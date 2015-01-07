@@ -1,0 +1,6 @@
+service ntp stop
+ntpdate -s ntp.ubuntu.com
+service ntp start
+
+# bonus: update timezone
+#dpkg-reconfigure tzdata
