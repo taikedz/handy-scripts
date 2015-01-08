@@ -1,12 +1,16 @@
+#! /bin/bash
+
+# Commented iptables firewalll restructuring
+# For learning and securing a standard web host.
 # See http://wiki.centos.org/HowTos/Network/IPTables 
-# for more info
+# for more info on iptables command
 
 # [1] we have connected from a remote machine - make sure
 #    we maintain connection!
 # add a live rule
-#iptables -P INPUT ACCEPT
+iptables -P INPUT ACCEPT
 # don't do via SSH
-iptables -P INPUT DROP
+#iptables -P INPUT DROP
 
 # [2] flush current rules table, which closes all external
 #   connections - hence step 1.
@@ -26,22 +30,24 @@ iptables -A INPUT -p icmp -j ACCEPT
 iptables -A INPUT -i lo -j ACCEPT
 
 # [6] Accept incoming new ssh (tcp port 22) connections ; existing ones are served by rule [3]
-#iptables -A INPUT -m state --state NEW -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -m state --state NEW -p tcp --dport 22 -j ACCEPT
 
 # [6.1] XTRA - allow other connections
-#iptables -A INPUT -m state --state NEW -p tcp --dport 80   -j ACCEPT
+iptables -A INPUT -m state --state NEW -p tcp --dport 80   -j ACCEPT
+iptables -A INPUT -m state --state NEW -p tcp --dport 443   -j ACCEPT
 #iptables -A INPUT -m state --state NEW -p tcp --dport 3306 -j ACCEPT
 #     port 80 is for Apache; 3306 is for MySQL, for example.
 
 # [7] Reject everything else
-iptables -P INPUT DROP # the more correct step
+iptables -P INPUT DROP
 
 # [8] Reject all forwards (we are not a router)
-iptables -P FORWARD DROP # the more correct step
+iptables -P FORWARD DROP
 
 # [9] Accept any outgoing traffic
 iptables -P OUTPUT ACCEPT
 
 # [10] Save the settings we've just defined so that
 # they apply when we reboot
-#service iptables save
+#service iptables save # RHEL/CentOS
+dpkg-reconfigure iptables-persistent # Debian/Ubuntu
