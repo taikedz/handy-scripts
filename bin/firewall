@@ -1,19 +1,22 @@
 #! /bin/bash
 
+if [[ $UID != 0 ]]; then
+	echo "You are not root."
+	exit 1
+fi
+
 # Commented iptables firewalll restructuring
 # For learning and securing a standard web host.
 # See http://wiki.centos.org/HowTos/Network/IPTables 
 # for more info on iptables command
 
-# [1] we have connected from a remote machine - make sure
+# [1] if we have connected from a remote machine, make sure
 #    we maintain connection!
 # add a live rule
 iptables -P INPUT ACCEPT
-# don't do via SSH
-#iptables -P INPUT DROP
 
 # [2] flush current rules table, which closes all external
-#   connections - hence step 1.
+#   connections if policy is DROP - hence step 1.
 iptables -F
 
 # [3] add our first rule on incoming connections:
@@ -26,13 +29,15 @@ iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 # [4] Accept any input for protocol ("-p") ICMP
 iptables -A INPUT -p icmp -j ACCEPT
 
-# [5] Accept anything from localhost -- the distinction is not visible in the above dump
+# [5] Accept anything from localhost -- the distinction is not visible
+# when dumping from iptables -L
 iptables -A INPUT -i lo -j ACCEPT
 
-# [6] Accept incoming new ssh (tcp port 22) connections ; existing ones are served by rule [3]
+# [6] Accept incoming new ssh (tcp port 22) connections
+# existing connections in general are served by rule [3]
 iptables -A INPUT -m state --state NEW -p tcp --dport 22 -j ACCEPT
 
-# [6.1] XTRA - allow other connections
+# [6.1] XTRA - allow other connections - customize as necessary
 iptables -A INPUT -m state --state NEW -p tcp --dport 80   -j ACCEPT
 iptables -A INPUT -m state --state NEW -p tcp --dport 443   -j ACCEPT
 #iptables -A INPUT -m state --state NEW -p tcp --dport 3306 -j ACCEPT
@@ -45,9 +50,29 @@ iptables -P INPUT DROP
 iptables -P FORWARD DROP
 
 # [9] Accept any outgoing traffic
-iptables -P OUTPUT ACCEPT
+# OK for a desktop, not for a server?
+#iptables -P OUTPUT ACCEPT
+
+# For a server, limit outgoing ports
+iptables -A OUTPUT -m state --state NEW -p tcp --dport 80 -j ACCEPT
+iptables -A OUTPUT -m state --state NEW -p tcp --dport 443 -j ACCEPT
+iptables -A OUTPUT -m state --state NEW -p tcp --dport 8080 -j ACCEPT
+iptables -A OUTPUT -m state --state NEW -p tcp --dport 25 -j ACCEPT
+iptables -A OUTPUT -m state --state NEW -p tcp --dport 53 -j ACCEPT # DNS queries!
+iptables -P OUTPUT DROP
 
 # [10] Save the settings we've just defined so that
 # they apply when we reboot
-#service iptables save # RHEL/CentOS
-dpkg-reconfigure iptables-persistent # Debian/Ubuntu
+
+if [[ "x$(which apt)" != "x" ]]; then # checking for apt, if present presume Debian/Ubuntu
+	if [[ "x$(dpkg --get-selections | grep iptables-persistent)" = 'x' ]]; then
+		read -p "Install iptables-persistent? " RY
+		if [[ $RY = 'y' ]]; then
+			apt install iptables-persistent
+		fi
+	else
+		dpkg-reconfigure iptables-persistent # Debian/Ubuntu
+	fi
+else # presume CentOS... very lazy, i know
+	/sbin/service iptables save # RHEL/CentOS
+fi
