@@ -1,0 +1,23 @@
+#! /bin/bash
+
+if [[ "x$UID" != 'x0' ]]; then
+	echo "You are not root."
+	exit 1
+fi
+
+ytdlurl="https://yt-dl.org/downloads/latest/youtube-dl"
+ytdlbin=/usr/local/bin/youtube-dl
+
+echo "Downloading YouTube Download from $ytdlurl ..."
+
+wget -O "$ytdlbin" "$ytdlurl"
+
+chmod a+x "$ytdlbin"
+
+cat <<EOF
+Successfully installed. Run [ youtube-dl -U ] to check for and install updates.
+
+Any issues, run the command again with the --verbose optiion added, and send reports to
+  https://github.com/rg3/youtube-dl/issues/
+EOF
+
