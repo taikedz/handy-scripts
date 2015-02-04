@@ -5,6 +5,29 @@ if [[ $UID != 0 ]]; then
 	exit 1
 fi
 
+## Adding args options
+
+MYMODE="workstation"
+
+if [[ "x$1" = 'x-m' && "x$2" != '' ]]; then
+	shift # pop the '-m'
+	MYMODE=$1 # get the arg
+	shift # pop that too
+	case "$MYMODE" in
+		server)
+			echo "Configuring for a server"
+			;;
+		workstation)
+			echo "Configuring for a workstation"
+			;;
+		*)
+			echo "Invalid mode: $MYMODE"
+			exit 1
+			;;
+	esac
+fi
+
+
 # Commented iptables firewalll restructuring
 # For learning and securing a standard web host.
 # See http://wiki.centos.org/HowTos/Network/IPTables 
@@ -36,13 +59,18 @@ iptables -A INPUT -i lo -j ACCEPT
 # [6] Accept incoming new ssh (tcp port 22) connections
 # existing connections in general are served by rule [3]
 iptables -A INPUT -m state --state NEW -p tcp --dport 22 -j ACCEPT
+# Default port is 5500 for VNC?
+#iptables -A INPUT -m state --state NEW -p tcp --dport 5500 -j ACCEPT
 
 # [6.1] XTRA - allow other connections - customize as necessary
-iptables -A INPUT -m state --state NEW -p tcp --dport 80   -j ACCEPT
-iptables -A INPUT -m state --state NEW -p tcp --dport 443   -j ACCEPT
-#iptables -A INPUT -m state --state NEW -p tcp --dport 3306 -j ACCEPT
-#     port 80 is for Apache; 3306 is for MySQL, for example.
-
+if [[ $MYMODE = 'server' ]]; then
+	# Only open these publicly for servers
+	iptables -A INPUT -m state --state NEW -p tcp --dport 80   -j ACCEPT
+	iptables -A INPUT -m state --state NEW -p tcp --dport 443   -j ACCEPT
+	iptables -A INPUT -m state --state NEW -p tcp --dport 8080 -j ACCEPT
+	#iptables -A INPUT -m state --state NEW -p tcp --dport 3306 -j ACCEPT
+	# port 80 is for Apache; 3306 is for MySQL, for example.
+fi
 
 # [7] Reject everything else
 iptables -P INPUT DROP
@@ -51,21 +79,23 @@ iptables -P INPUT DROP
 iptables -P FORWARD DROP
 
 # [9] Accept any outgoing traffic
-# OK for a desktop, not for a server?
-#iptables -P OUTPUT ACCEPT
+if [[ $MYMODE = 'workstation' ]]; then
+	iptables -P OUTPUT ACCEPT
+fi
 
-# Allow outgoing requests from already established transactions
-iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-# Limit outgoing connections
-iptables -A OUTPUT -m state --state NEW -p tcp --dport 80 -j ACCEPT
-iptables -A OUTPUT -m state --state NEW -p tcp --dport 443 -j ACCEPT
-iptables -A OUTPUT -m state --state NEW -p tcp --dport 8080 -j ACCEPT
-iptables -A OUTPUT -m state --state NEW -p tcp --dport 25 -j ACCEPT
-iptables -A OUTPUT -m state --state NEW -p tcp  --dport 53 -j ACCEPT # DNS queries!
-iptables -A OUTPUT -m state --state NEW -p udp  --dport 53 -j ACCEPT # DNS
-iptables -P OUTPUT DROP
-
+if [[ $MYMODE = 'server' ]]; then
+	# Allow outgoing requests from already established transactions
+	iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+	
+	# Limit outgoing connections
+	iptables -A OUTPUT -m state --state NEW -p tcp --dport 80 -j ACCEPT
+	iptables -A OUTPUT -m state --state NEW -p tcp --dport 443 -j ACCEPT
+	iptables -A OUTPUT -m state --state NEW -p tcp --dport 8080 -j ACCEPT
+	iptables -A OUTPUT -m state --state NEW -p tcp --dport 25 -j ACCEPT
+	iptables -A OUTPUT -m state --state NEW -p tcp  --dport 53 -j ACCEPT # DNS queries!
+	iptables -A OUTPUT -m state --state NEW -p udp  --dport 53 -j ACCEPT # DNS
+	iptables -P OUTPUT DROP
+fi
 
 # [10] Save the settings we've just defined so that
 # they apply when we reboot
