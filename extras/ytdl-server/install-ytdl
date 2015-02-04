@@ -8,16 +8,20 @@ fi
 ytdlurl="https://yt-dl.org/downloads/latest/youtube-dl"
 ytdlbin=/usr/local/bin/youtube-dl
 
-echo "Downloading YouTube Download from $ytdlurl ..."
+echo "Downloading YouTube Downloader from $ytdlurl ..."
 
 wget -O "$ytdlbin" "$ytdlurl"
 
-chmod a+x "$ytdlbin"
+chmod a+rx "$ytdlbin"
 
 cat <<EOF
+
 Successfully installed. Run [ youtube-dl -U ] to check for and install updates.
+
+Run [ youtube-dl --help ] for a list of options.
 
 Any issues, run the command again with the --verbose optiion added, and send reports to
   https://github.com/rg3/youtube-dl/issues/
+
 EOF
 
