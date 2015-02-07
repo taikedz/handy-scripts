@@ -18,9 +18,9 @@ Restart sshd
 
 Finally, open the tunnel:
 
-	nohup ssh -fN -R 5500:localhost:22
+	nohup ssh -fN -R 5500:localhost:22 anchor
 
-We use `nohup` to leave this process running.
+...where 'anchor' is the domain name or IP of the anchor machine. We use `nohup` to leave this process running after the shell terminates.
 
 ## Setup the anchor
 
@@ -39,3 +39,11 @@ For simple ssh, this is:
 Port 5500 is used for Gitso, and if you do not have the ability to port forward on the router, this method is what you'll need to employto allow users elsewhere to connect to you.
 
 Users of Gitso soliciting your help will then need to use the anchor's address to connect to you.
+
+### Clean up
+
+On the target, once the access requirement is ended, take down the reverse tunnel. First find the PID:
+
+	ps aux | grep 'ssh -fN -R'
+
+Get the PID (often the first number after your username) and issue a `kill` command on that PID.
