@@ -1,5 +1,13 @@
 #! /bin/bash
 
+# Commented iptables firewalll restructuring
+# For learning and iptables and bash
+# Secures a standard web host in server mode;
+# or provides sane defaults for workstation mode.
+
+# See http://wiki.centos.org/HowTos/Network/IPTables 
+# for more info on iptables command
+
 if [[ $UID != 0 ]]; then
 	echo "You are not root."
 	exit 1
@@ -27,11 +35,6 @@ if [[ "x$1" = 'x-m' && "x$2" != '' ]]; then
 	esac
 fi
 
-
-# Commented iptables firewalll restructuring
-# For learning and securing a standard web host.
-# See http://wiki.centos.org/HowTos/Network/IPTables 
-# for more info on iptables command
 
 # [1] if we have connected from a remote machine, make sure
 #    we maintain connection!
@@ -100,15 +103,15 @@ fi
 # [10] Save the settings we've just defined so that
 # they apply when we reboot
 
-if [[ "x$(which apt)" != "x" ]]; then # checking for apt, if present presume Debian/Ubuntu
+if [[ "x$(which dpkg)" != "x" ]]; then # checking for dpkg, if present presume Debian/Ubuntu and presence of iptables-persistent in repo
 	if [[ "x$(dpkg --get-selections | grep iptables-persistent)" = 'x' ]]; then
 		read -p "Install iptables-persistent? " RY
-		if [[ $RY = 'y' ]]; then
+		if [[ $RY = 'y' ]]; then # we have dpkg, presuming we have apt
 			apt install iptables-persistent
 		fi
 	else
 		dpkg-reconfigure iptables-persistent # Debian/Ubuntu
 	fi
-else # presume CentOS... very lazy, i know
+else # presume CentOS 5/6... very lazy, i know. Not tested on CentOS 7
 	/sbin/service iptables save # RHEL/CentOS
 fi

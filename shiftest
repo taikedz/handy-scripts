@@ -1,0 +1,7 @@
+echo [all] : $@
+echo Shifting
+shift
+MYVAR=$1
+echo MYVAR : $MYVAR
+echo [ 1 ] : $1
+echo [all] : $@
