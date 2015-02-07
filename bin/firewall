@@ -28,6 +28,14 @@ if [[ "x$1" = 'x-m' && "x$2" != '' ]]; then
 		workstation)
 			echo "Configuring for a workstation"
 			;;
+		open)
+			echo "Opening the firewall up completely. Be careful!"
+			iptables -P INPUT ACCEPT
+			iptables -P OUTPUT ACCEPT
+			iptables -P FORWARD ACCEPT
+			iptables -F
+			exit 0 # We don't even bother saving this configuration... just leave.
+			;;
 		*)
 			echo "Invalid mode: $MYMODE"
 			exit 1
@@ -79,7 +87,11 @@ fi
 iptables -P INPUT DROP
 
 # [8] Reject all forwards (we are not a router)
-iptables -P FORWARD DROP
+if [[ $MYMODE = 'server' ]]; then
+	iptables -P FORWARD ACCEPT
+else
+	iptables -P FORWARD DROP
+fi
 
 # [9] Accept any outgoing traffic
 if [[ $MYMODE = 'workstation' ]]; then
