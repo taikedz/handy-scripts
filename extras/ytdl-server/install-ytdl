@@ -20,6 +20,7 @@ if [[ ! -e "$ytsongexe" ]]; then
 	cat <<EOSCRIPT > "$ytsongexe"
 youtube-dl -x --audio-format vorbis $1
 EOSCRIPT
+	chmod a+rx "$ytsongexe"
 else
 	echo "INFO : $ytsongexe already exists; not creating."
 fi
