@@ -121,7 +121,7 @@ if [[ "x$(which dpkg)" != "x" ]]; then # checking for dpkg, if present presume D
 	if [[ "x$(dpkg --get-selections | grep iptables-persistent)" = 'x' ]]; then
 		read -p "Install iptables-persistent? " RY
 		if [[ $RY = 'y' ]]; then # we have dpkg, presuming we have apt
-			apt install iptables-persistent
+			apt-get install iptables-persistent
 		fi
 	else
 		dpkg-reconfigure iptables-persistent # Debian/Ubuntu
