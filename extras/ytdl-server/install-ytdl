@@ -16,15 +16,18 @@ wget -O "$ytdlbin" "$ytdlurl"
 
 chmod a+rx "$ytdlbin"
 
-if [[ ! -e "$ytsongexe" ]]; then
-	cat <<EOSCRIPT > "$ytsongexe"
+if [[ ! -e "$ytsongexe" && "x"$(which apt) != 'x' ]]; then
+	read -p "Install audio conversion support (libavtools) for Ubuntu? y/N>" ry
+	if [[ "x$ry" = "xy" ]]; then
+		apt install libav-tools --assume-yes
+		cat <<EOSCRIPT > "$ytsongexe"
 youtube-dl -x --audio-format vorbis $1
 EOSCRIPT
-	chmod a+rx "$ytsongexe"
+		chmod a+rx "$ytsongexe"
+	fi
 else
 	echo "INFO : $ytsongexe already exists; not creating."
 fi
-
 
 cat <<EOF
 
@@ -32,7 +35,7 @@ Successfully installed. Run [ youtube-dl -U ] to check for and install updates.
 
 Run [ youtube-dl --help ] for a list of options.
 
-A special script $ytsongexe should also be available to download and convert to Ogg/Vorbis audio.
+If you chose to install audio conversion support for Ubuntu, an additional command $ytsongexe should also be available to download and convert to Ogg/Vorbis audio.
 
 Any issues, run the command again with the --verbose optiion added, and send reports to
   https://github.com/rg3/youtube-dl/issues/
