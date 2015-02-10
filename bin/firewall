@@ -17,7 +17,7 @@ fi
 
 MYMODE="workstation"
 
-if [[ "x$1" = 'x-m' && "x$2" != '' ]]; then
+if [[ "x$1" = 'x-m' && "x$2" != 'x' ]]; then
 	shift # pop the '-m'
 	MYMODE=$1 # get the arg
 	shift # pop that too
@@ -34,6 +34,8 @@ if [[ "x$1" = 'x-m' && "x$2" != '' ]]; then
 			iptables -P OUTPUT ACCEPT
 			iptables -P FORWARD ACCEPT
 			iptables -F
+			# add an 'at' job to revert the changes after now + 10 minutes?
+			# check for $1 numeric?
 			exit 0 # We don't even bother saving this configuration... just leave.
 			;;
 		*)
