@@ -48,6 +48,10 @@ for file in "$@"; do
 		continue # skip the flags of course!
 	fi
 	# ===================
+	if [[ ! -e "$file" ]];
+		echo "Skipping '$file' as we cannot fin it"
+		continue
+	fi
 	echo "=> Transcoding '$file'... "
 
 	dst=$(dirname "$file")
