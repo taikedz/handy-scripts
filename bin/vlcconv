@@ -48,7 +48,7 @@ for file in "$@"; do
 		continue # skip the flags of course!
 	fi
 	# ===================
-	if [[ ! -e "$file" ]];
+	if [[ ! -e "$file" ]]; then
 		echo "Skipping '$file' as we cannot fin it"
 		continue
 	fi
