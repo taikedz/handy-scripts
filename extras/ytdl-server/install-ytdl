@@ -16,10 +16,10 @@ wget -O "$ytdlbin" "$ytdlurl"
 
 chmod a+rx "$ytdlbin"
 
-if [[ ! -e "$ytsongexe" && "x"$(which apt) != 'x' ]]; then
+if [[ ! -e "$ytsongexe" && "x"$(which apt-get) != 'x' ]]; then
 	read -p "Install audio conversion support (libavtools) for Ubuntu? y/N>" ry
 	if [[ "x$ry" = "xy" ]]; then
-		apt install libav-tools --assume-yes
+		apt-get install libav-tools --assume-yes
 		cat <<EOSCRIPT > "$ytsongexe"
 youtube-dl -x --audio-format vorbis $1
 EOSCRIPT
