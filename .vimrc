@@ -1,2 +1,0 @@
-set autoindent
-syntax on
