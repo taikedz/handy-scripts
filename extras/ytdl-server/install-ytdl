@@ -21,7 +21,9 @@ if [[ ! -e "$ytsongexe" && "x"$(which apt-get) != 'x' ]]; then
 	if [[ "x$ry" = "xy" ]]; then
 		apt-get install libav-tools --assume-yes
 		cat <<EOSCRIPT > "$ytsongexe"
-youtube-dl -x --audio-format vorbis $1
+#! /bin/bash
+
+youtube-dl -x --audio-format vorbis \$1
 EOSCRIPT
 		chmod a+rx "$ytsongexe"
 	fi
