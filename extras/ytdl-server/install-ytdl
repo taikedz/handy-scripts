@@ -23,7 +23,7 @@ if [[ ! -e "$ytsongexe" && "x"$(which apt-get) != 'x' ]]; then
 		cat <<EOSCRIPT > "$ytsongexe"
 #! /bin/bash
 
-youtube-dl -x --audio-format vorbis \$1
+youtube-dl -i -x --audio-format vorbis \$1
 EOSCRIPT
 		chmod a+rx "$ytsongexe"
 	fi
