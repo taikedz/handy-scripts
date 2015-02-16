@@ -1,0 +1,10 @@
+#! /bin/bash
+
+if [[ x$(which parallel) = 'x' ]]; then
+	echo "No GNU parallel installed"
+	exit(1)
+	# change this so that not using parallel is an option
+fi
+
+ls | parallel "if [[ ! -f {} ]]; then cd {}; echo -n 'Updating '{}' : '; git pull; cd ..; fi;"
+
