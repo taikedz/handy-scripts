@@ -6,5 +6,5 @@ if [[ x$(which parallel) = 'x' ]]; then
 	# change this so that not using parallel is an option
 fi
 
-ls | parallel "if [[ ! -f {} ]]; then cd {}; echo -n 'Updating '{}' : '; git pull; cd ..; fi;"
+ls | parallel "if [[ -d {} ]]; then cd {}; echo -n 'Updating '{}' : '; git pull; cd ..; fi;"
 

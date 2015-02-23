@@ -54,10 +54,28 @@ function matcharg {
 	echo -e "$a_match" | grep "^$a_arg$"
 }
 
+function argextract {
+	#$1 - argument
+	#$2 - series of capturing patterns captured sequentially
+	# This is a bit kludgy and needs refining
+	
+	local a_arg=$1
+	shift
+	
+	#echo "Arg $a_arg"
+
+	local var
+	for var in "$@"; do
+		#echo "Pat $var"
+		a_arg=$(echo $a_arg | sed -r "s|^$var$|\1|")
+	done
+	echo $a_arg
+}
+
 # ===== Usage
 
 for var in "$@"; do
-	if [[ matcharg "$var" "--help,-h,/h" ) ]]; then
+	if [[ $( matcharg "$var" "--help,-h,/h" ) != "" ]]; then
 		cat <<EOHELP
 $0 - Open a remote tunnel
 
@@ -67,7 +85,7 @@ Assuming you can tunnel to a remote server, this script is intended to take care
 
 $0 ACTION --lport=LPORT [--rport=RPORT --server=SERVER --user=USER --cport=CPORT]
 
-[TODO] - change the last three items to a combined --ssh=USER@SERVER:CPORT
+$0 START --ssh=USER@SERVER:CPORT --tunnel=RPORT-LPORT
 
 	ACTION - any of "START", "STOP" or "STATUS" ; only ACTION requires the full set of arguments
 
@@ -92,17 +110,34 @@ EOHELP
 	l_action=$( matcharg "$var" "START,STOP,STATUS"  )
 	if [[ x$l_action != x ]]; then t_action=$l_action; fi
 
+	# Shorthand for the ports: --tunnel=rport-lport
+	l_ports=$( getarg "$var" "--tunnel" "[1-9][0-9]+-[1-9][0-9]+" )
+	if [[ x$l_ports != x ]]; then
+		t_rport=$( argextract "$l_ports" ".*-([1-9][0-9]+)" )
+		t_lport=$( argextract "$l_ports" "([1-9][0-9]+)-.*" )
+	fi
+
 	l_lport=$( getarg "$var" "--lport" "[1-9][0-9]+"  )
 	if [[ x$l_lport != x ]]; then t_lport=$l_lport; fi
 
 	l_rport=$( getarg "$var" "--rport" "[1-9][0-9]+" )
 	if [[ x$l_rport != x ]]; then t_rport=$l_rport; fi
 
-	# TODO - collapse these into --ssh=USER@SERVER:CPORT
+	# Here's a shorthand: --ssh=user@server:port part
+	l_ssh=$( getarg "$var" "--ssh" "[a-zA-Z0-9_-]+@[^.][a-z0-9\\.-]+[^.]:[1-9][0-9]+" )
+	if [[ x$l_ssh != x ]]; then
+		# old man in care home complaining about the eggs
+		# they taste of nothing. nothing. nothing.
+		# nurse replies "I just cooked the eggs - I don't lay them"
+		t_ruser=$( argextract "$l_ssh" "([a-zA-Z0-9_-]+)@.*" )
+		t_rserv=$( argextract "$l_ssh" ".*@([^.][a-z0-9\\.-]+[^.]):.*" )
+		t_cport=$( argextract "$l_ssh" ".*:([1-9][0-9]+)" )
+	fi
+	
 	l_rserv=$( getarg "$var" "--server" "[^.][a-z0-9\\.-]+[^.]" )
 	if [[ x$l_rserv != x ]]; then t_rserv=$l_rserv; fi
 
-	l_ruser=$( getarg "$var" "--user" "[a-zA-Z0-9_-]" )
+	l_ruser=$( getarg "$var" "--user" "[a-zA-Z0-9_-]+" )
 	if [[ x$l_ruser != x ]]; then t_ruser=$l_ruser; fi
 
 	l_cport=$( getarg "$var" "--cport" "[1-9][0-9]+" )
@@ -146,9 +181,9 @@ STOP)
 	;;
 STATUS)
 	if [[ -f "$t_confdir/$t_lport.log" ]]; then
-		echo -n "There is a tunnel running for port $t_port: "
+		echo -n "There is a tunnel running for port $t_lport: "
 		tail -n 1 "$t_confdir/$t_lport.log"
 	else
-		echo "No active tunnel found running for port $t_port."
+		echo "No active tunnel found running for port $t_lport."
 	fi
 esac
