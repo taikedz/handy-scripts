@@ -8,6 +8,9 @@
 # See http://wiki.centos.org/HowTos/Network/IPTables 
 # for more info on iptables command
 
+# See http://www.cyberciti.biz/tips/linux-iptables-examples.html
+# for a further tutorial on iptables rules manipulation
+
 if [[ $UID != 0 ]]; then
 	echo "You are not root."
 	exit 1
@@ -121,7 +124,7 @@ if [[ "x$(which dpkg)" != "x" ]]; then # checking for dpkg, if present presume D
 	if [[ "x$(dpkg --get-selections | grep iptables-persistent)" = 'x' ]]; then
 		read -p "Install iptables-persistent? " RY
 		if [[ $RY = 'y' ]]; then # we have dpkg, presuming we have apt
-			apt-get install iptables-persistent
+			apt-get install -yy iptables-persistent
 		fi
 	else
 		dpkg-reconfigure iptables-persistent # Debian/Ubuntu
