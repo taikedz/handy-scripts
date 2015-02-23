@@ -20,8 +20,12 @@ t_action=
 t_lport=
 t_rport=
 t_rserv=
+t_ruser=
+t_cport=
 
-# Get arguments
+# =========================================
+# Bash argument extraction example
+# ===
 
 function getarg {
 	# $1 - arg
@@ -50,32 +54,101 @@ function matcharg {
 	echo -e "$a_match" | grep "^$a_arg$"
 }
 
+# ===== Usage
+
 for var in "$@"; do
-	l_action=$( matcharg $var "START,STOP,STATUS"  )
-	if [[ x$l_action != x ]]; then
-		t_action=$l_action
+	if [[ matcharg "$var" "--help,-h,/h" ) ]]; then
+		cat <<EOHELP
+$0 - Open a remote tunnel
+
+Assuming you can tunnel to a remote server, this script is intended to take care of the logic of testing and managing a remote tunnel connection
+
+== Usage ==
+
+$0 ACTION --lport=LPORT [--rport=RPORT --server=SERVER --user=USER --cport=CPORT]
+
+[TODO] - change the last three items to a combined --ssh=USER@SERVER:CPORT
+
+	ACTION - any of "START", "STOP" or "STATUS" ; only ACTION requires the full set of arguments
+
+	LPORT - the local port you want to forward the tunnel to
+
+STOP and STATUS only need the local port number to stop the tunnel, if it exists
+
+Establishing a connection with START requires these additional parameters
+
+	RPORT - the port on the remote server which is listening
+
+	SERVER - the remote server which is the front end of the tunnel
+
+	USER - the user on the remote server
+
+	CPORT - the SSH port of the remote server
+
+EOHELP
+		return 0
 	fi
+	
+	l_action=$( matcharg "$var" "START,STOP,STATUS"  )
+	if [[ x$l_action != x ]]; then t_action=$l_action; fi
 
 	l_lport=$( getarg "$var" "--lport" "[1-9][0-9]+"  )
-	if [[ x$l_lport != x ]]; then
-		t_lport=$l_lport
-	fi
+	if [[ x$l_lport != x ]]; then t_lport=$l_lport; fi
 
-        l_rport=$( getarg "$var" "--rport" "[1-9][0-9]+" )
-        if [[ x$l_rport != x ]]; then
-                t_rport=$l_rport
-        fi
+	l_rport=$( getarg "$var" "--rport" "[1-9][0-9]+" )
+	if [[ x$l_rport != x ]]; then t_rport=$l_rport; fi
 
-        l_rserv=$( getarg "$var" "--server" "[^.][a-z0-9\\.-]+[^.]" )
-        if [[ x$l_rserv != x ]]; then
-                t_rserv=$l_rserv
-        fi
+	# TODO - collapse these into --ssh=USER@SERVER:CPORT
+	l_rserv=$( getarg "$var" "--server" "[^.][a-z0-9\\.-]+[^.]" )
+	if [[ x$l_rserv != x ]]; then t_rserv=$l_rserv; fi
 
+	l_ruser=$( getarg "$var" "--user" "[a-zA-Z0-9_-]" )
+	if [[ x$l_ruser != x ]]; then t_ruser=$l_ruser; fi
+
+	l_cport=$( getarg "$var" "--cport" "[1-9][0-9]+" )
+        if [[ x$l_cport != x ]]; then t_cport=$l_cport; fi
 done
+
+# ===
+# Argument processing is done
+# ================================
 
 cat <<EOF
 Action: $t_action
+
 Local port: $t_lport
 Remote port: $t_rport
+
 Server: $t_rserv
+Remote user: $t_ruser
+Connection port: $t_cport
 EOF
+
+case $t_action in
+START)
+	if [[ ! -f "$t_confdir/$t_lport.log" ]]; then
+		# TODO - Somehow we have to pass the password
+		# which is probbaly not possible if programatically, so need to pass
+		# a key file
+		ssh -fN -R "$t_lport:localhost:$t_rport" "$t_ruser@$t_rserv" -p $t_cport & >> "$t_confdir/$t_lport.log" # remember to match the below next!
+		pidline=$( ps aux | grep "$t_lport:localhost:$t_rport $t_ruser@$t_rserv" | grep -v grep )
+		# TODO - need to extract PID!
+		pid=
+		echo -e "$pid\n$pidline" > "$t_confdir/$t_lport.log"
+	else
+                echo -n "There is a tunnel running for port $t_port: "
+                tail -n 1 "$t_confdir/$t_lport.log"
+	fi
+	;;
+STOP)
+	kill $(echo "$t_confdir/$t_lport.log")
+	mv "$t_confdir/$t_lport.log" "$t_confdir/$t_lport-killed.log"
+	;;
+STATUS)
+	if [[ -f "$t_confdir/$t_lport.log" ]]; then
+		echo -n "There is a tunnel running for port $t_port: "
+		tail -n 1 "$t_confdir/$t_lport.log"
+	else
+		echo "No active tunnel found running for port $t_port."
+	fi
+esac
