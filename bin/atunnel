@@ -159,24 +159,30 @@ Remote user: $t_ruser
 Connection port: $t_cport
 EOF
 
+# ============
+# This section is not at all robust...
+# Need to be able to find connections we did not initiate
+# Need to be able to kill off processes reliably, or reliably report failure to kill them
+# Probably also be able to manage tunnels by name
+
 case $t_action in
 START)
 	if [[ ! -f "$t_confdir/$t_lport.log" ]]; then
 		# TODO - Somehow we have to pass the password
 		# which is probbaly not possible if programatically, so need to pass
 		# a key file
-		ssh -fN -R "$t_lport:localhost:$t_rport" "$t_ruser@$t_rserv" -p $t_cport & >> "$t_confdir/$t_lport.log" # remember to match the below next!
+		ssh -fN -R "$t_lport:localhost:$t_rport" "$t_ruser@$t_rserv" -p $t_cport >> "$t_confdir/$t_lport.log" # remember to match the below next!
 		pidline=$( ps aux | grep "$t_lport:localhost:$t_rport $t_ruser@$t_rserv" | grep -v grep )
-		# TODO - need to extract PID!
-		pid=
+		# extract PID
+		pid=$( echo $pidline | sed -r "s|^$USER\\s+([0-9]+)\\s+.+$|\1|" )
 		echo -e "$pid\n$pidline" > "$t_confdir/$t_lport.log"
 	else
-                echo -n "There is a tunnel running for port $t_port: "
+                echo -n "There is a tunnel running for port $t_lport: "
                 tail -n 1 "$t_confdir/$t_lport.log"
 	fi
 	;;
 STOP)
-	kill $(echo "$t_confdir/$t_lport.log")
+	kill $( echo "$t_confdir/$t_lport.log" | head -n 1 )
 	mv "$t_confdir/$t_lport.log" "$t_confdir/$t_lport-killed.log"
 	;;
 STATUS)
