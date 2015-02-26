@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # Shell arguments extractor
 #
@@ -18,6 +18,8 @@
 # etc.
 #
 # For full license details, please refer to the GNU General Public License v 3.0
+
+# ===========================================================================================
 
 # Read an argument and try to decode it according to the rules as provided
 # Argument 1 is the argument being passed
@@ -66,7 +68,7 @@ function matcharg {
 	echo -e "$a_match" | grep "^$a_arg$"
 }
 
-# Extract a specific piece of text out of an argyment, by way of a series of patterns
+# Extract a specific piece of text out of an argument, by way of a series of patterns
 #
 # Argument 1 - the argument to process
 # Argument 2+ - the patterns through which to successively pass the argument

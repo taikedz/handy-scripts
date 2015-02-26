@@ -1,0 +1,3 @@
+syntax on
+set autoindent
+set formatoptions=tcqr
