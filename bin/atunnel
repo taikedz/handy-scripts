@@ -1,13 +1,14 @@
 #! /bin/bash
 
 # Script to automatically start or kill a tunnel
-# Saves information to a ~/.autotunnel/PORT.pid containing the PID of the SSH instance
+# Saves information to a ~/.config/tunnels/PORT.pid containing the PID of the SSH instance
 
-# ssh -fN -R 5500:localhost:22 anchor & >> ~/.autotunnel/PORT.log
+# TODO : extra features to include
+# STATUSALL - display the statuses of all tunnels
 
 # Declare global variables
 
-t_confdir=$HOME/.autotunnel
+t_confdir=$HOME/.config/tunnels
 mkdir -p $t_confdir
 if [[ $? != 0 ]]; then
 	echo "Could not make preferences directory!"
@@ -77,31 +78,42 @@ function argextract {
 for var in "$@"; do
 	if [[ $( matcharg "$var" "--help,-h,/h" ) != "" ]]; then
 		cat <<EOHELP
+Remote Tunnel Manager
+
 $0 - Open a remote tunnel
 
 Assuming you can tunnel to a remote server, this script is intended to take care of the logic of testing and managing a remote tunnel connection
 
 == Usage ==
 
-$0 ACTION --lport=LPORT [--rport=RPORT --server=SERVER --user=USER --cport=CPORT]
+Full set of arguments
 
-$0 START --ssh=USER@SERVER:CPORT --tunnel=RPORT-LPORT
+	$0 ACTION --lport=LPORT [--rport=RPORT --server=SERVER --user=USER --cport=CPORT]
 
-	ACTION - any of "START", "STOP" or "STATUS" ; only ACTION requires the full set of arguments
+or short hand:
 
-	LPORT - the local port you want to forward the tunnel to
+	$0 START --ssh=USER@SERVER:CPORT --tunnel=RPORT-LPORT
 
-STOP and STATUS only need the local port number to stop the tunnel, if it exists
+ACTION
+	Any of "START", "STOP" or "STATUS" ; only START requires the full set of arguments
+	STOP and STATUS only need the local port number to stop the tunnel, if it exists
+
+LPORT
+	The local port you want to forward the tunnel to
 
 Establishing a connection with START requires these additional parameters
 
-	RPORT - the port on the remote server which is listening
+RPORT
+	The port on the remote server which is listening
 
-	SERVER - the remote server which is the front end of the tunnel
+SERVER
+	The remote server which is the front end of the tunnel
 
-	USER - the user on the remote server
+USER
+	The user on the remote server
 
-	CPORT - the SSH port of the remote server
+CPORT
+	The SSH port of the remote server
 
 EOHELP
 		exit 0
@@ -148,6 +160,9 @@ done
 # Argument processing is done
 # ================================
 
+l_verbose=$( matcharg "$var" "-v,--verbose"  )
+if [[ x$l_verbose != x ]]; then
+
 cat <<EOF
 Action: $t_action
 
@@ -159,19 +174,21 @@ Remote user: $t_ruser
 Connection port: $t_cport
 EOF
 
+fi
+
 # ============
-# This section is not at all robust...
-# Need to be able to find connections we did not initiate
-# Need to be able to kill off processes reliably, or reliably report failure to kill them
-# Probably also be able to manage tunnels by name
+# This section is not as robust as could be...
+# Need to be able to find connections we did not initiate so as to not try to create more on top (but not kill)
+# Probably also be able to manage tunnels by name? Could simply use a "name" option, which if absent becomes the local port?
+# WOuld also be good to have a LIST option to list managed connections
 
 case $t_action in
 START)
 	if [[ ! -f "$t_confdir/$t_lport.log" ]]; then
 		# TODO - Somehow we have to pass the password
-		# which is probbaly not possible if programatically, so need to pass
+		# which is probably not possible if programatically, so need to pass
 		# a key file
-		ssh -fN -R "$t_lport:localhost:$t_rport" "$t_ruser@$t_rserv" -p $t_cport >> "$t_confdir/$t_lport.log" # remember to match the below next!
+		ssh -fN -R "$t_lport:localhost:$t_rport" "$t_ruser@$t_rserv" -p $t_cport #>> "$t_confdir/$t_lport.log" # remember to match the below next!
 		pidline=$( ps aux | grep "$t_lport:localhost:$t_rport $t_ruser@$t_rserv" | grep -v grep )
 		# extract PID
 		pid=$( echo $pidline | sed -r "s|^$USER\\s+([0-9]+)\\s+.+$|\1|" )
@@ -182,14 +199,21 @@ START)
 	fi
 	;;
 STOP)
-	kill $( echo "$t_confdir/$t_lport.log" | head -n 1 )
-	mv "$t_confdir/$t_lport.log" "$t_confdir/$t_lport-killed.log"
+	if [[ -f "$t_confdir/$t_lport.log" ]]; then
+		kill $( cat "$t_confdir/$t_lport.log" | head -n 1 )
+		if [[ $? = 0 ]]; then
+			rm "$t_confdir/$t_lport.log"
+			echo "Stopped tunnel to $t_lport"
+		fi
+	else
+		echo "This utility does not manage any remote tunnel to local port $t_lport."
+	fi
 	;;
 STATUS)
 	if [[ -f "$t_confdir/$t_lport.log" ]]; then
 		echo -n "There is a tunnel running for port $t_lport: "
 		tail -n 1 "$t_confdir/$t_lport.log"
 	else
-		echo "No active tunnel found running for port $t_lport."
+		echo "This utility does not manage any remote tunnel to local port $t_lport."
 	fi
 esac
