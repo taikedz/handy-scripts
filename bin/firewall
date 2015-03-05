@@ -79,6 +79,13 @@ iptables -A INPUT -m state --state NEW -p tcp --dport 22 -j ACCEPT
 #iptables -A INPUT -m state --state NEW -p tcp --dport 5500 -j ACCEPT
 
 # [6.1] XTRA - allow other connections - customize as necessary
+
+if [[ $MYMODE = 'workstation' ]]; then
+	# gitso
+	iptables -A INPUT -m state --state NEW -p tcp --dport 5500   -j ACCEPT
+	iptables -A INPUT -m state --state NEW -p tcp --dport 5900   -j ACCEPT
+fi
+
 if [[ $MYMODE = 'server' ]]; then
 	# Only open these publicly for servers
 	iptables -A INPUT -m state --state NEW -p tcp --dport 80   -j ACCEPT
