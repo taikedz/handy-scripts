@@ -18,9 +18,9 @@ Restart sshd
 
 Finally, open the tunnel:
 
-	nohup ssh -fN -R 5500:localhost:22 anchor
+	ssh -fN -R 5500:localhost:22 anchor &
 
-...where 'anchor' is the domain name or IP of the anchor machine. We use `nohup` to leave this process running after the shell terminates.
+...where 'anchor' is the domain name or IP of the anchor machine. We use `&` to leave this process running after the shell terminates.
 
 ## Setup the anchor
 
