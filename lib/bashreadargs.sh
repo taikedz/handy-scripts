@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 # Shell arguments extractor
 #
@@ -19,7 +19,13 @@
 #
 # For full license details, please refer to the GNU General Public License v 3.0
 
-# ===========================================================================================
+# ---------------------------------------------------------------------------
+
+# Include this script at the head of your main script to perform argument extraction
+# before beginning working
+#
+
+# </premable> ==============================================================================
 
 # Read an argument and try to decode it according to the rules as provided
 # Argument 1 is the argument being passed
@@ -91,9 +97,50 @@ function argextract {
 
 	local var
 	for var in "$@"; do
-	        #echo "Pat $var"
-	        a_arg=$(echo $a_arg | sed -r "s|^$var$|\1|")
+		#echo "Pat $var"
+		a_arg=$(echo $a_arg | sed -r "s|^$var$|\1|")
 	done
 	echo $a_arg
 }
 
+function getargs() {
+	for var in "$@"; do
+		if [[ $( matcharg "$var" "--help,-h,/h" ) != "" ]]; then
+		cat <<EOHELP
+USER HELP SECTION - replace this
+EOHELP
+
+		fi
+		
+#		# Example - extract an action string from (anywhere)
+#		local l_action=$( matcharg "$var" "START,STOP,STATUS"  )
+#		if [[ -n "$l_action" ]]; then
+#			t_action=$l_action;
+#		continue; fi
+#
+#		# Extract two numerical values from the same argument: --ports=rport-lport
+#		local l_ports=$( getarg "$var" "--ports" "[0-9]+-[0-9]+" )
+#		if [[ -n "$l_ports" ]]; then
+#			t_rport=$( argextract "$l_ports" ".*-([1-9][0-9]+)" ) # use '.*' at the start to omit initial part of string
+#			t_lport=$( argextract "$l_ports" "([1-9][0-9]+)-.*" ) # and at the end to omit rest of string
+#			continue;
+#		fi
+
+	done
+}
+# Calls the args processing
+getargs "$@"
+
+# -----------
+#
+#
+#	End of boilerplate argument extraction
+#	You can now add your own code
+#
+#
+# =========== Your actual script here =============
+#
+
+#if [[ -n $t_action ]]; then echo "t_action is $t_action";        fi
+#if [[ -n $t_lport  ]]; then echo "l = $t_lport ; r = $t_rport"; fi
+#echo "Done."
