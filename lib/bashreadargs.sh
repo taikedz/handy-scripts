@@ -4,14 +4,16 @@
 #
 # Copyright 2015 Tai Kedzierski
 #
-# Released under the GPL v3.0
+# Released under the GPL v3.0 - see http://gnu.org for full details
 #
+# In brief:
 # This software is Free Software - you are free to use, modify,
 # share and otherwise disseminate this program and its code as
-# well you please, provided that:
+# well you please, provided that this copyright notice is retained and:
 #
-# A/ You provide the source code with any binary version you may compile
-# B/ You transfer the same rights to any who use your version.
+#	A/ You provide the source code with any binary/non-source version you may compile
+#	B/ You provide the source code of any code you integrate this code into
+#	C/ You transfer the same rights to any who use your version.
 #
 # You accept that this code is provided "as-is"
 # wihout any warranty of merchantability or fitness for a particular purpose
@@ -27,7 +29,7 @@
 
 # </premable> ==============================================================================
 
-# Read an argument and try to decode it according to the rules as provided
+# Read an argument and try to extract its value according to the rules as provided
 # Argument 1 is the argument being passed
 # Argument 2 is the label - this is a string, followed by a "=" followed by thestring expected as value
 # Argument 3 is the pattern to match the value against. For the general case, use ".+"
@@ -57,7 +59,7 @@ function getarg {
 # Match an argument against a comma-separated list of values
 #
 # Argument 1 is the argument received
-# Argument 2 is as list of comma-separated literals
+# Argument 2 is a list of comma-separated literals
 #
 # Example: 
 #	matcharg "$argument" "START,STOP,STATUS"
@@ -82,7 +84,7 @@ function matcharg {
 # The patterns apply whole, and only the first capturing group should come out the other end.
 #
 # Example:
-#	argextract "sir francis SUPER bacon" "sir (.+)" "(.+) bacon"
+#	argextract "sir francis SUPER bacon" "[a-z]+ (.+)" "(.+) bacon"
 #
 # returns "francis SUPER"
 function argextract {
@@ -104,31 +106,36 @@ function argextract {
 }
 
 function getargs() {
+	# Main function to extract all arguments
 	for var in "$@"; do
 		if [[ $( matcharg "$var" "--help,-h,/h" ) != "" ]]; then
 		cat <<EOHELP
 USER HELP SECTION - replace this
 EOHELP
+	# Write in this loop what arguments you want to extract
+	# use 'local' to make variables that will not be used outside of this function
+	# all other variables have scope globally
 
 		fi
 		
+#		#if you need to pass aguments to a subshell, remember to export
+#
 #		# Example - extract an action string from (anywhere)
-#		local l_action=$( matcharg "$var" "START,STOP,STATUS"  )
-#		if [[ -n "$l_action" ]]; then
-#			t_action=$l_action;
-#		continue; fi
+#		t_action=$( matcharg "$var" "START,STOP,STATUS"  )
+#		if [[ -n "$t_action" ]]; then continue;
+#		else export t_action; fi
 #
 #		# Extract two numerical values from the same argument: --ports=rport-lport
-#		local l_ports=$( getarg "$var" "--ports" "[0-9]+-[0-9]+" )
+#		local l_ports=$( getarg "$var" "--ports" "[1-9][0-9]*-[1-9][0-9]*" )
 #		if [[ -n "$l_ports" ]]; then
-#			t_rport=$( argextract "$l_ports" ".*-([1-9][0-9]+)" ) # use '.*' at the start to omit initial part of string
-#			t_lport=$( argextract "$l_ports" "([1-9][0-9]+)-.*" ) # and at the end to omit rest of string
+#			export t_rport=$( argextract "$l_ports" ".*-([1-9][0-9]+)" ) # use '.*' at the start to discard the start of string
+#			export t_lport=$( argextract "$l_ports" "([1-9][0-9]+)-.*" ) # and at the end to omit rest of string
 #			continue;
 #		fi
 
 	done
 }
-# Calls the args processing
+# Calls the arguments processing we just defined
 getargs "$@"
 
 # -----------
