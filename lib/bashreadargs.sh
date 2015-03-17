@@ -27,6 +27,16 @@
 # before beginning working
 #
 
+# FIXME
+#
+# Make more concise
+# Turn if [] then; X fi // into // [] && X
+
+# TODO
+#
+# * Add feature for reading args line by line from file
+# * Add interactive option reading (turn this into an inputs management library)
+
 # </premable> ==============================================================================
 
 # Read an argument and try to extract its value according to the rules as provided
