@@ -8,7 +8,6 @@
 # TODO
 #
 # * Add support for CentOS
-# * drop the Document Outline feature!
 #
 # Dependencies - CentOS
 # pdftohtml (from poppler-utils)
@@ -33,8 +32,9 @@ pdftohtml -nomerge -noframes -s -i "$PDFNAME" "$TMPFILE"
 
 echo "Fixing quirks ..."
 sed -e "s,</b><br/>\$,</b><br/><br/>,g" -e "s,^<b>,<br/><b>,g" -e "s,\&#160;, ,g" -e "s, <br/>,<br/>,g" -i "$TMPFILE.html"
-sed -r -e 's/\<!--.+?--\>//g' -e 's#<([a-zA-Z0-9_-]+).*?>\s*([^a-ZA-Z0-9])\s*</\1>#\1#g' -i "$TMPFILE.html"
-sed -e '#<a name="outline"></a><h1>Document Outline</h1>#,$ d' -i "$TMPFILE.html"
+sed -r -e 's/\<!--.+?--\>//g' -e 's#<([a-zA-Z0-9_-]+).*?>\s*([^a-ZA-Z0-9])\s*</\1>##g' -i "$TMPFILE.html"
+sed -e '/<a name="outline"><\/a><h1>Document Outline<\/h1>/,$ d' -i "$TMPFILE.html"
+echo "</body>/<html>" >> "$TMPFILE.html"
 
 echo "Converting to LaTeX ..."
 gnuhtml2latex -S style "$TMPFILE.html" #> "$TMPTEX"
