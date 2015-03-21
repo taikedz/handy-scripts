@@ -1,5 +1,15 @@
 #!/bin/bash
 
+####
+# All you need is LibreOffice !
+
+libreoffice --headless --convert-to docx $@
+
+# done.
+
+####
+exit
+
 # Dependencies - Ubuntu
 # pdftohtml (from poppler-utils)
 # gnuhtml2latex
