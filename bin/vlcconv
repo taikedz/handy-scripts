@@ -11,9 +11,17 @@ for arg in "$@"; do
 		cat <<EOHELP
 $0 converts audio and video files using the VLC media streamer; to Theora video or Vorbis audio, in OGG container.
 
+USAGE
+
+	$0 MEDIAFILE
+
+	$0 --audio MEDIAFILE
+
 By defult, $0 will convert the file to Theora.
 
 Specify --audio option to encode to Vorbis (audio only).
+
+===
 
 Copyright Tai Kedzierski 2015
 
