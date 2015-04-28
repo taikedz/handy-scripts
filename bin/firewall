@@ -11,6 +11,8 @@
 # See http://www.cyberciti.biz/tips/linux-iptables-examples.html
 # for a further tutorial on iptables rules manipulation
 
+[[ -f /etc/redhat-release ]] && [[ $( cat /etc/redhat-release | sed -r -e 's/^.*?release ([0-9]+).*$/\1/') = '7' ]] && { echo "RedHat/CentOS version 7 does not use iptables. Please use firewalld."; }
+
 if [[ $UID != 0 ]]; then
 	echo "You are not root."
 	exit 1
@@ -140,6 +142,12 @@ if [[ "x$(which dpkg)" != "x" ]]; then # checking for dpkg, if present presume D
 	else
 		dpkg-reconfigure iptables-persistent # Debian/Ubuntu
 	fi
-else # presume CentOS 5/6... very lazy, i know. Not tested on CentOS 7
+elif [[ -f /etc/redhat-release ]]; then
 	/sbin/service iptables save # RHEL/CentOS
+else
+	cat <<EOF
+Unknown save mechanism. Please consult a search engine to find out how to save iptables firewalls in your distribution.
+
+And let us know :-) github.com/taikedz/handy-scripts
+EOF
 fi
