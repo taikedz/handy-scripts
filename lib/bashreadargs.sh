@@ -37,6 +37,12 @@
 # * Add feature for reading args line by line from file
 # * Add interactive option reading (turn this into an inputs management library)
 
+# Consider using bash native regular expressions and variable expansion?
+#   myvar="the fourth man"
+#   matcher="^the (.+) man$" # need to define a regex in a quoted string
+#   [[ $myvar =~ $matcher ]] && echo ${BASH_REMATCH[1]}
+# where BASH_REMATCH is the name of the capture identifier
+
 # </premable> ==============================================================================
 
 # Read an argument and try to extract its value according to the rules as provided
