@@ -1,6 +1,11 @@
-service ntp stop
+#!/bin/bash
+
+NTPSERVICE=ntp
+[[ -f /etc/redhat-release ]] && { NTPSERVICE=ntpd; }
+
+service $NTPSERVICE stop
 ntpdate -s ntp.ubuntu.com
-service ntp start
+service $NTPSERVICE start
 
 # bonus: update timezone
 #dpkg-reconfigure tzdata
