@@ -1,0 +1,11 @@
+Edit /etc/default/grub
+
+Add a line
+
+	GRUB_GFXMODE=640x480
+
+Then update grub
+
+	sudo update-grub
+
+then reboot
