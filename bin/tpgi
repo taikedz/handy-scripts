@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Install wrapper for tazpkg
+
+[[ $# -gt 0 ]] || {
+cat <<EOHELP
+Usage:
+
+	$0 install PACKAGE [...]
+	$0 search {and|or} TERM [PATTERNS ...]
+
+Wrapper for the tazpkg package manager. Allows specifying
+multiple packages on the same command line during search
+operations and installs.
+
+	$0 search and TERM [PATTERNS ...]
+
+Searches tazpkg for the first term, then filters package
+names using the subsequent patterns
+
+	$0 search or TERM [TERMS ...]
+
+Searches tazpkg for each term and prints the sorted results.
+
+
+===
+AUTHOR
+
+Written by Tai Kedzierski (C) 2015
+
+===
+LICENSE
+
+This software is Free Software license under the GNU GPLv3
+
+See www.gnu.org for more information about the
+    GNU General Pulic License v3.0
+EOHELP
+exit 1
+}
+
+echo -e "\n$0 - Wrapper for tazpkg\n-----------" 1>&2
+
+# ======= Search mode ========
+
+function andsearch {
+	tazres=$(tazpkg search $1 | grep -E -e '-[0-9]')
+	shift
+	for term in $@; do
+		tazres=$(echo $tazres | sed -r -e 's/ /\n/g' | grep "$term")
+	done
+	echo "$tazres"
+}
+
+function orsearch {
+	for term in $@; do
+		tazres="$tazres $(tazpkg search $term | grep -E -e '-[0-9]')"
+	done
+	echo $tazres | sort
+}
+
+[[ $1 = search ]] && {
+	shift
+	matcher='^(and|or)$'
+	[[ $1 =~ $matcher ]] && {
+		shift
+		smode=${BASH_REMATCH[1]}
+		if [[ $smode = "and" ]]; then
+			echo $(andsearch "$@") | sed -r -e 's/ /\n/g'
+		else
+			echo $(orsearch "$@" ) | sed -r -e 's/ /\n/g'
+		fi
+	}
+
+# =====
+echo -e "\n-----------" 1>&2
+exit # end search mode
+}
+
+# ======= Install mode =======
+
+[[ $UID != 0 ]] && {
+	echo "You are not root."
+	exit 2
+}
+
+[[ $1 = "install" ]] && {
+	shift
+	for term in $@; do
+		echo "Installing $term"
+		tazpkg -gi $term
+	done
+echo -e "\n-----------" 1>&2
+exit # ==== end of install
+}
+
+# ==== Else
+
+echo "Did not recognize your command. please specify 'install' or 'search {and|or}'. Run with no arguments for more info."
