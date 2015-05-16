@@ -1,8 +1,15 @@
+On grub menu press `c`
+
+run `vbeinfo` to list supported sizes
+
+run `reboot` to return to grub
+
+
 Edit /etc/default/grub
 
 Add a line
 
-	GRUB_GFXMODE=640x480
+	GRUB_GFXPAYLOAD_LINUX=640x480
 
 Then update grub
 
