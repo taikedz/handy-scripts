@@ -20,21 +20,21 @@ if [[ $# -gt 1 ]] && [[ $1 = 'install' ]]; then
 		echo "You are not root"
 		exit 1
 	else
-		apt-get install $@
+		yum install $@
 		exit
 	fi
 fi
 
 if [[ $# = 1 ]] && [[ $1 = 'list' ]]; then
-	dpkg --get-selections | less
+	yum list installed | less
 	exit
 fi
 
 if [[ $# -gt 1 ]] && [[ $1 = 'show' ]]; then
 	shift
-	apt-cache show $@ | less
+	yum info $@ | less
 	exit
 fi
 
 # else search
-apt-cache search $1 | less
+yum search $1 | less
