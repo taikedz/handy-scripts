@@ -24,8 +24,7 @@ for term in $@; do
 		ls ~/.ssh/ | grep -E -e '\.(key|pem)'
 		exit
 	else
-		myargs="$myargs $1"
-		shift
+		myargs="$myargs $term"
 	fi
 done
 
