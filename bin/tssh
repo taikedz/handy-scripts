@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Wrapper for ssh command
+# If you have a number of identitiy files in ~/.ssh this
+# wrapper allows you just to name them rather than type
+# the full path
+
+for term in $@; do
+	matcher="^--i=(.+)$"
+	if [[ $term =~ $matcher ]]; then
+		t_iden="$HOME/.ssh/"${BASH_REMATCH[1]}
+		[[ ! -f "$t_iden.key" ]] && {
+			pemid="$t_iden.pem"
+			[[ ! -f "$pemid" ]] && {
+				echo "Identity file '$t_iden.key' or '$pemid' not found."
+				exit 2
+			}
+			t_iden="$pemid"
+		}
+		t_iden="-i $t_iden"
+	elif [[ $term = 'list' ]]; then
+		# specifically list pem or key files.
+		# really, should be named like this.
+		ls ~/.ssh/ | grep -E -e '\.(key|pem)'
+		exit
+	else
+		myargs="$myargs $1"
+		shift
+	fi
+done
+
+myargs="$myargs $t_iden"
+
+#echo "SSH would be called with"
+#for term in $myargs; do
+#	echo $term
+#done
+
+ssh $myargs
