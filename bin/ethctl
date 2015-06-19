@@ -1,4 +1,13 @@
 #!/bin/bash
+### BEGIN INIT INFO
+# Provides: etherpad
+# Required-Start:
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Custom etherpad start/stop
+### END INIT INFO
+
 
 [[ $# -lt 1 ]] && {
 	echo "Actions: start, stop, restart, status"
@@ -6,14 +15,15 @@
 }
 
 etherpid=$(ps aux | grep 'node /home/etherpad/etherpad-lite' | grep -v grep | sed -r -e 's/ +/\t/g'  | cut -f 2)
-etherlog=$HOME/logs/etherpad-$(date +%F).log
+etherlog=/home/etherpad/logs/etherpad-$(date +%F).log
 
+# ----------- need to replace with cleaner "case" switch statement
 if [[ 'start' = "$1" ]]; then
 	[[ -n "$etherpid" ]] && {
 		echo "Etherpad is already started ($etherpid)"
 		exit
 	}
-	cd etherpad-lite
+	cd /home/etherpad/etherpad-lite
 	bin/run.sh >> $etherlog 2>&1 &
 	echo "Started etherpad. Logging to [$etherlog]"
 elif [[ 'stop' = "$1" ]]; then
