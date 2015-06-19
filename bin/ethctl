@@ -1,0 +1,37 @@
+#!/bin/bash
+
+[[ $# -lt 1 ]] && {
+	echo "Actions: start, stop, restart, status"
+	exit 1
+}
+
+etherpid=$(ps aux | grep 'node /home/etherpad/etherpad-lite' | grep -v grep | sed -r -e 's/ +/\t/g'  | cut -f 2)
+etherlog=$HOME/logs/etherpad-$(date +%F).log
+
+if [[ 'start' = "$1" ]]; then
+	[[ -n "$etherpid" ]] && {
+		echo "Etherpad is already started ($etherpid)"
+		exit
+	}
+	cd etherpad-lite
+	bin/run.sh >> $etherlog 2>&1 &
+	echo "Started etherpad. Logging to [$etherlog]"
+elif [[ 'stop' = "$1" ]]; then
+	[[ -z "$etherpid" ]] && {
+		echo "No etherpad instance found to stop."
+		exit 2
+	}
+	echo "Killing process $etherpid"
+	kill $etherpid
+elif [[ 'restart' = "$1" ]]; then
+	set -e
+	$0 stop
+	$0 start
+	set +e
+elif [[ 'status' = "$1" ]]; then
+	echo "Looking for etherpad instances ..."
+	ps aux | grep 'node /home/etherpad/etherpad-lite' | grep -v grep
+else
+	echo "Unknown command [$1]"
+	exit 1
+fi
