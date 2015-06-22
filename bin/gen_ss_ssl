@@ -1,0 +1,81 @@
+#!/bin/bash
+
+[[ $# -lt 1 ]] && {
+	cat <<EOF
+SELF-SIGNED SSL CERTIFICATE GENERATOR
+
+Generates a private key and a self-signed certifiate,
+ installing to /etc/pki directories.
+
+
+Usage:
+
+	$0 KEYNAME
+	$0 list
+
+KEYNAME is the name of a key, CSR or certificate to
+ (re-)produce
+
+'list' will list currently named certificates and CSRs
+EOF
+	exit 0
+}
+
+[[ $UID != 0 ]] && {
+	echo "You need to be root to setup keys"
+	exit 1
+}
+
+pat="^[0-9a-zA-Z._-]+$"
+[[ ! "$1" =~ $pat ]] && {
+	echo "Not valid: [$1]"
+	exit 1
+}
+
+DPRIV=/etc/pki/private
+DCERT=/etc/pki/certificate
+mkdir -p $DPRIV
+mkdir -p $DCERT
+
+[[ "$1" = "list" ]] && {
+	echo "---- Currently available named certificates ----"
+	ls $DCERT
+	echo "---- Currently available named CSRs ----"
+	ls $DPRIV/*.csr
+	exit
+}
+
+F_KEY=$DPRIV/$1.key
+F_CSR=$DPRIV/$1.csr
+F_CRT=$DCERT/$1.crt
+
+#Generate Self-Signed Cert, then a CSR (cert signing req)
+
+[[ -f "$F_KEY" ]] || {
+echo "======= Generating Key ========="
+openssl genrsa -out "$F_KEY" 2048
+}
+
+[[ -f "$F_CSR" ]] || {
+echo "======= Generating CSR ========="
+openssl req -new -key "$F_KEY" -out "$F_CSR"
+}
+
+#Challenge used for CSR "csrsign"
+
+#Generate self-signed cert
+
+echo -e "=======\nGenerating Certificate from CSR [$F_CSR] and Key [$F_KEY]\n========="
+openssl x509 -req -days 30 -in "$F_CSR" -signkey "$F_KEY" -out "$F_CRT"
+
+
+cat<<EOF
+Now edit your Apache config
+
+There should be a default-ssl in sites-available
+
+Configure:
+
+	SSLCertificateFile      $F_CRT
+	SSLCertificateKeyFile   $F_KEY
+EOF
