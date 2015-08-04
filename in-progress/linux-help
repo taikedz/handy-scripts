@@ -62,27 +62,28 @@ cd /var/www/html
 
 cat FILENAME
   replace the FILENAME word with the name of an actual file
-  dumps the content of the file to screen ("dump to console").
+  -Dumps the content of the file to screen ("dump to console").
   useful if you want to see a file while also typing
 
 (navigation)
   if your console (commands screen) fills up with lots of text, you can navigate up and down
   by holding Shift key, and using the Pg Up and Pg Down buttons
-  on Mac mini-keyboards, hold Shift, and the fn key and use the Up and Down arrows to do the same
+  On Mac mini-keyboards, hold Shift and the fn key, and use the Up and Down arrows to do the same
 
 mkdir FILENAME
   create a directory with the name FILENAME in the current working directory
 
 less FILENAME
   "less" allows you to read files
-  use the Up and Down arrow keys, Page Up or Page Down arrow keys
-  you can also use the "w" and "z" keys to move up and down
-  type a "/" when in less, then type some text to search for, then hit enter
-  when searching, press "n" (small n) to go to the next result
-  press "N" (shift and n) to return to the previous character
-  press "g" to go to the start of the file
-  press "G" to go to the end of the file
-  press 'q' to quit
+  Use the Up and Down arrow keys, Page Up or Page Down arrow keys to navigate
+  You can also use the "w" and "z" keys to move up and down
+  Type a "/" when in less, then type some text to search for, then hit enter
+  When searching, press "n" (small n) to go to the next result
+  Press "N" (shift and n) to return to the previous result
+  Press "g" to go to the start of the file
+  Press "G" to go to the end of the file
+  Press 'q' to quit
+  You are probably reading this in "less" - try the commands out!
 
 nano FILENAME
   nano allows you to edit a text file
@@ -92,7 +93,7 @@ nano FILENAME
 
 vim FILENAME
   vim is an advanced text editor. You should google "vim tutorial" ;-)
-  it's more versatile and powerful than nano, but is quite different from what
+  It's more versatile and powerful than nano, but is quite different from what
   you are likely used to.
 
 emacs FILENAME
@@ -109,7 +110,8 @@ man COMMAND
   the same navigating and searching mechanisms as for 'less' apply for man
 
 ^C
-  Ctrl+c when a command is running generally kills it. Dead. Use if something is not quite running right
+  Ctrl+c when a command is running generally kills it. Dead.
+  Use if something is not quite running right
 
 ^Z
   Ctrl+z when a command is running pauses it and returns you to the command line
@@ -132,7 +134,7 @@ cp [FILE] [NEWFILE]
   note that if NEWFILE already exists, it is completely overwritten!
 
 exit
-  come out of the command line
+  come out of the current command line session
 
 ^D
   end of input
@@ -153,9 +155,9 @@ You can use the TAB key (above caps lock) to use "tab-completion"
 
 Start typing the name of a command and press tab to complete it. If that does not complete the command, press tab again.
 
-Either their are several commands that are spelled the same a tthe beginning and you will be told all of them, or there are no commands of that name.
+Either there are several commands that are spelled the same to start with and you will be told all of them, or there are no commands of that name.
 
-You can also use tabl completion for file names and file paths. For example type
+You can also use tab completion for file names and file paths. For example type
 
   cd /va
 
@@ -163,7 +165,7 @@ and then press tab. You end up with "cd /var/". Type some more so that you have
 
   cd /var/ww/html/wp
 
-and press tab again. It will complete to "cd /var/www/html/wp-". Press tab again to see a list of file starting with "wp-"
+and press tab again. It will complete to "cd /var/www/html/wp-". Press tab again to see a list of files starting with "wp-"
 
 ==================================================================================
 
@@ -176,9 +178,9 @@ Globbing allows you to refer to groups of files with similar names. Try the foll
   ls /var/www/html/wp*
   ls /var/www/html/*.php
 
-The first command lists all teh files in /var/www/html
+The first command lists all the files in /var/www/html
 
-The second command complains tha there's no "/var/www/html/wp" file
+The second command complains that there's no "/var/www/html/wp" file
 
 The third command displays all files whose name starts with "/var/www/html/wp", as well as the contents of all directories that start with "wp" too.
 
@@ -190,7 +192,7 @@ The fourth command displays all files inside /var/www/html/ and whose name ends 
 
 You can copy and paste in terminals too - they're just a little different from other applications, because the "Ctrl" key is used for other purposes
 
-        Windows
+###     Windows
 
 If you are connecting from Windows, you are probably using KiTTY or PuTTY
 
@@ -198,7 +200,7 @@ Select text to copy it
 
 Right-click to paste, or press Shift+Insert keys to paste
 
-        Mac
+###     Mac
 
 You are probably using Terminal to connect
 
@@ -206,9 +208,24 @@ Use the Command keys as you normally would to copy and paste
 
 Cmd+C , Cmd+V
 
-        Other
+###     Other
 
 If you are connecting from Linux, from a Chromebook, or another system, you probably use Ctrl+C and Ctrl+V to copy and paste.
 
 You need to instead use Ctrl+Shift+C and Ctrl+Shift+V to paste
 
+====================================================================================
+
+Thus ends your command line primer. There is so much more that can be done with the command line, including writing programs called "shell scripts". On this server, we use the fairly standard shell "bash", with which you can write "bash scripts" - Google that to find out more.
+
+Bash scripts are essentially series of command line commands with extra logic to allow you to automate various complex tasks. You can then run ("call", "execute") them like any other program.
+
+Knowing proper bash syntax - the language of bash - can allow you great mastery over a system. It is often the preferred way for power users and system administrators to interact with computers when processing information for its greater flexibility and reporting options, so you know exactly what's going on where.
+
+Of course, it is ill suited for navigating the web (which you can still do by typing "elinks"), or airbrushing photos.
+
+However it is very useful for grabbing hundreds of pages and doing some processing or data extraction on them, or producing thumbnails of thousands of images in one go, with the appropriate tools.
+
+Once you know how to use a command line, you'll wonder how you ever used a computer without it :-)
+
+Good luck, and happy learning!
