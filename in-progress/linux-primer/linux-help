@@ -1,4 +1,4 @@
-Welcome to the Staging server
+Welcome to the Linux server
 =================================
 
 Use the Up/Down arrow keys or Page Up/Page Down arrows keys or the "w" and "z" keys to move up and down.
@@ -14,6 +14,9 @@ go to the VirtualBox tutorials.
 
 
 In the immediate, here is some help you may find useful
+
+
+(NOTE TO ADMIN: the examples assume wordpress is installed in /var/www/html)
 
 =====================================================================================
 
