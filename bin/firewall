@@ -123,6 +123,7 @@ if [[ $MYMODE = 'server' ]]; then
 	# Limit outgoing connections
 	iptables -A OUTPUT -m state --state NEW -p tcp --dport 80 -j ACCEPT
 	iptables -A OUTPUT -m state --state NEW -p tcp --dport 443 -j ACCEPT
+	iptables -A OUTPUT -m state --state NEW -p tcp --dport 3306 -j ACCEPT
 	iptables -A OUTPUT -m state --state NEW -p tcp --dport 8080 -j ACCEPT
 	iptables -A OUTPUT -m state --state NEW -p tcp --dport 25 -j ACCEPT
 	iptables -A OUTPUT -m state --state NEW -p tcp  --dport 53 -j ACCEPT # DNS queries!
