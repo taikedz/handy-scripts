@@ -24,7 +24,12 @@ if [[ 'start' = "$1" ]]; then
 		exit
 	}
 	cd /home/etherpad/etherpad-lite
-	bin/run.sh >> $etherlog 2>&1 &
+	ecmd="bin/run.sh >> $etherlog 2>&1 &"
+	if [[ $UID = 0 ]] || [[ $(whoami) != etherpad ]]; then
+		su etherpad -c "$ecmd"
+	elif [[ $(whoami) = etherpad ]]; then
+		$ecmd
+	fi
 	echo "Started etherpad. Logging to [$etherlog]"
 elif [[ 'stop' = "$1" ]]; then
 	[[ -z "$etherpid" ]] && {
