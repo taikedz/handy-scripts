@@ -6,23 +6,19 @@ Usage
 
 	$0 list # list installed packages
 	$0 TERM # search for TERM
-	$0 {s|show} PACKAGE # show information about PACKAGE
+	$0 show PACKAGE # show information about PACKAGE
 	$0 install PACKAGE [PACKAGES ...] # install packages
 
-Specify a package to search, show, or install
+Specify a package to search, show, or install"
 EOF
 	exit
 }
 
-if [[ $# -gt 1 ]] && [[ $1 = 'install' ]]; then
+iopt='^(i|install)$'
+if [[ $# -gt 1 ]] && [[ $1 =~ $iopt ]]; then
 	shift
-	if [[ $UID != 0 ]]; then
-		echo "You are not root"
-		exit 1
-	else
-		apt-get install $@
-		exit
-	fi
+	sudo apt-get install $@
+	exit
 fi
 
 if [[ $# = 1 ]] && [[ $1 = 'list' ]]; then
@@ -30,8 +26,8 @@ if [[ $# = 1 ]] && [[ $1 = 'list' ]]; then
 	exit
 fi
 
-optshow='^(s|show)$'
-if [[ $# -gt 1 ]] && [[ $1 =~ $optshow ]]; then
+sopt='^(s|show)$'
+if [[ $# -gt 1 ]] && [[ $1 = $sopt ]]; then
 	shift
 	apt-cache show $@ | less
 	exit
