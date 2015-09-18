@@ -1,7 +1,7 @@
 
 # ============ Friendly help message to add to the end of .profile
 
-alias helpme="less $HOME/linux-help"
+alias helpme="less -R $HOME/linux-help"
 
 cat <<EOF
 
