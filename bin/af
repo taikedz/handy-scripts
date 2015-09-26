@@ -31,12 +31,12 @@ if [[ $# -gt 1 ]] && [[ $1 =~ $sopt ]]; then
 fi
 
 if [[ $# = 1 ]] && [[ $1 = "update" ]]; then
-	apt update
+	sudo apt update
 	exit
 fi
 
 if [[ $# = 1 ]] && [[ $1 = "upgrade" ]]; then
-	apt upgrade -y
+	sudo apt upgrade -y
 	exit
 fi
 
