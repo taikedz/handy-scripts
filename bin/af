@@ -19,7 +19,9 @@ EOF
 iopt='^(i|install)$'
 if [[ $# -gt 1 ]] && [[ $1 =~ $iopt ]]; then
 	shift
-	sudo apt-get install $@ -y
+	sudo apt install $@ -y
+	sudo apt-get autoremove -y
+	sudo apt-get autoclean -y
 	exit
 fi
 
@@ -37,6 +39,8 @@ fi
 
 if [[ $# = 1 ]] && [[ $1 = "upgrade" ]]; then
 	sudo apt upgrade -y
+	sudo apt-get autoremove -y
+	sudo apt-get autoclean -y
 	exit
 fi
 
