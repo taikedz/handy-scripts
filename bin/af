@@ -11,7 +11,13 @@ Usage
 	$0 {s|show} PACKAGE     # show information about PACKAGE
 	$0 {i|install} PACKAGES ...  # install packages
 
-Specify a package to search, show, or install"
+Specify a package to search, show, or install.
+
+Installation and upgrade tasks run with the --assume-yes flag, and
+perform auto-remove and autoclean.
+
+The tool uses sudo to run actions that require root.
+
 EOF
 	exit
 }
@@ -28,7 +34,7 @@ fi
 sopt='^(s|show)$'
 if [[ $# -gt 1 ]] && [[ $1 =~ $sopt ]]; then
 	shift
-	apt-cache show $@ | sed -r 's/^(Package: )/=============\n\1/' | less
+	apt-cache show $@ | sed -r 's/^(Package: )/\n\n\1/' | less
 	exit
 fi
 
