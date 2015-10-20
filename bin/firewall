@@ -134,8 +134,8 @@ fi
 # [10] Save the settings we've just defined so that
 # they apply when we reboot
 
-if [[ "x$(which dpkg)" != "x" ]]; then # checking for dpkg, if present presume Debian/Ubuntu and presence of iptables-persistent in repo
-	if [[ "x$(dpkg --get-selections | grep iptables-persistent)" = 'x' ]]; then
+if [[ -f /usr/bin/dpkg ]]; then # checking for dpkg, if present presume Debian/Ubuntu and presence of iptables-persistent in repo
+	if [[ "$(dpkg --get-selections | grep iptables-persistent | wc -l)" -lt 1 ]]; then
 		read -p "Install iptables-persistent? " RY
 		if [[ $RY = 'y' ]]; then # we have dpkg, presuming we have apt
 			apt-get install -yy iptables-persistent
