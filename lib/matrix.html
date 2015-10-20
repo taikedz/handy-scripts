@@ -1,0 +1,268 @@
+<html><head><title>Matrix Screen Display</title>
+
+<style type="text/css">
+body {margin:0px;}
+
+input {
+	font-family:courier new;
+	font-size: 12pt;
+}
+
+a {
+	color:#00ff00;
+	background-color:#000066;
+	text-decoration:none;
+}
+</style>
+
+</head>
+<body bgcolor="#000000">
+
+<! === Display Area === >
+<table bgcolor="#000000"><tr><td>
+
+	<font style="font-size:12pt;font-family:Verdana,Tahoma,sans-serif;color:#00ff00;">
+
+		<a onClick="toggle();">&nbsp;Parameter Settings&nbsp;</a>&nbsp;
+		<a onClick="obj('fontsbox').style.visibility='visible';">&nbsp;Fonts Settings&nbsp;</a>&nbsp;
+		<a onClick="editpalette();">&nbsp;Edit Character Palette&nbsp;</a>&nbsp;
+		<a onClick="about();">&nbsp;About this page&nbsp;</a>&nbsp;
+		<a onClick="clearInterval(INT);">&nbsp;Stop&nbsp;</a>&nbsp;
+		<a onClick="INT = setInterval('newLine();',speed);">&nbsp;Play&nbsp;</a>&nbsp;
+		<a onClick="newLine();">&nbsp;Step&nbsp;</a>
+
+	</font>
+
+</td></tr><tr><td>
+<span id="square"></span>
+</td></tr>
+</table>
+
+<! === Preferences Panel === >
+<table id="prefs" style="border:solid 1px #00ffff;visibility:hidden;background-color:#000000;color:#00ffff;font-family:verdana;font-size:12pt;position:absolute;left:30;top:20;">
+	<tr><td>Max line length</td>
+		<td><input type="text" size="3" id="MLL"></td></tr>
+	<tr><td>Max line gap</td>
+
+		<td><input type="text" size="3" id="MLG"></td></tr>
+	<tr><td>Columns</td>
+		<td><input type="text" size="3" id="COL"></td></tr>
+	<tr><td>Rows</td>
+		<td><input type="text" size="3" id="ROW"></td></tr>
+	<tr><td>Speed (miliseconds)</td>
+		<td><input type="text" size="3" id="SPD"></td></tr>
+
+	<tr><td><input type="button" onClick="validate();" value="OK"></td>
+		<td><input type="button" onClick="obj('prefs').style.visibility = 'hidden';" value="Cancel"></td></tr>
+</table>
+
+<! === Fonts Settings === >
+
+<table id="fontsbox" style="border:solid 1px #00ffff;visibility:hidden;background-color:#000000;color:#00ffff;font-family:verdana;font-size:12pt;position:absolute;left:30;top:20;">
+<tr><td>
+Font:
+</td><td>
+<select onChange="FONT = this.value;">
+	<option value="courier new">Courier New
+	<option value="verdana">Verdana
+	<option value="papyrus">Papyrus
+	<option value="webdings">Webdings
+	<option value="wingdings">Wingdings
+</select>
+</td></tr>
+<tr><td>
+Size:
+</td><td>
+<select onChange="SIZE = this.value;">
+	<option value="7">7
+	<option value="8">8
+	<option value="9">9
+	<option value="11">11
+	<option value="14">14
+</select>
+</td></tr>
+<tr><td>
+Color:
+</td><td><select onChange="COLR = this.value;">
+	<option value="#00ff00">Bright Green
+	<option value="#0000ff">Bright Blue
+	<option value="#ff0000">Bright Red
+	<option value="#ffff00">Bright Yellow
+	<option value="#ff00ff">Bright Pink
+	<option value="#00ffff">Bright Turquoise
+	<option value="#99FF99">Light Green
+	<option value="#9999FF">Light Blue
+	<option value="#FF9999">Light Red
+	<option value="#FFFF99">Light Yellow
+	<option value="#FF99FF">Light Pink
+	<option value="#99FFFF">Light Turquoise
+	<option value="#009900">Dark Green
+	<option value="#000099">Dark Blue
+	<option value="#990000">Dark Red
+	<option value="#999900">Dark Yellow
+	<option value="#990099">Dark Pink
+	<option value="#009999">Dark Turquoise
+	<option value="#333333">Shade 3
+	<option value="#666666">Shade 6
+	<option value="#999999">Shade 9
+	<option value="#cccccc">Shade C
+	<option value="#ffffff">Shade F (white)
+</select>
+</td></tr>
+<tr><td colspan="2"><center><input type="button" onCLick="obj('fontsbox').style.visibility = 'hidden';" value="Close"></center></td><tr>
+</table>
+
+<! === About Box === >
+
+<table style="border:solid 1px #ff0000;background-color:#000000;color:#9999ff;font-family:verdana;font-size:10pt;visibility:hidden;position:absolute;left:300;top:20;" id="aboutbox" width="250">
+<tr><td><center><font color="#ffff00"><i><b>Matrix Srceen Display v1.1</b></i></font></center></td></tr><tr><td>
+
+<p>This was first written as a midnight project overnight from 25apr to 26apr 2004</p>
+
+<p>I had always wanted to write a Matrix screen flow... and I was not able to sleep one night so... I got up, sat in front of the TV and wrote this page...</p>
+
+<p>I hope you enjoy it, even though it is completely pointless...</p>
+
+<p align="right"><font color="#ffff99"><i>by <a href="https://linkedin.com/in/taikedz">Tai Kedzierski</a></i><br>&copy;2004</font></p>
+
+<p align="center"><input type="button" value="OK" onClick="obj('aboutbox').style.visibility = 'hidden';"></p>
+</td></tr></table>
+
+<script language="JavaScript">
+
+if (parseInt(navigator.appVersion.charAt(0)) >= 4) {
+	isNav4 = (navigator.appName == "Netscape" && parseInt(navigator.appVersion) != 5)? true:false;
+	isNav6 = (navigator.appName == "Netscape" && parseInt(navigator.appVersion) == 5)? true:false;
+	isNav = (isNav4 || isNav6)? true:false;
+	isIE  = (navigator.appName.indexOf("Microsoft") != -1)? true:false;
+	isMac  = (navigator.platform.indexOf("Mac") != -1)? true:false;
+}
+
+//if(isMac) alert("You're on a Mac - it may not work, I have no means of testing...");
+
+// === Preferences ======
+
+function toggle() {
+	if(obj('prefs').style.visibility == 'visible') {
+		// Do nthing
+	} else {
+		obj('prefs').style.visibility = 'visible';
+		obj('MLL').value = maxline;
+		obj('MLG').value = maxgap;
+		obj('COL').value = cols;
+		obj('ROW').value = rows;
+		obj('SPD').value = speed;
+	}
+}
+
+function validate() {
+	maxline = parseInt(obj('MLL').value,10);
+	maxgap = parseInt(obj('MLG').value,10);
+	cols = parseInt(obj('COL').value,10);
+	rows = parseInt(obj('ROW').value,10);
+	speed = parseInt(obj('SPD').value,10);
+	obj('prefs').style.visibility = 'hidden';
+	newSquare();
+}
+
+function about() {
+	obj('aboutbox').style.visibility = 'visible';
+}
+
+function editpalette() {
+	RES = prompt('Modify character palette:',palette);
+	if(RES!=null && RES.length>0) {
+		palette = RES;
+	}
+}
+
+// === Initializing ======
+
+// --- Global Variables ------
+
+		// Parameters
+		maxline = 20;  // Maximum length of a line
+		maxgap  = 15;  // Maximum length of a gap
+		cols    = 170; // Number of columns
+		rows    = 40;  // Number of rows
+		speed   = 50;  // Speed (ms)
+
+		// Styles
+		COLR = "#00ff00";
+		FONT = "courier new";
+		SIZE = "14px"
+
+		palette = "abcdefghijklmnopqrstuvwxyz1234567890#!?%$£";
+
+function newSquare() {
+	clearInterval(INT);
+
+	columnlength = new Array(cols);
+
+	for(i=0;i<columnlength.length;i++) {
+		columnlength[i] = Math.round(Math.random()*(maxgap+maxline))-maxgap;
+	}
+
+	textlines = new Array(rows);
+
+	for(i=0;i<textlines.length;i++) {
+		textlines[i] = " ";
+	}
+	
+	obj('square').innerHTML = "";
+	INT = setInterval('newLine();',speed);
+}
+
+	INT = setInterval('newLine();',speed);
+	newSquare();
+
+// === Function definition ======
+
+function obj(theObj) {
+	if(isNav6 || isIE) {
+		return document.getElementById(theObj);
+	} else if(isNav4) {
+		return document.layers[theObj];
+	}
+}
+
+function doDisplay() {
+	obj("square").innerHTML = '<font style="color:'+COLR+';font-family:'+FONT+';font-size:'+SIZE+';">'+textlines.join("<br>\n");
+}
+
+function randomCharacter() {
+	x = Math.round(Math.random()*palette.length)-1;
+
+	return palette.substring(x,x+1);
+}
+
+// === Run Methods ======
+
+function newLine() {
+	flushLines();
+	for(i=0;i<columnlength.length;i++) {
+		if(columnlength[i] > 0) {
+			textlines[0] += randomCharacter();
+			--columnlength[i];
+		} else if(columnlength[i] < 0) {
+			textlines[0] += "&nbsp;";
+			columnlength[i]++;
+		} else {
+			columnlength[i] = Math.round(Math.random()*(maxgap+maxline))-maxgap;
+			textlines[0] += "&nbsp;";
+		}
+	}
+	doDisplay();
+}
+
+function flushLines() {
+	for(i=textlines.length;i>1;--i) {
+		textlines[i-1] = textlines[i-2]
+	}
+	textlines[0] = "";
+}
+</script>
+
+<!-- <embed hidden="true" src="it_is_finished.mp3" loop="true" autostart="true"></embed> -->
+
+</body></html>
