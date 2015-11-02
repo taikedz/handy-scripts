@@ -1,3 +1,6 @@
+
+Ubuntu
+
 On grub menu press `c`
 
 run `vbeinfo` to list supported sizes
@@ -16,3 +19,11 @@ Then update grub
 	sudo update-grub
 
 then reboot
+
+CentOS
+
+vim /etc/grub2.cfg
+
+Find the kernel vmlinuz
+
+At the end of the options, add vga=791
