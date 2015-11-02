@@ -1,5 +1,16 @@
 #! /bin/bash
 
+# ===== NOTICE =====
+# I am no longer maintaining this script
+# On ubuntu I will be moving over to ufw
+# On CentOS and RedHat, you must use firewalld
+#
+# This script remains useful though when you are
+# on systems where iptables is the way to go
+# and for learning about iptables.
+#
+# ==================
+
 # Commented iptables firewalll restructuring
 # For learning and iptables and bash
 # Secures a standard web host in server mode;
@@ -11,18 +22,18 @@
 # See http://www.cyberciti.biz/tips/linux-iptables-examples.html
 # for a further tutorial on iptables rules manipulation
 
-[[ -f /etc/redhat-release ]] && [[ $( cat /etc/redhat-release | sed -r -e 's/^.*?release ([0-9]+).*$/\1/') = '7' ]] && { echo "RedHat/CentOS version 7 does not use iptables. Please use firewalld."; }
+[[ -f /etc/redhat-release ]] && [[ $( cat /etc/redhat-release | sed -r -e 's/^.*?release ([0-9]+).*$/\1/') = '7' ]] && { echo "RedHat/CentOS version 7 does not use iptables. Please use firewalld."; exit 1; }
 
 if [[ $UID != 0 ]]; then
 	echo "You are not root."
-	exit 1
+	exit 2
 fi
 
 ## Adding args options
 
 MYMODE="workstation"
 
-if [[ "x$1" = 'x-m' && "x$2" != 'x' ]]; then
+if [[ "$1" = '-m' ]]; then
 	shift # pop the '-m'
 	MYMODE=$1 # get the arg
 	shift # pop that too
@@ -50,7 +61,7 @@ if [[ "x$1" = 'x-m' && "x$2" != 'x' ]]; then
 	esac
 else
 	echo "Options not stated"
-	exit 1
+	exit 3
 
 fi
 
@@ -148,7 +159,5 @@ elif [[ -f /etc/redhat-release ]]; then
 else
 	cat <<EOF
 Unknown save mechanism. Please consult a search engine to find out how to save iptables firewalls in your distribution.
-
-And let us know :-) github.com/taikedz/handy-scripts
 EOF
 fi
