@@ -1,10 +1,48 @@
 #! /bin/bash
 
-# Uncomplicated Firewall Initial Setup
+# =========================================
+# Very Uncomplicated Firewall Initial Setup
+# =========================================
+
+# Edit one of the following two lines to open up
+# the desired ports
 
 # Allowed inputs
-INPUTS="22 80 443 5500 5900"
-OUTPUTS="22 smtp smtps 80 443 3306"
+INPUTS="22 80 443"
+OUTPUTS="22 smtp 80 8080 443 3306 53"
+
+# ===== Stop editing ======================
+# =========================================
+
+function showhelp {
+cat <<EOF 1>&2
+
+Very Uncomplicated Firewall
+
+Manage your firewall with as little fuss as
+possible.
+
+This script helps in setting up initial
+firewall defaults for configuring servers
+
+Edit the script's two lists of ports to open
+and close the needed ports
+
+	$0
+	$0 --reset
+
+The default form just opens and closes the defined ports
+without affecting any additional ports you might have
+modified using the "ufw" command
+
+The --reset option actively resets ufw to default, then
+applies the chosen ports as defined in this script.
+
+Once applied, the firewall, ufw is enabled and
+you may be prompted to accept the change.
+
+EOF
+}
 
 # ======= Main ----------------¬
 
@@ -15,11 +53,14 @@ case $arg in
 	--reset)
 		f_doreset=y
 		;;
+	--help)
+		showhelp
+		;;
 esac
 done
 
 # Open up -- do not drop any current connections
-ufw disable
+# ufw disable
 for fstate in incoming outgoing routed; do
 	ufw default allow $fstate
 done
@@ -44,6 +85,7 @@ for fstate in incoming outgoing routed; do
 	ufw default deny $fstate
 done
 
+# this may prompt the user to accept.
 echo "[31;1m" # print in red
 ufw enable --force
 echo "[0m" # turn off coloring
