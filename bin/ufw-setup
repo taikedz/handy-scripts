@@ -8,8 +8,9 @@
 # the desired ports
 
 # Allowed inputs
-INPUTS="22 80 443"
-OUTPUTS="22 smtp 80 8080 443 3306 53"
+INPUTS="22"
+OUTPUTS="smtp 8080 3306 53"
+INOUT="80 443"
 
 # ===== Stop editing ======================
 # =========================================
@@ -71,11 +72,11 @@ done
 
 # Apply simple rules ---------------¬
 
-for firule in $INPUTS; do
+for firule in $INPUTS $INOUT; do
 	ufw allow in $firule > /dev/null && echo "Allowed in $firule"
 done
 
-for forule in $OUTPUTS; do
+for forule in $OUTPUTS $INOUT; do
 	ufw allow out $forule > /dev/null && echo "Allowed out $forule"
 done
 
