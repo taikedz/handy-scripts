@@ -1,0 +1,49 @@
+#! /bin/bash
+
+# Uncomplicated Firewall Initial Setup
+
+# Allowed inputs
+INPUTS="22 80 443 5500 5900"
+OUTPUTS="22 smtp smtps 80 443 3306"
+
+# ======= Main ----------------¬
+
+[[ $UID != 0 ]] && { echo "You are not root" 1>&2 ; exit 1 ; }
+
+for arg in $@; do
+case $arg in
+	--reset)
+		f_doreset=y
+		;;
+esac
+done
+
+# Open up -- do not drop any current connections
+ufw disable
+for fstate in incoming outgoing routed; do
+	ufw default allow $fstate
+done
+# -------------------/
+
+# Reset rules
+[[ "$f_doreset" = y ]] && ufw reset
+
+# Apply simple rules ---------------¬
+
+for firule in $INPUTS; do
+	ufw allow in $firule > /dev/null && echo "Allowed in $firule"
+done
+
+for forule in $OUTPUTS; do
+	ufw allow out $forule > /dev/null && echo "Allowed out $forule"
+done
+
+# Lock down ---------------------¬
+
+for fstate in incoming outgoing routed; do
+	ufw default deny $fstate
+done
+
+echo "[31;1m" # print in red
+ufw enable --force
+echo "[0m" # turn off coloring

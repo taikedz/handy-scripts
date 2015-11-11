@@ -9,6 +9,9 @@
 # on systems where iptables is the way to go
 # and for learning about iptables.
 #
+# If you are looking for a one-off script for
+# setting up firewalls, see the ufw-setup
+# script in this same repository.
 # ==================
 
 # Commented iptables firewalll restructuring
@@ -21,6 +24,14 @@
 
 # See http://www.cyberciti.biz/tips/linux-iptables-examples.html
 # for a further tutorial on iptables rules manipulation
+
+cat <<EOF 1>&2
+
+[31;1mThis script is no longer supported.
+
+Use at your own risk.[0m
+
+EOF
 
 [[ -f /etc/redhat-release ]] && [[ $( cat /etc/redhat-release | sed -r -e 's/^.*?release ([0-9]+).*$/\1/') = '7' ]] && { echo "RedHat/CentOS version 7 does not use iptables. Please use firewalld."; exit 1; }
 
