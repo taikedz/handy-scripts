@@ -1,0 +1,210 @@
+#! /bin/bash
+
+# =========================================
+# Very Easy Firewall Initial Setup
+# =========================================
+
+CDEF="[0m"
+CRED="[1;31m"
+CGRN="[0;32m"
+
+CONFIG="/usr/local/etc/vefw"
+
+function showhelp {
+cat <<EOF 1>&2
+
+${CGRN}==== Very Easy Firewall ====$CDEF
+
+Manage your firewall with as little fuss as
+possible.
+
+This script helps in setting up initial
+firewall defaults for configuring servers
+
+Edit the port files (see below) to open
+and close the needed ports
+
+The command can be run in one of 3 ways
+
+	$0
+	$0 --noreset
+	$0 --dry-run
+
+The default form just adds new rules opening the ports
+without affecting any additional rules you might have
+modified using the "iptables" command
+
+The --noreset option prevents flushing rules and chains,
+which is the default. The rules are re-applied, no existing
+rules are affected.
+
+Once applied, the firewall, ufw is enabled and
+you may be prompted to accept the change.
+
+The --dry-run option displays what ports have been
+picked up from the file, but does not apply them.
+
+${CGRN}==== Port Files ====${CDEF}
+
+There are three files which govern the use
+of the Very Easy Firewall tool.
+
+	$CONFIG/inputs
+	$CONFIG/outputs
+	$CONFIG/policy
+
+List in inputs and outputs the ports or protocols that
+need to be allowed.
+
+You can define as many ports and protocols as you want per line.
+Comments start with a "#" and end at the end of the line.
+
+Specify one uncommented line in policy : this is the default policy
+to set once the firewall rules have been applied. Typically this
+will be one of
+* REJECT (explicitly reject connections)
+* DROP (silently drop connections)
+* ACCEPT (accept any incoming connection - ONLY FOR TESTING)
+
+
+If the $CONFIG directory does not exist, it is created and
+populated with default data and example comments.
+
+If it exists but any of the subfiles do not exist, they will NOT
+be re-created.
+EOF
+}
+
+function dumports {
+	# use 'echo' to flatten to a single line
+	[[ -f $CONFIG/$1 ]] && echo $(cat $CONFIG/$1 | sed -r 's/#.+$//' )
+}
+
+# ======= Main ----------------¬
+
+# TODO - add a forceful override to this.
+[[ -f /etc/redhat-release ]] && [[ $( cat /etc/redhat-release | sed -r -e 's/^.*?release ([0-9]+).*$/\1/') = '7' ]] && { echo "RedHat/CentOS version 7 does not use iptables directly. Please use firewalld."; exit 1; }
+
+
+[[ $UID != 0 ]] && { echo "${CRED}You are not root$CDEF" 1>&2 ; exit 1 ; }
+
+# Allowed inputs
+INPUTS="$( dumports inputs )"
+OUTPUTS="$( dumports outputs )"
+POLICY="$( dumports policy )"
+
+[[ -z "$POLICY" ]] && { echo "No lockdown policy. See --help option for more." ; exit 99 ; }
+
+[[ ! -d $CONFIG ]] && {
+	mkdir $CONFIG
+	cat <<EOF > $CONFIG/policy
+# Lockdown policy - ACCEPT, REJECT, DROP
+DROP
+EOF
+	cat <<EOF > $CONFIG/inputs
+#22 # SSH port - enable for SSH
+
+#80 443 # Standard web ports
+
+EOF
+	cat <<EOF > $CONFIG/outputs
+22 # SSH
+25 # plain SMTP
+53ut # DNS lookups - udp and tcp
+80 443 8080 # Some typical web host ports
+#3306 # MySQL/MariaDB requests - you may need to activate this even for local MySQL access
+EOF
+	chmod -R 700 $CONIFG/
+}
+
+f_doreset=y
+for arg in $@; do
+case $arg in
+	--noreset)
+		f_doreset=n
+		;;
+	--help)
+		showhelp
+		;;
+	--dry-run)
+		cat <<EOF && exit
+INPUT: $INPUTS
+OUTPUT: $OUTPUTS
+POLICY: $POLICY
+EOF
+		;;
+esac
+done
+
+# -------------------/
+
+# Reset rules
+[[ "$f_doreset" = y ]] && {
+	iptables -P INPUT ACCEPT
+	iptables -P OUTPUT ACCEPT
+	iptables -P FORWARD ACCEPT
+	iptables -F # flush rules
+	# forcefully delete chains
+	iptables -L | grep Chain | grep -vE 'Chain (INPUT|OUTPUT|FORWARD)' | cut -d ' ' -f 2 | while read x; do iptables -X $x ; done
+}
+
+# Apply simple rules ---------------¬
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -p icmp -j ACCEPT
+iptables -A OUTPUT -p icmp -j ACCEPT
+iptables -A INPUT -i lo -j ACCEPT
+
+PRULE="([0-9]+)([ut]{1,2})"
+
+function chainup {
+CHAIN=$1
+shift
+for firule in $@; do
+	if [[ $firule =~ $PRULE ]]; then
+		FPORT=${BASH_REMATCH[1]}
+		FPROTO=${BASH_REMATCH[2]}
+		[[ $FPROTO =~ u ]] && iptables -A $CHAIN -m state --state NEW -p udp --dport $FPORT -j ACCEPT
+		[[ $FPROTO =~ t ]] && iptables -A $CHAIN -m state --state NEW -p tcp --dport $FPORT -j ACCEPT
+	else # just a number
+		iptables -A $CHAIN -m state --state NEW -p tcp --dport $firule -j ACCEPT
+	fi
+done
+}
+
+chainup INPUT $INPUTS
+chainup OUTPUT $OUTPUTS
+
+# Lock down ---------------------¬
+
+for fchain in INPUT OUTPUT FORWARD; do
+	iptables -P $fchain $POLICY
+done
+
+cat <<EOF
+$CRED
+Firewall locked down.
+
+${CGRN}Input: $INPUTS
+Output: $OUTPUTS
+
+Lockdown policy: $POLICY
+$CDEF
+EOF
+
+if [[ -f /usr/bin/dpkg ]]; then # checking for dpkg, if present presume Debian/Ubuntu and presence of iptables-persistent in repo
+        if [[ "$(dpkg --get-selections | grep iptables-persistent | wc -l)" -lt 1 ]]; then
+                read -p "Install iptables-persistent? " RY
+                if [[ $RY = 'y' ]]; then # we have dpkg, presuming we have apt
+                        apt-get install -yy iptables-persistent
+                fi
+        else
+                dpkg-reconfigure iptables-persistent # Debian/Ubuntu
+        fi
+elif [[ -f /etc/redhat-release ]]; then
+        /sbin/service iptables save # RHEL/CentOS 6 and before
+else
+        cat <<EOF
+Unknown save mechanism. Please consult a search engine to find out how to save iptables firewalls in your distribution.
+EOF
+fi
