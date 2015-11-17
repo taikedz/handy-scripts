@@ -11,7 +11,7 @@ CGRN="[0;32m"
 CONFIG="/usr/local/etc/vefw"
 
 function showhelp {
-cat <<EOF 1>&2
+cat <<EOF 1>&2 && exit
 
 ${CGRN}==== Very Easy Firewall ====$CDEF
 
