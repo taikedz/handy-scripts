@@ -89,12 +89,20 @@ function dumports {
 
 [[ $UID != 0 ]] && { echo "${CRED}You are not root$CDEF" 1>&2 ; exit 1 ; }
 
-# Allowed inputs
-INPUTS="$( dumports inputs )"
-OUTPUTS="$( dumports outputs )"
-POLICY="$( dumports policy )"
-
-[[ -z "$POLICY" ]] && { echo "No lockdown policy. See --help option for more." ; exit 99 ; }
+f_doreset=y
+for arg in $@; do
+case $arg in
+	--noreset)
+		f_doreset=n
+		;;
+	--help)
+		showhelp
+		;;
+	--dry-run)
+		f_dryrun=y
+		;;
+esac
+done
 
 [[ ! -d $CONFIG ]] && {
 	mkdir $CONFIG
@@ -118,25 +126,17 @@ EOF
 	chmod -R 700 $CONIFG/
 }
 
-f_doreset=y
-for arg in $@; do
-case $arg in
-	--noreset)
-		f_doreset=n
-		;;
-	--help)
-		showhelp
-		;;
-	--dry-run)
-		cat <<EOF && exit
+INPUTS="$( dumports inputs )"
+OUTPUTS="$( dumports outputs )"
+POLICY="$( dumports policy )"
+[[ -z "$POLICY" ]] && { echo "No lockdown policy. See --help option for more." ; exit 99 ; }
+
+
+[[ "$f_dryrun" = y ]] && cat <<EOF && exit
 INPUT: $INPUTS
 OUTPUT: $OUTPUTS
 POLICY: $POLICY
 EOF
-		;;
-esac
-done
-
 # -------------------/
 
 # Reset rules
