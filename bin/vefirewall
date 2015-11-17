@@ -30,16 +30,11 @@ The command can be run in one of 3 ways
 	$0 --noreset
 	$0 --dry-run
 
-The default form just adds new rules opening the ports
-without affecting any additional rules you might have
-modified using the "iptables" command
+The default rule flushes all rules and chains, then
+applies TCP rules for ports defined in the port files
 
 The --noreset option prevents flushing rules and chains,
-which is the default. The rules are re-applied, no existing
-rules are affected.
-
-Once applied, the firewall, ufw is enabled and
-you may be prompted to accept the change.
+The rules are re-applied, no existing rules are affected.
 
 The --dry-run option displays what ports have been
 picked up from the file, but does not apply them.
@@ -53,15 +48,21 @@ of the Very Easy Firewall tool.
 	$CONFIG/outputs
 	$CONFIG/policy
 
-List in inputs and outputs the ports or protocols that
-need to be allowed.
+List in "inputs" and "outputs" the port numbers that
+need to be allowed. You can specify for example "80"
+to allow HTTP traffic, or port "53ut" for DNS traffic
+on both UDP and TCP, or "7654u" to allow custom UDP-only
+traffic on the designated port.
 
-You can define as many ports and protocols as you want per line.
+You can define as many ports as you want per line.
 Comments start with a "#" and end at the end of the line.
 
-Specify one uncommented line in policy : this is the default policy
+==== Lockdown Policy ====
+
+Specify one uncommented line in "policy": this is the default policy
 to set once the firewall rules have been applied. Typically this
 will be one of
+
 * REJECT (explicitly reject connections)
 * DROP (silently drop connections)
 * ACCEPT (accept any incoming connection - ONLY FOR TESTING)
