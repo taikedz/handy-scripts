@@ -126,7 +126,7 @@ EOF
 80 443 8080 # Some typical web host ports
 #3306 # MySQL/MariaDB requests - you may need to activate this even for local MySQL access
 EOF
-	chmod -R 700 $CONFIG/
+	chmod -R 700 $CONFIG
 }
 
 INPUTS="$( dumports inputs )"
