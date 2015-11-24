@@ -93,6 +93,7 @@ function dumports {
 [[ $UID != 0 ]] && { echo "${CRED}You are not root$CDEF" 1>&2 ; exit 1 ; }
 
 f_doreset=y
+f_dryrun=n
 for arg in $@; do
 case $arg in
 	--noreset)
@@ -144,12 +145,14 @@ EOF
 
 # Reset rules
 [[ "$f_doreset" = y ]] && {
+	set +e
 	iptables -P INPUT ACCEPT
 	iptables -P OUTPUT ACCEPT
 	iptables -P FORWARD ACCEPT
 	iptables -F # flush rules
 	# forcefully delete chains
 	iptables -L | grep Chain | grep -vE 'Chain (INPUT|OUTPUT|FORWARD)' | cut -d ' ' -f 2 | while read x; do iptables -X $x ; done
+	set -e
 }
 
 # Apply simple rules ---------------¬
