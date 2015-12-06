@@ -137,7 +137,7 @@ EOF
 25 587 # SMTP
 #21 # FTP
 EOF
-	chmod -R 700 $CONFIG/
+	chmod -R 700 $CONFIG
 }
 
 INPUTS="$( dumports inputs )"
@@ -157,6 +157,7 @@ EOF
 
 # Reset rules
 [[ "$f_doreset" = y ]] && {
+	set +e
 	iptables -P INPUT ACCEPT
 	iptables -P OUTPUT ACCEPT
 	iptables -P FORWARD ACCEPT
