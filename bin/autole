@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# ==============================================================
+## Lets Encypt Automation - General Case
+## variant by Tai Kedzierski,
+## Adapted from Damia Soler's script
+
+# TODO - better argument extraction, add arguments for all variable parts
+# TODO - improve the syntax of tests and subshells
+# TODO - generalize the solution for email addresses etc
+# ===============================================================
+
+##
+##
+##    LETS ENCRYPT AUTOMATION
+##
+##                                by Damia Soler
+##                                Contact  damia (at) damia (dot) net
+##				  https://blog.damia.net
+##
+##
+##==================================================
+## SETUP
+##
+##
+##
+##    REMAINING DAYS TO EXPIRE BEFORE RENEW
+##
+DAYSTORENEW=10 
+##
+##   REMAINING DAYS TO EXPIRE BEFORE ALERT
+##
+DAYSTOALERT=5
+##
+##    EMAIL TO ALERT IF UNABLE TO RENEW
+##
+ALERTEMAIL=root@localhost
+##
+##    EMAIL ACCOUNT ON LETS ENCRYPT
+##
+LEEMAIL=admin@damia.net # FIXME - add your own email
+## 
+WEBROOT=/var/www/html/le # FIXME
+##WEBROOT=/var/www/html/le/$1
+##
+##
+LEBIN=/root/.local/share/letsencrypt/bin/letsencrypt # FIXME - where did you install your letsencrypt?
+##
+CERTFILE=/etc/letsencrypt/live/$1/cert.pem
+##====================================================================================
+if test $1 = "--renew-all" ; then 
+	echo Checking certificates
+	ls -1 /etc/letsencrypt/live|xargs -n1 $0 ;
+	/etc/init.d/apache2 graceful
+	exit ; 
+fi; 
+##====================================================================================
+if test -a $CERTFILE ; then 
+		d1=$(date -d "`openssl x509 -in $CERTFILE -text -noout|grep "Not After"|cut -c 25-`" +%s)
+		d2=$(date -d "now" +%s)
+		DAYS=` echo \( $d1 -  $d2 \)  / 86400 |bc `
+		echo -n `date` DOMAIN $1 will expire in $DAYS days " "
+	else
+		echo -n `date` DOMAIN $1 new
+		DAYS=$DAYSTOALERT;
+fi;
+if test $DAYS -lt $DAYSTORENEW ; then
+				echo Trying to renew ;
+				### PRETEST TO NOT MESS LE SERVERS IF YOU ARE NOT ANSWERING THE CHALLENGE
+				TESTFILE=$RANDOM
+				echo test> $WEBROOT/.well-known/acme-challenge/$TESTFILE
+				URL=http://$1/.well-known/acme-challenge/$TESTFILE
+				mkdir -p $WEBROOT/.well-known/acme-challenge
+				touch $WEBROOT/.well-known/acme-challenge/index.html
+				echo test> $WEBROOT/.well-known/acme-challenge/$TESTFILE
+				if curl --output /dev/null --silent --head --fail "$URL"; then
+							$LEBIN --renew-by-default -a webroot --webroot-path $WEBROOT --server https://acme-v01.api.letsencrypt.org/directory  --email $LEEMAIL --text --agree-tos --agree-dev-preview -d $1 auth
+				else
+				  			echo "CAN NOT ACCESS THE PRE-CHALLENGE $URL PLEASE ADD ALIAS TO YOUR WEBSERVER" ;
+							echo "Alias /.well-known      $WEBROOT/.well-known" ; 
+				fi
+				rm $WEBROOT/.well-known/acme-challenge/$TESTFILE
+				else
+				echo not yet to expire ;
+fi ;
+
+if test $DAYS -lt $DAYSTOALERT ; then
+				echo ALERT DOMAIN $1 CERTIFICATE RENEWAL PROBLEM|mail $ALERTEMAIL ;
+				echo ALERT DOMAIN $1 CERTIFICATE RENEWAL PROBLEM ;
+fi;
+
+
+
