@@ -93,6 +93,8 @@ function dumports {
 [[ $UID != 0 ]] && { echo "${CRED}You are not root$CDEF" 1>&2 ; exit 1 ; }
 
 f_doreset=y
+f_dryrun=y
+f_mkconfig=n
 for arg in $@; do
 case $arg in
 	--noreset)
@@ -101,14 +103,19 @@ case $arg in
 	--help)
 		showhelp
 		;;
-	--dry-run)
-		f_dryrun=y
+	--apply)
+		f_dryrun=n
+		;;
+	--initialize)
+		f_mkconfig=y
 		;;
 esac
 done
 
-[[ ! -d $CONFIG ]] && {
-	mkdir $CONFIG
+[[ "$f_mkconfig" = y ]] && (
+	[[ $(read -p "Are you sure you want to ${CRED}INITIALIZE${CDEF} the configs to DEFAULT VALUES? y/N> " RESP; echo "$RESP") = "y" ]]
+	) && {
+	mkdir -p $CONFIG
 	cat <<EOF > $CONFIG/policy
 # Lockdown policy - ACCEPT, REJECT, DROP
 DROP
@@ -125,6 +132,10 @@ EOF
 53ut # DNS lookups - udp and tcp
 80 443 8080 # Some typical web host ports
 #3306 # MySQL/MariaDB requests - you may need to activate this even for local MySQL access
+143 993 # IMAP
+110 995 # POP3
+25 587 # SMTP
+#21 # FTP
 EOF
 	chmod -R 700 $CONFIG/
 }
@@ -136,6 +147,8 @@ POLICY="$( dumports policy )"
 
 
 [[ "$f_dryrun" = y ]] && cat <<EOF && exit
+Use the --apply option to apply these rules:
+
 INPUT: $INPUTS
 OUTPUT: $OUTPUTS
 POLICY: $POLICY
@@ -147,10 +160,13 @@ EOF
 	iptables -P INPUT ACCEPT
 	iptables -P OUTPUT ACCEPT
 	iptables -P FORWARD ACCEPT
+	set +e # the following can silently fail
 	iptables -F # flush rules
 	# forcefully delete chains
 	iptables -L | grep Chain | grep -vE 'Chain (INPUT|OUTPUT|FORWARD)' | cut -d ' ' -f 2 | while read x; do iptables -X $x ; done
+	set -e
 }
+
 
 # Apply simple rules ---------------¬
 iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -176,10 +192,12 @@ for firule in $@; do
 done
 }
 
+
 chainup INPUT $INPUTS
 chainup OUTPUT $OUTPUTS
 
 # Lock down ---------------------¬
+
 
 for fchain in INPUT OUTPUT FORWARD; do
 	iptables -P $fchain $POLICY
