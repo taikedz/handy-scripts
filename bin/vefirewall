@@ -134,7 +134,7 @@ EOF
 #3306 # MySQL/MariaDB requests - you may need to activate this even for local MySQL access
 143 993 # IMAP
 110 995 # POP3
-25 587 # SMTP
+25 465 587 # SMTP
 #21 # FTP
 EOF
 	chmod -R 700 $CONFIG
