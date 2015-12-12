@@ -1,0 +1,12 @@
+#!/bin/bash
+
+  "$1" > /dev/null 2>&1 &
+#  ^---|-----------|----|--- run binary
+#      ^-----------|----|--- discard output
+#                  |    |    redirect stderr to stdout
+#                  ^----|--- declare *after* redirecting stdout
+#                       ^--- lastly, run it in background
+
+# This will launch the program in the background from the terminal,
+# and not display the terminal output, leaving you free to use the
+# command line. When the program exits, it will not notify the terminal
