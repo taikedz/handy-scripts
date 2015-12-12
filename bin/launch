@@ -1,12 +1,51 @@
 #!/bin/bash
 
-  "$1" > /dev/null 2>&1 &
-#  ^---|-----------|----|--- run binary
-#      ^-----------|----|--- discard output
-#                  |    |    redirect stderr to stdout
-#                  ^----|--- declare *after* redirecting stdout
-#                       ^--- lastly, run it in background
+set -euo pipefail
 
-# This will launch the program in the background from the terminal,
-# and not display the terminal output, leaving you free to use the
-# command line. When the program exits, it will not notify the terminal
+PROGRAM=
+OUTPUT=
+
+CDEF='[0m'
+CRED='[1;31m'
+CGRN='[1;32m'
+CYEL='[1;33m'
+CBLU='[1;34m'
+
+function printhelp {
+cat <<EOHELP
+
+Launch a program without interrupting a terminal session.
+
+	${CBLU}$0 PROGRAM [--output=OUTPUT]${CDEF}
+
+Optionally write the output to OUTPUT, otherwise discard it
+
+EOHELP
+}
+
+[[ -z "$@" ]] && { printhelp ; exit ; }
+
+for x in "$@"; do
+	case "$x" in
+		--out=*)
+			OUTPUT=${x#--output=}
+			;;
+		--help)
+			printhelp
+			exit
+			;;
+		*)
+			PROGRAM=$x
+			;;
+	esac
+done
+
+[[ -z "$OUTPUT" ]] && OUTPUT=/dev/null
+
+  "$PROGRAM" > "$OUTPUT" 2>&1 &
+#  ^---------|-----------|----|--- run binary
+#            ^-----------|----|--- redirect output
+#                        ^-------- redirect stderr to stdout
+#                             |    declare *after* redirecting output
+#                             ^--- lastly, run it in background
+
