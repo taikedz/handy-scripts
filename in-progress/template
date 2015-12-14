@@ -1,10 +1,15 @@
 #!/bin/bash
 
-# Set error handling
+## -------- Set error handling
 
 set -euo pipefail
 
-# Define colours
+## -------- optional - add signal trap
+## 'trap' COMMAND signal
+
+#trap 'exit' SIGINT
+
+## -------- Define colours
 
 CDEF='[0m'
 CRED='[0;31m' # Regular
@@ -20,7 +25,7 @@ CGNU='[4;32m'
 CYLU='[4;33m'
 CBUU='[4;34m'
 
-# Define help routine
+## -------- Define help routine
 
 function printhelp { # MODIFY AS APPROPRIATE, including copyright and license
 cat <<EOHELP
@@ -61,11 +66,12 @@ ${CBUU}Blue underline${CDEF}
 EOHELP
 }
 
-# Define script-wide variables
+## -------- Define script-wide variables
 
+# Used in arg parsing, further below
 FLAGOPT=
 
-# parse arguments
+## -------- parse arguments
 
 for term in "$@"; do
 	case $term in
@@ -79,4 +85,4 @@ for term in "$@"; do
 	esac
 done
 
-#### ++++++ Add main now +++++
+## ++++++ Add main now +++++
