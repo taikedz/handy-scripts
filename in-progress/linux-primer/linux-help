@@ -1,5 +1,13 @@
-[1;34mWelcome to the Linux server
-[31m===========================[0m
+CDEF='[0m'
+CRED='[1;31m'
+CGRN='[1;32m'
+CYEL='[1;33m'
+CBLU='[1;34m'
+CTUQ='[1;36m'
+
+cat <<EOLINUXPRIMER | less -R
+${CBLU}Welcome to the Linux server
+${CRED}===========================${CDEF}
 
 Use the Up/Down arrow keys or Page Up/Page Down arrows keys or the "w" and "z" keys to move up and down.
 
@@ -20,7 +28,7 @@ In the immediate, here is some help you may find useful
 
 =====================================================================================
 
-    [1;31mWARNING ::  Undoing changes[0;0m
+    ${CRED}WARNING ::  Undoing changes${CDEF}
 
 There is no "undo" on the command line, be that on Linux, Mac OS X, Windows, or other
 
@@ -32,50 +40,50 @@ You need to take your own precautions. Make copies and backups.
 Don't overwrite your copies until you're done with them.
 
 
-[1;33m
+${CYEL}
  >   "It is not Unix's job to keep you from shooting yourself in the
  >   foot.  If you should choose to do so, it is Unix's job to deliver
  >   Mr. Bullet to Mr. Foot in the most efficient way it knows." 
  >         --- Terry Lambert
-[0;0m
+${CDEF}
 
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    [1;32mBasic Commands[0;0m
+    ${CGRN}Basic Commands${CDEF}
 
-[1;34mls[0;0m
+${CBLU}ls${CDEF}
   list folder ("directory") contents
 
-[1;34mcd[0;0m
+${CBLU}cd${CDEF}
   "change directory" - go into a different directory
 
 	cd .. - go up one directory
 	cd ../.. - go up two directories
 
-[1;34mpwd[0;0m
+${CBLU}pwd${CDEF}
   "print working directory" - tells you where you are
 
-[1;34mnewgrp [1;33mwww-data[0;0m
+${CBLU}newgrp ${CYEL}www-data${CDEF}
   allows you to operate in the web server directory
 
-[1;34mcd [1;33m/var/www/html[0;0m
+${CBLU}cd ${CYEL}/var/www/html${CDEF}
   go to the web server directory
 
-[1;34mcat [1;33mFILENAME[0;0m
+${CBLU}cat ${CYEL}FILENAME${CDEF}
   replace the FILENAME word with the name of an actual file
   -Dumps the content of the file to screen ("dump to console").
   useful if you want to see a file while also typing
 
-[0;34m(navigation)[0;0m
+${CBLU}(navigation)${CDEF}
   if your console (commands screen) fills up with lots of text, you can navigate up and down
   by holding Shift key, and using the Pg Up and Pg Down buttons
   On Mac mini-keyboards, hold Shift and the fn key, and use the Up and Down arrows to do the same
 
-[1;34mmkdir [1;33mFILENAME[0;0m
+${CBLU}mkdir ${CYEL}FILENAME${CDEF}
   create a directory with the name FILENAME in the current working directory
 
-[1;34mless [1;33mFILENAME[0;0m
+${CBLU}less ${CYEL}FILENAME${CDEF}
   "less" allows you to read files
   Use the Up and Down arrow keys, Page Up or Page Down arrow keys to navigate
   You can also use the "w" and "z" keys to move up and down
@@ -86,74 +94,74 @@ Don't overwrite your copies until you're done with them.
   Press "G" to go to the end of the file
   Press 'q' to quit
   You are probably reading this in "less" - try the commands out!
-  Hint: you can use [1;0mless -R [1;33mFILENAME[0;0m to display some text
+  Hint: you can use ${CDEF}less -R ${CYEL}FILENAME${CDEF} to display some text
   files in colour (such as this one)
 
-[1;34mnano [1;33mFILENAME[0;0m
+${CBLU}nano ${CYEL}FILENAME${CDEF}
   nano allows you to edit a text file
   at the bottom, commands are displayed with ^X and ^O etc
   use the Ctrl key ("^") and "x" (small) to exit
   use Ctrl+o (^O) to write the file to disk
 
-[1;34mvim [1;33mFILENAME[0;0m
+${CBLU}vim ${CYEL}FILENAME${CDEF}
   vim is an advanced text editor. You should google "vim tutorial" ;-)
   It's more versatile and powerful than nano, but is quite different from what
   you are likely used to.
 
-[1;34memacs [1;33mFILENAME[0;0m
+${CBLU}emacs ${CYEL}FILENAME${CDEF}
   another text editor
   also very powerful
   google for a tutorial
   the choice is up to you which you prefer
   emacs is not installed on this server though....
 
-[1;34mman [1;33mCOMMAND[0;0m
+${CBLU}man ${CYEL}COMMAND${CDEF}
   display manual
   replace the COMMAND word with the name of a command to learn more about how to use it
   very useful - try "man ls" or "man nano" for example
   the same navigating and searching mechanisms as for 'less' apply for man
 
-[1;34m^C[0;0m
+${CBLU}^C${CDEF}
   Ctrl+c when a command is running generally kills it. Dead.
   Use if something is not quite running right
 
-[1;34m^Z[0;0m
+${CBLU}^Z${CDEF}
   Ctrl+z when a command is running pauses it and returns you to the command line
 
-[1;34mjobs[0;0m
+${CBLU}jobs${CDEF}
   lists any programs still running that you came out of with ^Z
   each program will be preceded by a number
 
-[1;34mfg [1;33m[NUM][0;0m
+${CBLU}fg ${CYEL}[NUM]${CDEF}
   fg on its own returns you to the last job you paused
   fg with a number, for example "fg 2" takes you to the job with that number
   the "[" and "]" characters when describing a command mean the item is optional
 
-[1;34mbg [1;33m[NUM][0;0m
+${CBLU}bg ${CYEL}[NUM]${CDEF}
   when you pause a job with ^Z it is completely paused. If you want it to continue running in the background
   whilst you continue working, set it back in motion with "bg"
 
-[1;34mcp [1;33mFILE NEWFILE[0;0m
+${CBLU}cp ${CYEL}FILE NEWFILE${CDEF}
   copies FILE to the location specified by NEWFILE
   note that if NEWFILE already exists, it is completely overwritten!
 
-[1;34mexit[0;0m
+${CBLU}exit${CDEF}
   come out of the current command line session
 
-[1;34m^D[0;0m
+${CBLU}^D${CDEF}
   end of input
   useful if you've typed a command that expects input on the command line but you want to signal that you've finished sending input.
   can only be used on an empty line
 
-[1;34m^S[0;0m
+${CBLU}^S${CDEF}
   pause the session. Nothing will respond
 
-[1;34m^Q[0;0m
+${CBLU}^Q${CDEF}
   resume a paused session
 
 ==================================================================================
 
-     [1;32mTab Completion[0;0m
+     ${CGRN}Tab Completion${CDEF}
 
 You can use the TAB key (above caps lock) to use "tab-completion"
 
@@ -173,7 +181,7 @@ and press tab again. It will complete to "cd /var/www/html/wp-". Press tab again
 
 ==================================================================================
 
-    [1;32mGlobbing[0;0m
+    ${CGRN}Globbing${CDEF}
 
 Globbing allows you to refer to groups of files with similar names. Try the following commands:
 
@@ -192,11 +200,11 @@ The fourth command displays all files inside /var/www/html/ and whose name ends 
 
 ===================================================================================
 
-     [1;32mTerminals[0;0m
+     ${CGRN}Terminals${CDEF}
 
 You can copy and paste in terminals too - they're just a little different from other applications, because the "Ctrl" key is used for other purposes
 
-[1;36m###     Windows[0;0m
+${CTUQ}###     Windows${CDEF}
 
 If you are connecting from Windows, you are probably using KiTTY or PuTTY
 
@@ -204,7 +212,7 @@ Select text to copy it
 
 Right-click to paste, or press Shift+Insert keys to paste
 
-[1;36m###     Mac[0;0m
+${CTUQ}###     Mac${CDEF}
 
 You are probably using Terminal to connect
 
@@ -212,7 +220,7 @@ Use the Command keys as you normally would to copy and paste
 
 Cmd+C , Cmd+V
 
-[1;36m###     Other[0;0m
+${CTUQ}###     Other${CDEF}
 
 If you are connecting from Linux, from a Chromebook, or another system, you probably use Ctrl+C and Ctrl+V to copy and paste.
 
@@ -233,3 +241,4 @@ However it is very useful for grabbing hundreds of pages and doing some processi
 Once you know how to use a command line, you'll wonder how you ever used a computer without it :-)
 
 Good luck, and happy learning!
+EOLINUXPRIMER

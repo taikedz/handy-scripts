@@ -1,23 +1,34 @@
+#!/bin/bash
 
 # ============ Friendly help message to add to the end of .profile
 
-alias helpme="less -R $HOME/linux-help"
+alias helpme="bash $HOME/linux-help"
+
+CDEF='[0m'
+CRED='[0;31m'
+CGRN='[0;32m'
+CYEL='[0;33m'
+CBLU='[0;34m'
+CREDB='[1;31m'
+CGRNB='[1;32m'
+CYELB='[1;33m'
+CBLUB='[1;34m'
 
 cat <<EOF
 
-[1;31m=============================
-[32mWelcome to the Linux server
-[31m=============================
+${CREDB}=============================
+${CGRNB} Welcome to the Linux server
+${CREDB}=============================
 
-[34mIf this is the first time you have used a Linux server, please take the time to read the quick
+${CDEF}If this is the first time you have used a Linux server, please take the time to read the quick
 how-to / getting-started guide.
 
 Type the following command:
 
-       [33mhelpme
+       ${CGRNB}helpme
 
-[34mAnd press the Enter key.
+${CDEF}And press the Enter key.
 
 ... and follow along! You may want to open a fresh new session to have the guide and your work side by side.
-[0m
+${CDEF}
 EOF
