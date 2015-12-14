@@ -4,6 +4,7 @@ set -euo pipefail
 
 PROGRAM=
 OUTPUT=
+ARGS=
 
 CDEF='[0m'
 CRED='[1;31m'
@@ -27,7 +28,7 @@ EOHELP
 
 for x in "$@"; do
 	case "$x" in
-		--out=*)
+		--output=*)
 			OUTPUT=${x#--output=}
 			;;
 		--help)
@@ -35,17 +36,21 @@ for x in "$@"; do
 			exit
 			;;
 		*)
-			PROGRAM=$x
+			if [[ -z "$PROGRAM" ]]; then
+				PROGRAM=$x
+			else
+				ARGS="$ARGS $x"
+			fi
 			;;
 	esac
 done
 
 [[ -z "$OUTPUT" ]] && OUTPUT=/dev/null
 
-  "$PROGRAM" > "$OUTPUT" 2>&1 &
-#  ^---------|-----------|----|--- run binary
-#            ^-----------|----|--- redirect output
-#                        ^-------- redirect stderr to stdout
-#                             |    declare *after* redirecting output
-#                             ^--- lastly, run it in background
+  "$PROGRAM" $ARGS > "$OUTPUT" 2>&1 &
+#  ^---------------|-----------|----|--- run binary
+#                  ^-----------|----|--- redirect output
+#                              ^-------- redirect stderr to stdout
+#                                   |    declare *after* redirecting output
+#                                   ^--- lastly, run it in background
 
