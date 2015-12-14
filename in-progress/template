@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# Set error handling
+
+set -euo pipefail
+
+# Define colours
+
+CDEF='[0m'
+CRED='[0;31m' # Regular
+CGRN='[0;32m'
+CYEL='[0;33m'
+CBLU='[0;34m'
+CRDB='[1;31m' # Bold (if supported)
+CGNB='[1;32m'
+CYLB='[1;33m'
+CBUB='[1;34m'
+CRDU='[4;31m' # Underline (if supported)
+CGNU='[4;32m'
+CYLU='[4;33m'
+CBUU='[4;34m'
+
+# Define help routine
+
+function printhelp { # MODIFY AS APPROPRIATE, including copyright and license
+cat <<EOHELP
+
+	${CBUB}Program Name${CDEF}
+
+${CBUB}copyright:   $CDEF (C) DATE AUTHOR
+${CBUB}license:     $CYEL GNU General Public License version 3
+${CBUB}license url: $CBLU https://www.gnu.org/licenses/gpl-3.0.html
+
+Usage:
+
+	${CBLU}$0 ${CYEL}OPTIONS${CDEF}
+
+${CYEL}option${CDEF}
+
+Comment
+
+++++
+
+Colour test
+
+${CRED}Red
+${CGRN}Green
+${CYEL}Yellow
+${CBLU}Blue${CDEF}
+
+${CRDB}Red bold
+${CGNB}Green bold
+${CYLB}Yellow bold
+${CBUB}Blue bold${CDEF}
+
+${CRDU}Red underline
+${CGNU}Green underline
+${CYLU}Yellow underline
+${CBUU}Blue underline${CDEF}
+
+EOHELP
+}
+
+# Define script-wide variables
+
+FLAGOPT=
+
+# parse arguments
+
+for term in "$@"; do
+	case $term in
+		--help)
+			printhelp
+			exit
+			;;
+		--flag=*)
+			FLAGOPT=${term#--flag=}
+			;;
+	esac
+done
+
+#### ++++++ Add main now +++++
