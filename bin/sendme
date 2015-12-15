@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -euo pipefail
+
+CDEF='[0m'
+CRED='[1;31m'
+CGRN='[1;32m'
+CYEL='[1;33m'
+CBLU='[1;34m'
+FILES=
+FROM=
+RCPT=
+. $HOME/.config/sendme
+
+function printhelp {
+cat <<EOF
+
+        ${CBLU}sendme${CDEF}
+
+Allows you to send files and compose emails, with prompts.
+
+    ${CGRN}$0 [FILES]${CDEF}
+
+Specify files on the command line to be attached to the mailer program.
+
+You can define the "FROM" and "RCPT" shell variabels in a config file - example
+
+    ${CGRN}cat $HOME/.config/sendme
+${CYEL}
+        RCPT=me@example.com
+        FROM=noreply@bogus.foo
+${CDEF}
+You can still change these on an ad-hoc basis when running the command.
+
+FUTURE
+
+Future versions will support:
+* using the editor defined in EDITOR to edit files
+* specifying a template to use
+
+EOF
+}
+helppat='-h|--help'
+
+for xfile in "$@"; do
+	[[ "$xfile" =~ $helppat ]] && { printhelp ; exit ; }
+	[[ ! -f "$xfile" ]] && { "${CRED}$xfile does not exist.${CDEF}" ; exit 2 ; }
+	FILES="$FILES -a $xfile"
+done
+
+[[ -z "$FILES" ]] && echo "${CYEL}WARN: No files specified${CDEF}"
+
+read -p "${CBLU}To: ${CDEF}" -ei "$RCPT" RCPT # opportunity to change destination
+read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender address
+
+[[ -z "$RCPT" ]] && { echo "${CRED}FAIL: No recipient RCPT specified. Aborting." ; exit 1 ; }
+
+
+read -p "${CBLU}Subject:${CDEF} " RES
+if [[ -n "$RES" ]]; then
+	echo -e "${CBLU}Message: ${CGRN}\n(^D to send, ^C to cancel)${CDEF}"
+	mail -s "$RES" -r "$FROM" $FILES $RCPT
+fi
+
