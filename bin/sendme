@@ -17,7 +17,9 @@ cat <<EOF
 
         ${CBLU}sendme${CDEF}
 
-Allows you to send files and compose emails, with prompts.
+Friendly terminal email sending tool.
+
+Supports GPG-sgning of message.
 
     ${CGRN}$0 [FILES]${CDEF}
 
@@ -41,24 +43,33 @@ Future versions will support:
 EOF
 }
 helppat='-h|--help'
+MSGFILE="/tmp/sendme-message-$(date +'%F.%T')"
+ASCFILE="$MSGFILE.asc"
 
+[[ ! -z "$@" ]] && { echo -e "\n\n\n++++++\nAttachment MD5 sums:\n" > "$MSGFILE" ; }
 for xfile in "$@"; do
 	[[ "$xfile" =~ $helppat ]] && { printhelp ; exit ; }
 	[[ ! -f "$xfile" ]] && { "${CRED}$xfile does not exist.${CDEF}" ; exit 2 ; }
-	FILES="$FILES -a $xfile"
+	FILES="$FILES -A $xfile"
+	md5sum "$xfile" >> "$MSGFILE" # Linux only. FIXME need to adapt for cygwin and OS.X
 done
 
 [[ -z "$FILES" ]] && echo "${CYEL}WARN: No files specified${CDEF}"
 
-[[ -t 1 ]] && read -p "${CBLU}To: ${CDEF}" -ei "$RCPT" RCPT # opportunity to change destination
-[[ -t 1 ]] && read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender address
+read -p "${CBLU}To: ${CDEF}" -ei "$RCPT" RCPT # opportunity to change destination
+read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender address
 
 [[ -z "$RCPT" ]] && { echo "${CRED}FAIL: No recipient RCPT specified. Aborting." ; exit 1 ; }
 
 RES="automatic email - see attached"
-[[ -t 1 ]] && read -p "${CBLU}Subject:${CDEF} " RES
+read -p "${CBLU}Subject:${CDEF} " RES
 if [[ -n "$RES" ]]; then
-	[[ -t 1 ]] && echo -e "${CBLU}Message: ${CGRN}\n(^D to send, ^C to cancel)${CDEF}"
-	mail -s "$RES" -r "$FROM" $FILES $RCPT
+	$EDITOR "$MSGFILE" # use the EDITOR variable
+	read -p "Sign with GPG? y/N> " SIG
+	[[ "$SIG" = y ]] && {
+		gpg --output="$ASCFILE" --clearsign "$MSGFILE"
+		MSGFILE="$ASCFILE"
+	}
+	mail -s "$RES" -r "$FROM" $FILES $RCPT < "$MSGFILE"
 fi
 
