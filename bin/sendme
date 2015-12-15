@@ -50,15 +50,15 @@ done
 
 [[ -z "$FILES" ]] && echo "${CYEL}WARN: No files specified${CDEF}"
 
-read -p "${CBLU}To: ${CDEF}" -ei "$RCPT" RCPT # opportunity to change destination
-read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender address
+[[ -t 1 ]] && read -p "${CBLU}To: ${CDEF}" -ei "$RCPT" RCPT # opportunity to change destination
+[[ -t 1 ]] && read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender address
 
 [[ -z "$RCPT" ]] && { echo "${CRED}FAIL: No recipient RCPT specified. Aborting." ; exit 1 ; }
 
-
-read -p "${CBLU}Subject:${CDEF} " RES
+RES="automatic email - see attached"
+[[ -t 1 ]] && read -p "${CBLU}Subject:${CDEF} " RES
 if [[ -n "$RES" ]]; then
-	echo -e "${CBLU}Message: ${CGRN}\n(^D to send, ^C to cancel)${CDEF}"
+	[[ -t 1 ]] && echo -e "${CBLU}Message: ${CGRN}\n(^D to send, ^C to cancel)${CDEF}"
 	mail -s "$RES" -r "$FROM" $FILES $RCPT
 fi
 
