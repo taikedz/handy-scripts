@@ -1,0 +1,5 @@
+7410 # SSH port - enable for SSH
+
+80 443 # Standard web ports
+
+#53ut
