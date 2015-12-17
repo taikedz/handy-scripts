@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Add the most common items
+
+if [[ "$UID" = 0 ]]; then
+	mkdir -p /usr/local/bin/
+	cp bin/{vefirewall,af} /usr/local/bin/
+else
+	mkdir -p "$HOME/bin"
+	cp bin/{secret,sendme,connect,launch} "$HOME/bin/"
+
+fi
+
+
