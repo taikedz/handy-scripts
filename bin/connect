@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -euo pipefail
+TARGET=
+SERVERFILE=./servers.txt
+
+CDEF='[0m'
+CRED='[1;31m'
+CYEL='[1;33m'
+
+function printhelp {
+	cat <<EOF
+
+${CRED}No server file $SERVERFILE${CDEF}
+
+Please create $SERVERFILE and list the servers required
+
+Example:
+
+	#--------- example file contents
+${CYEL}	Any line starting with "%" is a server specification
+	You can append comments to the end of server names
+
+	% server1.example.com
+	% server2.example.com # this comment will be displayed in selections
+
+	This allows you to annotate appropriately.
+	You can also comment out servers
+
+	#% server3.example.com # deactivated server
+${CDEF}	# -------- /example
+
+
+EOF
+}
+
+[[ ! -f "$SERVERFILE" ]] && { printhelp ; exit 1 ; }
+
+ALLSERVERS=$(grep -E '^%' "$SERVERFILE" | grep -E '^' -n | sed 's/:%//')
+
+echo -e "Connect to: \n\n$ALLSERVERS"
+
+CHOICE=
+read -p "> " CHOICE
+
+NUMPAT='^[0-9]+'
+[[ $CHOICE =~ $NUMPAT ]] && CHOICE="^$CHOICE"
+
+[[ -n "$CHOICE" ]] && TARGET=$(echo "$ALLSERVERS" | grep -E "$CHOICE" | head -n 1 | sed -r -e 's/^[0-9]+ //' -e 's/\s*#.+$//')
+[[ -n "$TARGET" ]] && ssh $TARGET
