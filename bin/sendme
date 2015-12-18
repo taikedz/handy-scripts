@@ -11,7 +11,12 @@ if [[ $(which gpg2 > /dev/null 2>&1; echo $?) -lt 1 ]]; then
 elif [[ $(which gpg > /dev/null 2>&1; echo $?) -lt 1 ]]; then
 	GCMD=gpg
 else
-	echo "${CYEL}No gpg2/gpg command found. Suggestion: install ${CBLU}apt-get install gnupg2${CDEF}"
+	echo "${CYEL}No gpg2/gpg command found. Suggestion: install ${CBLU}gnupg2${CDEF}"
+fi
+
+if [[ $(which mailx > /dev/null 2>&1; echo $?) -lt 1 ]]; then
+	echo "${CRED}No mailx command found. Abort.$CDEF"
+	exit 96
 fi
 
 if [[ -z "$EDITOR" ]]; then
@@ -30,6 +35,8 @@ helppat='-h|--help'
 FILES=
 FROM=
 RCPT=
+ATCH=$( [[ $(man mailx | grep 'mailutils' -c) -gt 0 ]] && echo "-A" ; [[ $(man mailx | grep 'Heirloom' -c) -gt 0 ]] && echo "-a" ; )
+[[ -z "$ATCH" ]] && { echo "${CRED}Could not determine mailx flavour. Abort.${CDEF}" ; exit 96 ; }
 
 function printhelp {
 cat <<EOF
@@ -70,7 +77,7 @@ ASCFILE="$MSGFILE.asc"
 [[ ! -z "$@" ]] && { echo -e "\n\n\n++++++\nAttachment MD5 sums:\n" > "$MSGFILE" ; }
 for xfile in "$@"; do
 	[[ ! -f "$xfile" ]] && { "${CRED}$xfile does not exist.${CDEF}" ; exit 2 ; }
-	FILES="$FILES -A $xfile"
+	FILES="$FILES $ATCH $xfile"
 	md5sum "$xfile" >> "$MSGFILE" # Linux only. FIXME need to adapt for cygwin and OS.X
 done
 
@@ -84,7 +91,7 @@ read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender a
 RES="automatic email - see attached"
 read -p "${CBLU}Subject:${CDEF} " RES
 if [[ -n "$RES" ]]; then
-	$EDITOR "$MSGFILE" # use the EDITOR variable
+	"$EDITOR" "$MSGFILE"
 	read -p "Sign with GPG? y/N> " SIG
 	[[ "$SIG" = y ]] && {
 		"$GCMD" --output="$ASCFILE" --clearsign "$MSGFILE"
