@@ -11,7 +11,9 @@ TARGET=
 
 CDEF='[0m'
 CRED='[1;31m'
+CGRN='[1;32m'
 CYEL='[1;33m'
+CBLU='[1;34m'
 
 function printhelp {
 	cat <<EOF
@@ -43,13 +45,26 @@ EOF
 
 ALLSERVERS=$(grep -E '^%' "$SERVERFILE" | grep -E '^' -n | sed 's/:%//')
 
-echo -e "Connect to: \n\n$ALLSERVERS"
+while [[ x = x ]]; do
+	echo -e "Connect to: \n\n$ALLSERVERS"
 
-CHOICE=
-read -p "> " CHOICE
+	CHOICE=
+	read -p "> " CHOICE
 
-NUMPAT='^[0-9]+'
-[[ $CHOICE =~ $NUMPAT ]] && CHOICE="^$CHOICE"
+	NUMPAT='^[0-9]+'
+	[[ $CHOICE =~ $NUMPAT ]] && CHOICE="^$CHOICE"
 
-[[ -n "$CHOICE" ]] && TARGET=$(echo "$ALLSERVERS" | grep -E "$CHOICE" | head -n 1 | sed -r -e 's/^[0-9]+ //' -e 's/\s*#.+$//')
-[[ -n "$TARGET" ]] && ssh $TARGET
+	[[ -n "$CHOICE" ]] && TARGET=$(echo "$ALLSERVERS" | grep -E "$CHOICE" | sed -r -e 's/^[0-9]+ //' -e 's/\s*#.+$//')
+
+	if [[ $(echo "$TARGET"|wc -l ) -gt 1 ]]; then
+		echo -e "${CYEL}Multiple results\n\n$CBLU$TARGET$CDEF\n"
+		continue
+	else
+		break
+	fi
+done
+
+[[ -n "$TARGET" ]] && {
+	echo "${CGRN}Connecting to '$TARGET'$CDEF"
+	ssh $TARGET
+}
