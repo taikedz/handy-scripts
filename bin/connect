@@ -1,8 +1,13 @@
 #!/bin/bash
 
+SERVERFILE=./servers/default.list
+
+[[ -n "$1" ]] && {
+	SERVERFILE="$1"
+}
+
 set -euo pipefail
 TARGET=
-SERVERFILE=./servers.txt
 
 CDEF='[0m'
 CRED='[1;31m'
