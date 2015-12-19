@@ -1,0 +1,182 @@
+#!/bin/bash
+
+## -------- optional - add signal trap
+## 'trap' COMMAND signal
+
+#trap 'exit' SIGINT
+
+## -------- Define colours
+
+CDEF='[0m'
+CRED='[0;31m' # Regular
+CGRN='[0;32m'
+CYEL='[0;33m'
+CBLU='[0;34m'
+CRDB='[1;31m' # Bold (if supported)
+CGNB='[1;32m'
+CYLB='[1;33m'
+CBUB='[1;34m'
+
+# Config file
+CONFIGFILE=/etc/letsen/letsen.cfg
+
+## -------- Define help routine
+
+function printhelp { # MODIFY AS APPROPRIATE, including copyright and license
+cat <<EOHELP
+
+	${CBUB}Let's Encrypt automation${CDEF}
+
+${CBUB}copyright:   $CDEF (C) Tai Kedzierski
+${CBUB}license:     $CYEL GNU General Public License version 3
+${CBUB}license url: $CBLU https://www.gnu.org/licenses/gpl-3.0.html${CDEF}
+
+${CBUB}Usage:${CDEF}
+
+	${CBLU}$0 ${CYEL}[--do=OPERTION] [{--certificate=CERTIFICATE|--config=CONFIGFILE}]${CDEF}
+
+${CBUB}Config file:${CDEF}
+
+The default config file can be found at $CONFIGFILE
+
+You can define any number of configuration files,
+but only the default one will be used unless other-
+wise specified.
+
+The default configuration is always loaded.
+
+Any other configuration file overwirtes only the
+relevant variables. Only one secondary configuration
+file can be used per run.
+
+${CBUB}Options:${CDEF}
+
+By default, the operation is to renew the certificate
+specified either on the command line or in the custom
+configuration file.
+
+  ${CYEL}OPERATION${CDEF}
+
+What oepration to perform.
+
+  ${CYEL}CERTIFICATE${CDEF}
+
+Specify a certificate to renew, as path to certificate
+
+  ${CYEL}CONFIGFILE${CDEF}
+
+Specify a configuration file.
+
+EOHELP
+}
+
+helppat='--help|-h'
+[[ "$@" =~ $helppat ]] && {
+	printhelp
+	exit
+}
+
+function testconfig {
+	set +e
+	# SURELY there's a better way to do this...??
+	#
+	# for x in var1 var2; do
+	# [[ -z $(bash "echo \$x") ]] && {
+	# 	echo "variable $x is empty"
+	# }
+	# done
+	if [[ -z "$CONFIGFILE" ]] || [[ -z "$DAYSTILRENEW" ]] || [[ -z "$ADMINEM" ]] || [[ -z "$CERTEM" ]] || [[ -z "$LEXEC" ]] || [[ -z "$OPERATION" ]] || [[ -z "$CERTIFICATE" ]] || [[ -z "$WEBROOT" ]] || [[ -z "$FQDN" ]]; then
+	 	echo "Missing information."
+	fi
+	exit
+	set -e
+}
+
+## -------- Set error handling
+
+set -euo pipefail
+
+## -------- Define script-wide variables
+
+# Threshold of number of days lafte before renewal must take place
+DAYSTILRENEW=1
+
+# Admin email - who to alert on failure
+ADMINEM=
+
+# Email registered in the certificate
+CERTEM="$ADMINEM"
+
+# Let's Encrypt Executable
+LEXEC=
+
+# What operation to perform
+OPERATION=
+
+# Certificate to operate on
+CERTIFICATE=
+
+# Where the root of the site is
+WEBROOT=
+
+# Website domain
+FQDN=
+
+## -------- parse arguments
+
+# Load global config file before loading arguments
+. "$CONFIGFILE"
+
+for arg in "$@"; do
+	case "$arg" in
+		--do=*)
+			OPERATION=${arg#--do=}
+			;;
+		--cert=*)
+			CERTIFICATE=${arg#--flag=}
+			;;
+		--config=*) # Override the config
+			CONFIGFILE=${arg#--config=}
+			;;
+		*)
+			echo "Unkown option ${CRDB}$arg${CDEF}"
+			;;
+	esac
+done
+
+# Load new config file, does no unset global pieces implecitly
+. "$CONFIGFILE"
+
+testconfig # run testconfig only now to check for issue
+## ++++++ Add main now +++++
+
+if [[ -f "$CERTIFICATE" ]]; then
+
+	CVALIDTIL=$(date -d "$(openssl x509 -in "$CERTIFICATE" -text -noout|grep "Not After"|sed -r 's/^[^:]+?:\s*//')" "+%s")
+	TODAY=$(date -d "now" "+%s")
+
+	DAYSLEFT=$(( ($CVALIDTIL - $TODAY)/86400 )) # VALIDTIL should be in the future
+
+else
+
+	DAYSLEFT=0
+
+fi
+
+if [[ "$DAYSLEFT" -lt "$DAYSTILRENEW" ]]; then
+	# Try to renew now
+	NONCE=$RANDOM
+	CHALDIR="$WEBROOT/.well-known/acme-challenge"
+	CHALURL="http://$FQDN/.well-known/acme-challenge/$NONCE"
+	mkdir -p "$CHALDIR"
+	touch "$CHALDIR/index.html"
+	echo "$FQDN" > "$CHALDIR/$NONCE"
+	set +e
+	if wget -O /dev/null -q "$CHALURL"; then
+		"$LEXEC" --renew-by-default -a webroot --webroot-path "$WEBROOT" --server "https://acme-v01.api.letsencrypt.org/directory" --email "$CERTEM" --agree-tos --agree-dev-preview -d "$FQDN" auth
+	else
+		echo "Could not renew certificate for $FQDN" | mail -s "Certificate renew fail: $FQDN" "$ADMINEM"
+	fi
+	set -e
+	
+fi
