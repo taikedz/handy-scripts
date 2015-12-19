@@ -1,9 +1,5 @@
 #!/bin/bash
 
-## -------- Set error handling
-
-set -euo pipefail
-
 ## -------- optional - add signal trap
 ## 'trap' COMMAND signal
 
@@ -24,6 +20,10 @@ CRDU='[4;31m' # Underline (if supported)
 CGNU='[4;32m'
 CYLU='[4;33m'
 CBUU='[4;34m'
+CRDH='[0;41m' # Highlight
+CGNH='[0;42m'
+CYLH='[0;43m'
+CBUH='[0;44m'
 
 ## -------- Define help routine
 
@@ -34,7 +34,7 @@ cat <<EOHELP
 
 ${CBUB}copyright:   $CDEF (C) DATE AUTHOR
 ${CBUB}license:     $CYEL GNU General Public License version 3
-${CBUB}license url: $CBLU https://www.gnu.org/licenses/gpl-3.0.html
+${CBUB}license url: $CBLU https://www.gnu.org/licenses/gpl-3.0.html${CDEF}
 
 Usage:
 
@@ -44,27 +44,20 @@ ${CYEL}option${CDEF}
 
 Comment
 
-++++
-
-Colour test
-
-${CRED}Red
-${CGRN}Green
-${CYEL}Yellow
-${CBLU}Blue${CDEF}
-
-${CRDB}Red bold
-${CGNB}Green bold
-${CYLB}Yellow bold
-${CBUB}Blue bold${CDEF}
-
-${CRDU}Red underline
-${CGNU}Green underline
-${CYLU}Yellow underline
-${CBUU}Blue underline${CDEF}
-
 EOHELP
 }
+
+helppat='--help|-h'
+[[ "$@" =~ $helppat ]] && {
+	printhelp
+	exit
+}
+
+## -------- Add tests for unset variables here
+
+## -------- Set error handling
+
+set -euo pipefail
 
 ## -------- Define script-wide variables
 
@@ -73,14 +66,13 @@ FLAGOPT=
 
 ## -------- parse arguments
 
-for term in "$@"; do
-	case $term in
-		--help)
-			printhelp
-			exit
-			;;
+for arg in "$@"; do
+	case "$arg" in
 		--flag=*)
-			FLAGOPT=${term#--flag=}
+			FLAGOPT=${arg#--flag=}
+			;;
+		*)
+			echo "Handled general argument ${CGRN}$arg${CDEF}"
 			;;
 	esac
 done
