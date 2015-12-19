@@ -25,15 +25,28 @@ CONFIGFILE=/etc/letsen/letsen.cfg
 function printhelp { # MODIFY AS APPROPRIATE, including copyright and license
 cat <<EOHELP
 
-	${CBUB}Let's Encrypt automation${CDEF}
+	${CBUB}Let's Encrypt Automator${CDEF}
 
-${CBUB}copyright:   $CDEF (C) Tai Kedzierski
+${CBUB}copyright:   $CDEF (C) 2015 Tai Kedzierski
 ${CBUB}license:     $CYEL GNU General Public License version 3
 ${CBUB}license url: $CBLU https://www.gnu.org/licenses/gpl-3.0.html${CDEF}
 
+The "Let's Encrypt" project aims to provide browser-recognized SSL
+certificates to any website free of charge, with the Let's Encrypt
+group acting as the browser-recognized Certificate Authority.
+
+This script is designed to automate Let's Encrypt certificate renewal.
+
+Place it on your server - for example in /usr/local/bin/ - and add
+a root cron to call it at the desired frequency (recommended: once a day).
+
+This script is loosely based on the efforts by Damia Soler
+(https://blog.damia.net); written with the intent to be easily configur-
+able, and usable in multi-host setups.
+
 ${CBUB}Usage:${CDEF}
 
-	${CBLU}$0 ${CYEL}[--do=OPERTION] [{--certificate=CERTIFICATE|--config=CONFIGFILE}]${CDEF}
+	${CBLU}$0 ${CYEL}{--certificate=CERTIFICATE|--config=CONFIGFILE}${CDEF}
 
 ${CBUB}Config file:${CDEF}
 
@@ -55,17 +68,14 @@ By default, the operation is to renew the certificate
 specified either on the command line or in the custom
 configuration file.
 
-  ${CYEL}OPERATION${CDEF}
-
-What oepration to perform.
-
   ${CYEL}CERTIFICATE${CDEF}
 
 Specify a certificate to renew, as path to certificate
 
   ${CYEL}CONFIGFILE${CDEF}
 
-Specify a configuration file.
+Specify a configuration file. Configuration file over-
+rides the certificate specified on command line.
 
 EOHELP
 }
@@ -79,12 +89,15 @@ helppat='--help|-h'
 function testconfig {
 	set +e
 	# SURELY there's a better way to do this...??
+	# like ...
 	#
-	# for x in var1 var2; do
-	# [[ -z $(bash "echo \$x") ]] && {
-	# 	echo "variable $x is empty"
-	# }
-	# done
+	#	for x in var1 var2; do
+	#	[[ -z "$(bash "echo \$x")" ]] && {
+	#		echo "variable $x is empty"
+	#	}
+	#	done
+	#
+	# ..... no?
 	if [[ -z "$CONFIGFILE" ]] || [[ -z "$DAYSTILRENEW" ]] || [[ -z "$ADMINEM" ]] || [[ -z "$CERTEM" ]] || [[ -z "$LEXEC" ]] || [[ -z "$OPERATION" ]] || [[ -z "$CERTIFICATE" ]] || [[ -z "$WEBROOT" ]] || [[ -z "$FQDN" ]]; then
 	 	echo "Missing information."
 	fi
@@ -129,9 +142,6 @@ FQDN=
 
 for arg in "$@"; do
 	case "$arg" in
-		--do=*)
-			OPERATION=${arg#--do=}
-			;;
 		--cert=*)
 			CERTIFICATE=${arg#--flag=}
 			;;
