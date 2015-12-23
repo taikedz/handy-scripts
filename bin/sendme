@@ -14,7 +14,7 @@ else
 	echo "${CYEL}No gpg2/gpg command found. Suggestion: install ${CBLU}gnupg2${CDEF}"
 fi
 
-if [[ $(which mailx > /dev/null 2>&1; echo $?) -lt 1 ]]; then
+if [[ $(which mailx > /dev/null 2>&1; echo $?) -gt 1 ]]; then
 	echo "${CRED}No mailx command found. Abort.$CDEF"
 	exit 96
 fi
@@ -29,7 +29,6 @@ if [[ -z "$EDITOR" ]]; then
 	fi
 fi
 
-set -euo pipefail
 
 helppat='-h|--help'
 FILES=
@@ -37,6 +36,8 @@ FROM=
 RCPT=
 ATCH=$( [[ $(man mailx | grep 'mailutils' -c) -gt 0 ]] && echo "-A" ; [[ $(man mailx | grep 'Heirloom' -c) -gt 0 ]] && echo "-a" ; )
 [[ -z "$ATCH" ]] && { echo "${CRED}Could not determine mailx flavour. Abort.${CDEF}" ; exit 96 ; }
+
+set -euo pipefail
 
 function printhelp {
 cat <<EOF
