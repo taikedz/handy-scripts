@@ -248,10 +248,10 @@ function banhammer {
 	# FIXME need to properly verify that the IPs are valid, else script will bail
 	set +e # in the mean time, turn off auto-bail
 	for ipspec in $@; do
-		if [[ "$ipspec" =~ $IPpat ]]; then
-			banip "$ipspec"
-		elif [[ "$ipspec" =~ $IPpat-$IPpat ]]; then
+		if [[ "$ipspec" =~ $IPpat-$IPpat ]]; then
 			banrange "$ipspec"
+		elif [[ "$ipspec" =~ $IPpat ]]; then
+			banip "$ipspec"
 		else
 			echo "${CRED}Not a valid IP $ipspec${CDEF}"
 		fi
