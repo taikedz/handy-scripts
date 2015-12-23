@@ -115,18 +115,18 @@ done
 [[ "$f_mkconfig" = y ]] && (
 	[[ $(read -p "Are you sure you want to ${CRED}INITIALIZE${CDEF} the configs to DEFAULT VALUES? y/N> " RESP; echo "$RESP") = "y" ]]
 	) && {
-	mkdir -p $CONFIG
-	cat <<EOF > $CONFIG/policy
+	mkdir -p "$CONFIG"
+	cat <<EOF > "$CONFIG/policy"
 # Lockdown policy - ACCEPT, REJECT, DROP
 DROP
 EOF
-	cat <<EOF > $CONFIG/inputs
+	cat <<EOF > "$CONFIG/inputs"
 #22 # SSH port - enable for SSH
 
 #80 443 # Standard web ports
 
 EOF
-	cat <<EOF > $CONFIG/outputs
+	cat <<EOF > "$CONFIG/outputs"
 22 # SSH
 25 # plain SMTP
 53ut # DNS lookups - udp and tcp
@@ -137,7 +137,7 @@ EOF
 25 465 587 # SMTP
 #21 # FTP
 EOF
-	chmod -R 700 $CONFIG
+	chmod -R 700 "$CONFIG"
 }
 
 INPUTS="$( dumports inputs )"
