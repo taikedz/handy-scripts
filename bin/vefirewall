@@ -13,7 +13,8 @@ CGRN="[0;32m"
 CYEL="[0;33m"
 CBLU="[0;34m"
 
-CONFIG="/usr/local/etc/vefw"
+#CONFIG="/usr/local/etc/vefw"
+CONFIG="/etc/vefw" # New location.
 
 function showhelp {
 cat <<EOF 1>&2 && exit
@@ -97,7 +98,11 @@ EOF
 
 function dumports {
 	# use 'echo' to flatten to a single line
-	[[ -f $CONFIG/$1 ]] && echo $(cat $CONFIG/$1 | sed -r 's/#.+$//' )
+	if [[ -f "$CONFIG/$1" ]]; then
+		echo $(cat "$CONFIG/$1" | sed -r 's/#.+$//' )
+	else
+		echo "" # can't simply be silent....??
+	fi
 }
 
 # ======= Main ----------------¬
@@ -178,14 +183,15 @@ EOF
 # 183.60.0.0-183.65.255.255
 EOF
 	chmod -R 700 "$CONFIG"
+
+	echo "${CRED}MAKE SURE$CBLU you configure initial $CONFIG/inputs file or no new connections will come in!"
 }
 
 INPUTS="$( dumports inputs )"
 OUTPUTS="$( dumports outputs )"
 POLICY="$( dumports policy )"
-BANIP="$(dumports banned)"
+BANIP="$( dumports banned )"
 [[ -z "$POLICY" ]] && { echo "No lockdown policy. See --help option for more." ; exit 99 ; }
-
 
 [[ "$f_dryrun" = y ]] && cat <<EOF && exit
 Use the --apply option to apply these rules:
@@ -254,7 +260,7 @@ function banhammer {
 	set -e
 }
 
-banhammer $BANNED
+banhammer $BANIP
 chainup INPUT $INPUTS
 chainup OUTPUT $OUTPUTS
 
@@ -282,7 +288,7 @@ EOF
 if [[ -f /usr/bin/dpkg ]]; then # checking for dpkg, if present presume Debian/Ubuntu and presence of iptables-persistent in repo
 	if [[ "$(dpkg --get-selections | grep iptables-persistent | wc -l)" -lt 1 ]]; then
 		read -p "Install iptables-persistent? " RY
-		if [[ $RY = 'y' ]]; then # we have dpkg, presuming we have apt
+		if [[ $RY =~ 'y' ]]; then # we have dpkg, presuming we have apt
 			apt-get install -yy iptables-persistent
 		fi
 	else
