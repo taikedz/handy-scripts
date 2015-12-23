@@ -10,46 +10,53 @@ set -euo pipefail
 CDEF="[0m"
 CRED="[1;31m"
 CGRN="[0;32m"
+CYEL="[0;33m"
+CBLU="[0;34m"
 
 CONFIG="/usr/local/etc/vefw"
 
 function showhelp {
 cat <<EOF 1>&2 && exit
 
-${CGRN}==== Very Easy Firewall ====$CDEF
+${CBLU}==== Very Easy Firewall ====$CDEF
 
-Manage your firewall with as little fuss as
-possible.
+Manage your firewall with very little fuss.
 
-This script helps in setting up initial
-firewall defaults for configuring servers
+This script helps in setting up initial firewall defaults
+for configuring servers
 
-Edit the port files (see below) to open
-and close the needed ports
+Edit the rule files (see below) to open and close the
+needed ports
 
 The command can be run in one of 3 ways
 
 	$0
+	$0 --apply
 	$0 --noreset
-	$0 --dry-run
 
-The default rule flushes all rules and chains, then
+The default mode simply lists what ports will be left
+open, what lockdown policy will be applied, and what
+IPs will be banned.
+
+Use the "--apply" mode to actually apply these.
+
+The normal mode flushes all rules and chains, then
 applies TCP rules for ports defined in the port files
 
 The --noreset option prevents flushing rules and chains,
 The rules are re-applied, no existing rules are affected.
 
-The --dry-run option displays what ports have been
-picked up from the file, but does not apply them.
+${CGRN}==== Rule Files ====${CDEF}
 
-${CGRN}==== Port Files ====${CDEF}
-
-There are three files which govern the use
+There are four files which govern the use
 of the Very Easy Firewall tool.
 
 	$CONFIG/inputs
 	$CONFIG/outputs
 	$CONFIG/policy
+	$CONFIG/banned
+
+${CYEL}--- Port files ---${CDEF}
 
 List in "inputs" and "outputs" the port numbers that
 need to be allowed. You can specify for example "80"
@@ -60,7 +67,7 @@ traffic on the designated port.
 You can define as many ports as you want per line.
 Comments start with a "#" and end at the end of the line.
 
-==== Lockdown Policy ====
+${CYEL}--- Lockdown Policy ---${CDEF}
 
 Specify one uncommented line in "policy": this is the default policy
 to set once the firewall rules have been applied. Typically this
@@ -70,12 +77,21 @@ will be one of
 * DROP (silently drop connections)
 * ACCEPT (accept any incoming connection - ONLY FOR TESTING)
 
+${CYEL}--- IP Bans ---${CDEF}
 
-If the $CONFIG directory does not exist, it is created and
-populated with default data and example comments.
+In the "banned" file you can list IP addresses and IP ranges
+to add INPUT ban rules for - these will ban connections, and
+cut existing connections when the rule is applied.
 
-If it exists but any of the subfiles do not exist, they will NOT
-be re-created.
+${CGRN}=== Creating rules ===${CDEF}
+
+If the $CONFIG directory does not exist, vefirewall will not
+run. To create it, run '$0 --initialize'.
+
+If on initialization $CONFIG already exists, but any of the
+subfiles do not exist, NONE will be re-created or overwritten.
+You must remove $CONFIG directory altogether to use
+initialization.
 EOF
 }
 
