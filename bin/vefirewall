@@ -184,7 +184,7 @@ EOF
 EOF
 	chmod -R 700 "$CONFIG"
 
-	echo "${CRED}MAKE SURE$CBLU you configure initial $CONFIG/inputs file or no new connections will come in!"
+	echo "${CRED}MAKE SURE$CBLU you configure initial $CONFIG/inputs file or no new connections will come in!$CDEF"
 }
 
 INPUTS="$( dumports inputs )"
