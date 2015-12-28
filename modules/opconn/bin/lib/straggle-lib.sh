@@ -13,11 +13,6 @@ function stg_md5 {
 echo -n "$1"|md5sum|sed -r 's/\s*-\s*$//'
 }
 
-function stg_get {
-	cat <<EOSQL|mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME"
-select * from Connections where id='$1';
-EOSQL
-}
 function stg_getcontent {
 	cat <<EOSQL|mysql -N -u "$DBUSER" -p"$DBPASS" "$DBNAME"
 select Content from Connections where id='$1';
