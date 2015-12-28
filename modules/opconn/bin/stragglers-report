@@ -5,14 +5,25 @@ CONNCOUNT=$(echo "$CONNECTIONS"|wc -l)
 SERVERS=$(echo "$CONNECTIONS" |sed -r 's/^.+->([^:]+):.+$/\1/'|sort|uniq)
 PORTSERV=$(echo "$CONNECTIONS" |sed -r 's/^.+:(.+)->([^:]+):.+$/\1:\2/'|sort|uniq)
 
+# lib loading
+LIBF="$HOME/bin/lib/straggle-lib.sh"
+if [[ -f "$LIBF" ]]; then
+	. "$LIBF"
+else
+	echo "No function library found for stragglers. Abort."
+	exit 126
+fi
+
 # define SERVERNAME, FROM and RCPT
 CONFF="$HOME/.config/stragglers.conf"
-. "$CONFF"
+[[ -f "$CONFF" ]] && . "$CONFF"
 
 [[ $(echo -e "$THRESHOLD\n$SERVERNAME\n$FROM\n$RCPT\n$DBNAME\n$DBUSER\n$DBPASS"|sort|uniq|wc -l) -ne 7 ]] && {
 	echo "Verify configuration file $CONFF"
 	exit 127
 }
+
+# ============== Do it now
 
 if [[ -z "$CONNECTIONS" ]]; then
 	echo "Nothing to report."
