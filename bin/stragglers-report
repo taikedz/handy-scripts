@@ -1,0 +1,93 @@
+#!/bin/bash
+
+CONNECTIONS=$(lsof -i |grep -E 'http.+ESTABLISHED' )
+CONNCOUNT=$(echo "$CONNECTIONS"|wc -l)
+SERVERS=$(echo "$CONNECTIONS" |sed -r 's/^.+->([^:]+):.+$/\1/'|sort|uniq)
+PORTSERV=$(echo "$CONNECTIONS" |sed -r 's/^.+:(.+)->([^:]+):.+$/\1:\2/'|sort|uniq)
+
+# define SERVERNAME, FROM and RCPT
+. "$HOME/.config/stragglers.conf"
+
+# PORTSERV might identify a held connection
+# compare current against ones held in a file ?
+
+if [[ -z "$CONNECTIONS" ]]; then
+	echo "Nothing to report."
+	exit
+else
+	echo "Generating and sending report for $CONNCOUNT connections."
+fi
+
+#WHOISFILE=/tmp/whois-$(date +"%F-%T")".txt"
+#DOMAINSFILE=/tmp/domains-$(date +"%F-%T")".txt"
+
+#echo "$CONNECTIONS"|while read conn ; do
+#	bpid=$(echo "$conn"|sed -r 's/\s+/\t/g'|cut -f 2)
+#	etime=$(ps -eo pid,etime|grep "\b$bpid\b"|sed -r 's/\s+/\t/'|cut -f 2|sed -r 's/([0-9]{2}):[0-9]{2}$/\1/')
+#	#echo "PID $bpid elapsed minutes: $etime"
+#	# alas, this is only the age of the worker thread which could be
+#	# longer than the connection's actual duration (and often is)
+#done
+
+IPpat="^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" # I don't expect a wildly invalid IP to be returned by DNS tools...
+ABUSEF=/tmp/abuse
+echo "">$ABUSEF
+echo "$SERVERS"|while read SERV ; do
+	# a bit of a hack. Need to exclude DNS server details
+	[[ "$SERV" =~ $IPpat ]] || SERV=$(nslookup "$SERV" |sed '/8.8.8.8/d'|grep Address|sed 's/Address: //'|head -n 1)
+	echo -e "\t// $SERV" >> $ABUSEF
+	whois "$SERV"|egrep -i '((net|name).+:)|(abuse.*:)|Abuse contact|OrgAbuseEmail|OrgName' >> $ABUSEF
+done
+
+#for server in $SERVERS; do
+#	echo -e "\t\t$server\n\n" >> "$WHOISFILE"
+#	whois "$server" >> "$WHOISFILE"
+#	echo -e "\n+++++++\n\n" >> "$WHOISFILE"
+#	echo "$server" >> "$DOMAINSFILE"
+#done
+
+REPORTFILE="/tmp/report-$(date "+%F-%T")"
+cat <<EOF > "$REPORTFILE"
+
+Report for $SERVERNAME
+
+Connections: $CONNCOUNT
+
+	==== Servers involved ====
+
+$SERVERS
+
+	==== Abuse details ====
+
+$(cat $ABUSEF)
+
+	==== All connections ====
+
+$CONNECTIONS
+
+	==== Ports to server ====
+
+$PORTSERV
+
+	==== Apache Task ====
+
+$(
+if [[ $CONNCOUNT -gt $THRESHOLD ]]; then
+	echo "Restarting apache"
+	service apache2 restart 2>&1
+	[[ $? -gt 0 ]] && {
+		service --status-all | mailx -s "URGENT - $SERVERNAME apache restart failed" -r "$FROM" "$RCPT"
+	}
+fi
+)
+
+EOF
+
+if [[ "$@" =~ "--stdout" ]]; then
+	cat "$REPORTFILE" | less
+else
+	cat "$REPORTFILE"   | mailx -s "$SERVERNAME Open connections: $CONNCOUNT" -r "$FROM" "$RCPT"
+fi
+
+# cleanup temp directory
+#tmpreaper 2d /tmp
