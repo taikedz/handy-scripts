@@ -6,10 +6,11 @@ SERVERS=$(echo "$CONNECTIONS" |sed -r 's/^.+->([^:]+):.+$/\1/'|sort|uniq)
 PORTSERV=$(echo "$CONNECTIONS" |sed -r 's/^.+:(.+)->([^:]+):.+$/\1:\2/'|sort|uniq)
 
 # define SERVERNAME, FROM and RCPT
-. "$HOME/.config/stragglers.conf"
+CONFF="$HOME/.config/stragglers.conf"
+. "$CONFF"
 
-([[ -z "$THRESHOLD" ]] || [[ -z "$SERVERNAME" ]] || [[ -z "$FROM" ]] || [[ -z "$RCPT" ]]) && {
-echo "Please define SERVERNAME (name of server), THRESHOLD (num of connections above which to restart apache), FROM and RCPT (sender and recipient emails) in $HOME/.config/stragglers.conf"
+[[ $(echo -e "$THRESHOLD\n$SERVERNAME\n$FROM\n$RCPT\n$DBNAME\n$DBUSER\n$DBPASS"|sort|uniq|wc -l) -ne 7 ]] && {
+	echo "Verify configuration file $CONFF"
 	exit 127
 }
 
