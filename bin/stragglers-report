@@ -8,8 +8,8 @@ PORTSERV=$(echo "$CONNECTIONS" |sed -r 's/^.+:(.+)->([^:]+):.+$/\1:\2/'|sort|uni
 # define SERVERNAME, FROM and RCPT
 . "$HOME/.config/stragglers.conf"
 
-([[ -z "$SERVERNAME" ]] || [[ -z "$FROM" ]] || [[ -z "$RCPT" ]]) && {
-	echo "Please define SERVERNAME (name of server), FROM and RCPT (sender and recipient emails) in $HOME/.config/stragglers.conf"
+([[ -z "$THRESHOLD" ]] || [[ -z "$SERVERNAME" ]] || [[ -z "$FROM" ]] || [[ -z "$RCPT" ]]) && {
+echo "Please define SERVERNAME (name of server), THRESHOLD (num of connections above which to restart apache), FROM and RCPT (sender and recipient emails) in $HOME/.config/stragglers.conf"
 	exit 127
 }
 
@@ -73,6 +73,3 @@ if [[ "$@" =~ "--stdout" ]]; then
 else
 	cat "$REPORTFILE"   | mailx -s "$SERVERNAME Open connections: $CONNCOUNT" -r "$FROM" "$RCPT"
 fi
-
-# cleanup temp directory
-#tmpreaper 2d /tmp
