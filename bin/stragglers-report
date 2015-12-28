@@ -22,13 +22,15 @@ fi
 
 
 IPpat="^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" # I don't expect a wildly invalid IP to be returned by DNS tools...
+IPpat2="^(([12]?)[0-9])?[0-9]\.(([12]?)[0-9])?[0-9]\.(([12]?)[0-9])?[0-9]\.(([12]?)[0-9])?[0-9]\.$" # more precise but I'm less sure of its validity
 ABUSEF=/tmp/abuse
 echo "">$ABUSEF
 echo "$SERVERS"|while read SERV ; do
-	# a bit of a hack. Need to exclude DNS server details
-	[[ "$SERV" =~ $IPpat ]] || SERV=$(nslookup "$SERV" |sed '/8.8.8.8/d'|grep Address|sed 's/Address: //'|head -n 1)
-	echo -e "\t// $SERV" >> $ABUSEF
-	whois "$SERV"|egrep -i '((net|name).+:)|(abuse.*:)|Abuse contact|OrgAbuseEmail|OrgName' >> $ABUSEF
+	[[ "$SERV" =~ $IPpat ]] || SERV=$(nslookup "$SERV" |egrep '^Name:' -A 1|grep 'Address:'|sed -r 's/Address:\s*//')
+	echo "$SERV" | while read myaddr; do # cater for: if it was a name resolved to multiple addresses
+		echo -e "\t// $myaddr" >> "$ABUSEF"
+		whois "$myaddr"|egrep -i '((net|name).+:)|(abuse.*:)|Abuse contact|OrgAbuseEmail|OrgName' >> "$ABUSEF"
+	done
 done
 
 REPORTFILE="/tmp/report-$(date "+%F-%T")"
