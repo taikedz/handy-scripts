@@ -35,7 +35,7 @@ function stg_setcontent {
 	shift
 	newcontent=$@
 	cat <<EOSQL|mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME"
-update Connections where id='$md5id' set Content='$newcontent' limit 1;
+update Connections set Content='$newcontent' where id='$md5id' limit 1;
 EOSQL
 }
 
@@ -44,8 +44,14 @@ function stg_setnotes {
 	shift
 	newcontent=$@
 	cat <<EOSQL|mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME"
-update Connections where id='$md5id' set Notes='$newcontent' limit 1;
+update Connections set Notes='$newcontent' where id='$md5id' limit 1;
 EOSQL
 }
 
+
+function stg_clearout {
+	cat <<EOSQL|mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME"
+delete from Connections where Notes is null;
+EOSQL
+}
 
