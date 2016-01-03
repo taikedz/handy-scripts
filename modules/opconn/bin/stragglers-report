@@ -35,14 +35,13 @@ fi
 echo "$PORTSERV" | while read pserv; do
 	md5id=$(stg_md5 "$pserv")
 	if [[ $(stg_getcontent $md5id|wc -l) -gt 0 ]]; then
-		stg_setnotes $md5id "Old connection $(date "+%F-%T")"
+		stg_setnotes $md5id "Old connection $(date "+%F-%T") $pserv"
 		# do some other stuff here?
 		# for ex ban the IP in question?
 	else
 		stg_insert "$pserv"
 	fi
 done
-stg_clearout # remove the connections that did not appear in the most recent report
 
 IPpat="^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" # I don't expect a wildly invalid IP to be returned by DNS tools...
 #IPpat2="^(([12]?)[0-9])?[0-9]\.(([12]?)[0-9])?[0-9]\.(([12]?)[0-9])?[0-9]\.(([12]?)[0-9])?[0-9]\.$" # more precise but I'm less sure of its validity
@@ -65,12 +64,15 @@ Connections: $CONNCOUNT
 
 
 $(
-if [[ $CONNCOUNT -gt $THRESHOLD ]]; then
+if [[ $(egrep . stg_show_all -c) -gt 1 ]]; then
 	echo -e "	==== Apache Task ====\n\nRestarting apache\n"
 	service apache2 restart 2>&1
-	[[ $? -gt 0 ]] && {
+	if [[ $? -gt 0 ]]; then
 		service --status-all | mailx -s "URGENT - $SERVERNAME apache restart failed" -r "$FROM" "$RCPT"
-	}
+	else
+		stg_clearout
+		stg_drop # drop the now-obsolete old-connection artefacts
+	fi
 fi
 )
 
@@ -81,10 +83,6 @@ $SERVERS
 	==== Abuse details ====
 
 $(cat $ABUSEF)
-
-	==== All connections ====
-
-$CONNECTIONS
 
 	==== Ports to server ====
 
