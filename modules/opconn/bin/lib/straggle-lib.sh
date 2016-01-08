@@ -55,3 +55,22 @@ delete from Connections where Notes is null;
 EOSQL
 }
 
+function stg_drop {
+        cat <<EOSQL|mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME"
+delete from Connections where Notes is not null;
+EOSQL
+}
+
+# Debug items
+function stg_show {
+	cat <<EOSQL|mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME"
+select * from Connections where Notes is not null;
+EOSQL
+}
+
+function stg_show_all {
+	cat <<EOSQL|mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME"
+select * from Connections;
+EOSQL
+}
+
