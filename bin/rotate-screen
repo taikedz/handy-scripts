@@ -1,0 +1,67 @@
+#!/bin/bash
+
+CDEF='[0m'
+CRED='[1;31m'
+CGRN='[1;32m'
+CYEL='[1;33m'
+CBLU='[1;34m'
+
+([[ $@ =~ --help ]] || [[ -z "$@" ]]) && {
+cat <<EOHELP
+${CBLU}rotate screen$CDEF
+
+${CYEL}(C) 2016 Tai Kedzierski
+License: GPLv3
+See [https://www.gnu.org/licenses/gpl-3.0.html] for details${CDEF}
+
+Tool to rotate your screen and ensure your pointing devices match the orientation
+
+	${CGRN}$(basename $0) {normal|left|right|inverted} [SCREEN]$CDEF
+
+Specify the desired orientation, and optionally indicate the screen explicitly.
+
+If you omit the SCREEN option:
+
+  if there is only one connected screen, that one is used
+
+  if there are multiple attched screens, you will be prompted
+   to re-run the command whilst specifying which SCREEN to use
+
+EOHELP
+exit
+}
+
+touchids=$(xinput --list | egrep -i "slave\s+pointer"|sed -r 's/^.+id=([0-9]+)\s.+$/\1/')
+displayIDs=$(xrandr -q|grep ' connected'|sed -r 's/^(.+) connected.+/\1/')
+
+numpat="^[0-9]+$"
+modespat="^(left|right|normal|inverted)$"
+blankpat='^\s*$'
+
+if [[ ! $displayIDs =~ $blankpat ]] && [[ $(echo "$displayIDs"|wc -l) -gt 1 ]]; then
+	if [[ -n "$2" ]] && [[ $(echo "$displayIDs"|grep "^$2\$" -c) -gt 0 ]]; then
+		displayID="$2"
+	else
+		echo -e "Multiple screens detected\n\nRe run as '$CGRN$(basename $0) $CYEL$1 ${CBLU}SCREEN$CDEF' where SCREEN is one of:\n\n$CBLU$displayIDs$CDEF\n"
+		exit 1
+	fi
+else
+	displayID=$displayIDs
+fi
+
+if [[ ! $1 =~ $modespat ]]; then
+	echo "${CRED}Invalid mode [$1]$CDEF - please choose a mode of ${CYEL}{normal, left, right, inverted}$CDEF"
+	exit 2
+fi
+
+if [[ ! $displayID =~ $blankpat ]]; then
+	echo "$touchids"|while read touchid ; do
+		[[ $touchid =~ $numpat ]] && {
+			xrandr --output $displayID --rotate $1
+			xinput --map-to-output $touchid $displayID
+		}
+	done
+else
+	echo "${CRED}Could not find a display!${CDEF}"
+	exit 3
+fi
