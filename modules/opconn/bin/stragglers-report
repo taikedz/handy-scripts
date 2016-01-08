@@ -64,7 +64,7 @@ Connections: $CONNCOUNT
 
 
 $(
-if [[ $(stg_show_all|wc -l) -gt 1 ]]; then
+if [[ $(stg_show|wc -l) -gt 1 ]]; then
 	echo -e "	==== Apache Task ====\n\nRestarting apache\n"
 	service apache2 restart 2>&1
 	if [[ $? -gt 0 ]]; then
