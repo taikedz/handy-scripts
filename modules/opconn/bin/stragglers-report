@@ -33,6 +33,7 @@ if [[ "$OPTS" =~ "--send=" ]]; then
 	if [[ $? -gt 0 ]]; then
 		echo "Could not get report file $DESTFILE"|mailx -s "$SERVERNAME stragglers - no report file" -r "$FROM" "$RCPT"
 	fi
+	exit
 fi
 done
 
