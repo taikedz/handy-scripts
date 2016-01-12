@@ -29,7 +29,9 @@ CONFF="$HOME/.config/stragglers.conf"
 for OPTS in $@; do
 if [[ "$OPTS" =~ "--send=" ]]; then
 	DESTFILE=${OPTS#--send=}
+	if [[ ! -f "$DESTFILE" ]]; then exit ; fi
 	mailx -s "$SERVERNAME Stragglers report" -r "$FROM" "$RCPT" < "$DESTFILE"
+	mv "$DESTFILE" "$DESTFILE-$(date '+%F-%H:%M')"
 	if [[ $? -gt 0 ]]; then
 		echo "Could not get report file $DESTFILE"|mailx -s "$SERVERNAME stragglers - no report file" -r "$FROM" "$RCPT"
 	fi
@@ -50,6 +52,7 @@ echo "$PORTSERV" | while read pserv; do
 		# do some other stuff here?
 		# for ex ban the IP in question?
 	else
+		echo "No previous entry $md5id"
 		stg_insert "$pserv"
 	fi
 done
@@ -75,6 +78,7 @@ if [[ $(stg_show|wc -l) -gt 1 ]]; then
 cat <<EOF > "$REPORTFILE"
 
 Report for $SERVERNAME
+$(date)
 
 Old connections:
 
@@ -85,7 +89,7 @@ $(
 	echo -e "Restarting apache\n"
 	service apache2 restart 2>&1
 	if [[ $? -gt 0 ]]; then
-		service --status-all | mailx -s "URGENT - $SERVERNAME apache restart failed" -r "$FROM" "$RCPT"
+		service --status-all 2>&1 | mailx -s "URGENT - $SERVERNAME apache restart failed" -r "$FROM" "$RCPT"
 	else
 		stg_clearout
 		stg_drop # drop the now-obsolete old-connection artefacts
