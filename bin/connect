@@ -90,7 +90,7 @@ if [[ -n "$NEWHOST" ]]; then
 	set +e
 	THEHOST=$(echo "$NEWHOST"|sed -r 's/^(([^@]+?@)[a-zA-Z0-9.-]+).*$/\2/')
 	RES=$(nslookup "$THEHOST" |grep NXDOMAIN -c)
-	if [[ $RES -gt 0 ]]; then
+	if [[ $RES -gt 0 ]] || [[ "$?" -gt 0 ]]; then # on one machine I tested with, even NXDOMAIN returned status 0...!
 		echo "${CRED}Unknown host '$NEWHOST'$CDEF"
 		exit 1
 	fi
