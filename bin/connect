@@ -2,15 +2,23 @@
 
 SERVERFILE=./servers/default.list
 NEWHOST=
+COPYKEY=no
 
-[[ -n "$1" ]] && {
-	if [[ "$1" = '-a' ]]; then
-		[[ -n "$2" ]] && NEWHOST=$2
-		[[ -n "$3" ]] && SERVERFILE=$3 # optionally state a target file
+
+while [[ -n "$@" ]]; do
+	ARG=$1
+	shift
+
+	if [[ "$ARG" = "-a" ]] && [[ -n "$@" ]]; then
+		NEWHOST=$1
+		shift
+	elif [[ "$ARG" = "-k" ]]; then
+		COPYKEY=yes
 	else
-		SERVERFILE="$1"
+		SERVERFILE=$ARG
 	fi
-}
+done
+
 
 set -euo pipefail
 TARGET=
@@ -123,6 +131,10 @@ while [[ x = x ]]; do
 		exit 0
 	fi
 done
+
+[[ $COPYKEY = yes ]] && {
+	ssh-copy-id "$TARGET"
+}
 
 [[ -n "$TARGET" ]] && {
 	echo "${CGRN}Connecting to '$TARGET'$CDEF"
