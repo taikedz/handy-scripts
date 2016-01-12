@@ -108,9 +108,9 @@ while [[ x = x ]]; do
 	read -p "> " CHOICE
 
 	NUMPAT='^[0-9]+'
-	[[ $CHOICE =~ $NUMPAT ]] && CHOICE="^$CHOICE"
+	[[ $CHOICE =~ $NUMPAT ]] && CHOICE="^$CHOICE\s"
 
-	[[ -n "$CHOICE" ]] && TARGET=$(echo "$ALLSERVERS" | grep -P "$CHOICE\s" | sed -r -e 's/^[0-9]+ //'|sed -r 's/^([@_a-zA-Z0-9.-]+).*$/\1/')
+	[[ -n "$CHOICE" ]] && TARGET=$(echo "$ALLSERVERS" | grep -P "$CHOICE" | sed -r -e 's/^[0-9]+ //'|sed -r 's/^([@_a-zA-Z0-9.-]+).*$/\1/')
 
 	if [[ $(echo "$TARGET"|wc -l ) -gt 1 ]]; then
 		echo -e "${CYEL}Multiple results\n\n$CBLU$TARGET$CDEF\n"
