@@ -1,10 +1,13 @@
 #!/bin/bash
 
 SERVERFILE=./servers/default.list
+CONFIG=$HOME/.connectrc
 NEWHOST=
 COPYKEY=no
 FORCE=no
 SHOWHELP=no
+
+[[ -f "$CONFIG" ]] && source "$CONFIG"
 
 while [[ -n "$@" ]]; do
 	ARG=$1
