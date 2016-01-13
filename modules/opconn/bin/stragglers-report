@@ -29,7 +29,7 @@ CONFF="$HOME/.config/stragglers.conf"
 for OPTS in $@; do
 if [[ "$OPTS" =~ "--send=" ]]; then
 	DESTFILE=${OPTS#--send=}
-	if [[ ! -f "$DESTFILE" ]]; then exit ; fi
+	if [[ ! -f "$DESTFILE" ]] || [[ "$(cat "$DESTFILE")" = "" ]]; then exit 0 ; fi
 	mailx -s "$SERVERNAME Stragglers report" -r "$FROM" "$RCPT" < "$DESTFILE"
 	mv "$DESTFILE" "$DESTFILE-$(date '+%F-%H:%M')"
 	if [[ $? -gt 0 ]]; then
