@@ -7,6 +7,11 @@ COPYKEY=no
 FORCE=no
 SHOWHELP=no
 
+# Management actions
+
+DODISABLE=no
+DOENABLE=no
+
 [[ -f "$CONFIG" ]] && source "$CONFIG"
 
 while [[ -n "$@" ]]; do
@@ -15,6 +20,14 @@ while [[ -n "$@" ]]; do
 
 	if [[ "$ARG" = "-a" ]] && [[ -n "$@" ]]; then
 		NEWHOST=$1
+		shift
+	elif [[ "$ARG" = "-d" ]] && [[ -n "$@" ]]; then
+		NEWHOST=$1
+		DODISABLE=yes
+		shift
+	elif [[ "$ARG" = "-e" ]] && [[ -n "$@" ]]; then
+		NEWHOST=$1
+		DOENABLE=yes
 		shift
 	elif [[ "$ARG" = "-f" ]]; then
 		FORCE=yes
@@ -58,17 +71,25 @@ OPTIONS
 
 	-a DOMAIN
 		add a domain name to the servers file
-
-	-k	copy ssh public key to destination server
-		once you select a server to connect to, your public key will be copied to it
 	
 	-f	force add server
 		forces adding a name that does not resolve
+	
+	-d PATTERN
+		disable all domains matching the pattern
+		can affect multiple domains, use the -e option to undo the change
+	
+	-e PATTERN
+		re-enable all domains matching the pattern
+		can affect multiple domains, use the -d option to undo the change
+
+	-k	copy ssh public key to destination server
+		once you select a server to connect to, your public key will be copied to it
 
 EXAMPLE: server file
 
 	#--------- example file contents
-${CYEL}	Any line starting with "%" is a server specification
+${CBLU}	Any line starting with "%" as first character is a server specification
 	You can append comments to the end of server names
 
 	% server1.example.com
@@ -115,10 +136,26 @@ fi
 
 if [[ -n "$NEWHOST" ]]; then
 	set +e
-	THEHOST=$(echo "$NEWHOST"|sed -r 's/^(([^@]+?@)[a-zA-Z0-9.-]+).*$/\2/')
-	RES=$(nslookup "$THEHOST" |grep NXDOMAIN -c)
-	if ([[ $RES -gt 0 ]] || [[ "$?" -gt 0 ]]) && [[ ! "$FORCE" = "yes" ]]; then # on one machine I tested with, even NXDOMAIN returned status 0...!
-		echo "${CRED}Unknown host '$NEWHOST'$CDEF"
+	( [[ "$DOENABLE" = yes ]] || [[ "$DODISABLE" = yes ]] ) && { # redundant checking for grouping...
+		badpat='[/"'"']"
+		[[ "$NEWHOST" =~ $badpat ]] && { echo "${CYEL}Invalid pattern [$CRED$NEWHOST$CDEF]$CDEF" ; exit 3 ; }
+		if [[ "$DOENABLE" = yes ]]; then
+			echo "${CGRN}Seeking and enabling $NEWHOST :$CDEF"
+			grep -P "^#%\s+$NEWHOST\b" "$SERVERFILE"
+			sed -r -e "s/^#(%\s+$NEWHOST\b)/\1/" "$SERVERFILE" -i
+		elif [[ "$DODISABLE" = yes ]]; then
+			echo "${CGRN}Seeking and disabling $NEWHOST :$CDEF"
+			grep -P "^%\s+$NEWHOST\b" "$SERVERFILE"
+			sed -r -e "s/^(%\s+$NEWHOST\b)/#\1/" "$SERVERFILE" -i
+		fi
+		echo "... done."
+		exit 0
+	}
+
+	THEHOST=$(echo "$NEWHOST"|sed -r 's/^([^@]+?@)?([a-zA-Z0-9.-]+).*$/\2/')
+	RES=$(nslookup "$THEHOST" |grep 'Address:' -c) # how to check for success? NXDOMAIN on some servers returns status 0 !
+	if [[ $RES -gt 1 ]]  && [[ ! "$FORCE" = "yes" ]]; then
+		echo "${CRED}Unknown host '$THEHOST'$CDEF"
 		exit 1
 	fi
 
@@ -132,7 +169,7 @@ if [[ -n "$NEWHOST" ]]; then
 	echo >> "$SERVERFILE"
 fi
 
-echo "$CGRN Using $SERVERFILE$CDEF"
+#echo "$CGRN Using $SERVERFILE$CDEF"
 
 ALLSERVERS=$(grep -E '^%' "$SERVERFILE" | grep -E '^' -n | sed 's/:%//')
 
