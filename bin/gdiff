@@ -1,0 +1,8 @@
+#!/bin/bash
+
+CDEF='[0m'
+CRED='[31;1m'
+CGRN='[32;1m'
+CBLU='[34;1m'
+
+git diff "$@" | sed -r -e "s/^(-.*)$/${CRED}\1${CDEF}/" -e "s/^(\+.*)$/${CGRN}\1${CDEF}/" -e "s/^(@@.+)$/${CBLU}\1${CDEF}/" | less -R
