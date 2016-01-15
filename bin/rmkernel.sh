@@ -1,6 +1,6 @@
 #!/bin/bash
 
-versions=$(ls /boot | grep generic | sed -r -e 's/^([^-]+)-([^-]+-[^-]+).+$/\2/g' | sort | uniq)
+versions=$(ls /boot | grep -P "generic|vmlinuz" | sed -r -e 's/^([^-]+)-([^-]+-[^-]+).+$/\2/g' | sort | uniq)
 vcount=$(echo $versions | sed -r -e 's/ /\n/g' | wc -l)
 
 [[ $# -gt 0 ]] || {
