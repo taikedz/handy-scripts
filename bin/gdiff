@@ -5,4 +5,39 @@ CRED='[31;1m'
 CGRN='[32;1m'
 CBLU='[34;1m'
 
-git diff "$@" | sed -r -e "s/^(-.*)$/${CRED}\1${CDEF}/" -e "s/^(\+.*)$/${CGRN}\1${CDEF}/" -e "s/^(@@.+)$/${CBLU}\1${CDEF}/" | less -R
+ADDFILE=
+COMMIT=
+ACTION=
+
+while [[ -n "$@" ]]; do
+	ARG=$1
+	shift
+
+	case "$ARG" in
+	-m)
+		ACTION=commit
+		COMMIT="$@"
+		break
+		;;
+	-a)
+		ACTION=add
+		;;
+	*)
+		[[ -f "$ARG" ]] && ADDFILE="$ADDFILE $ARG"
+		;;
+	esac
+done
+
+if [[ "$ACTION" = add ]]; then
+	git add $ADDFILE
+elif [[ "$ACTION" = commit ]]; then
+	if [[ -z "$COMMIT" ]]; then
+		git commit
+	else
+		git commit -m "$COMMIT"
+	fi
+else
+	for cfile in $ADDFILE; do
+		git diff "$cfile" | sed -r -e 's//^[/g' -e "s/^(-.*)$/${CRED}\1${CDEF}/" -e "s/^(\+.*)$/${CGRN}\1${CDEF}/" -e "s/^(@@.+)$/${CBLU}\1${CDEF}/" | less -R
+	done
+fi
