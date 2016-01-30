@@ -153,8 +153,8 @@ if [[ -n "$NEWHOST" ]]; then
 	}
 
 	THEHOST=$(echo "$NEWHOST"|sed -r 's/^([^@]+?@)?([a-zA-Z0-9.-]+).*$/\2/')
-	RES=$(nslookup "$THEHOST" |grep 'Address:' -c) # how to check for success? NXDOMAIN on some servers returns status 0 !
-	if [[ $RES -gt 1 ]]  && [[ ! "$FORCE" = "yes" ]]; then
+	RES=$(nslookup "$THEHOST"|tail -n +3 |grep 'Address:' -c)
+	if [[ ! $RES -gt 1 ]] && [[ ! "$FORCE" = "yes" ]]; then
 		echo "${CRED}Unknown host '$THEHOST'$CDEF"
 		exit 1
 	fi
