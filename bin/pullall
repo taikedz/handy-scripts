@@ -30,7 +30,7 @@ for topdir in "$alldirs"; do
 		[[ -d .git ]] && {
 			if git fetch > /dev/null 2>&1 || [[ x = x ]]; then
 				if [[ $(git status|grep -E "is up-to-date|working directory clean" -c) -gt 1 ]]; then
-					echo git pull on $thisdir
+					git pull on $thisdir
 				else
 					echo "Cannot update $thisdir ----------¬"
 					git status
