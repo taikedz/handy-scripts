@@ -37,7 +37,7 @@ for topdir in "$alldirs"; do
 		(
 		cd $thisdir
 		[[ -d .git ]] && {
-			if git fetch > /dev/null 2>&1 ; then
+			if [[ $(git status|grep -E "is up-to-date|working directory clean" -c) -gt 1 ]] && git fetch > /dev/null 2>&1 ; then
 				if [[ $(git status|grep -E "is up-to-date|working directory clean" -c) -gt 1 ]]; then
 					git pull
 				else
@@ -45,7 +45,7 @@ for topdir in "$alldirs"; do
 					git status
 				fi
 			else
-				echo "    Fetch failed on $thisdir"
+				echo "    Update failed -- check git status $thisdir, and network connection"
 			fi
 		}
 		)
