@@ -1,10 +1,46 @@
 #! /bin/bash
 
-if [[ x$(which parallel) = 'x' ]]; then
-	echo "No GNU parallel installed"
-	exit(1)
-	# change this so that not using parallel is an option
-fi
+function printhelp {
+cat <<EOHELP
 
-ls | parallel "if [[ -d {} ]]; then cd {}; echo -n 'Updating '{}' : '; git pull; cd ..; fi;"
+git-pull a whole load of git subfolders
 
+List the parent directories to update as arguments
+
+Each parent directory's children will be entered, checked to be git repositories
+and if they can be updated safely, the script will do so, otherwise error will be
+printed.
+
+EOHELP
+}
+
+alldirs=
+
+while [[ -n "$@" ]]; do
+	alldirs=$(echo "$1"|sed 's/ //g')
+	shift
+done
+
+for topdir in "$alldirs"; do
+	( cd $(echo "$topdir"|sed 's// /g')
+	for thisdir in $(ls --color=never); do
+		[[ -d "$thisdir" ]] && {
+		(
+		cd $thisdir
+		[[ -d .git ]] && {
+			if git fetch > /dev/null 2>&1 || [[ x = x ]]; then
+				if [[ $(git status|grep -E "is up-to-date|working directory clean" -c) -gt 1 ]]; then
+					echo git pull on $thisdir
+				else
+					echo "Cannot update $thisdir ----------¬"
+					git status
+				fi
+			else
+				echo "    Fetch failed on $thisdir"
+			fi
+		}
+		)
+		}
+	done
+	)
+done
