@@ -16,7 +16,16 @@ EOHELP
 
 alldirs=
 
+if [[ -z "$@" ]]; then
+	printhelp
+	exit 0
+fi
+
 while [[ -n "$@" ]]; do
+	if [[ "$1" = "--help" ]]; then
+		printhelp
+		exit 0
+	fi
 	alldirs=$(echo "$1"|sed 's/ //g')
 	shift
 done
