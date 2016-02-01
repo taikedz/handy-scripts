@@ -111,7 +111,7 @@ elif [[ $ACTION = upgrade ]]; then
 elif [[ $ACTION = list ]]; then
 	dpkg --get-selections | less
 elif [[ $ACTION = show ]]; then
-	apt-cache show $PACKAGELIST | sed -r 's/^(Package: )/\n\n[133m===[0m\1/' | less -R
+	apt-cache show $PACKAGELIST | sed -r 's/^(Package: )/[1;33m===[0m\n\1/' | less -R
 elif [[ -z "$ACTION" ]]; then
 	apt-cache search $PACKAGELIST | less
 fi
