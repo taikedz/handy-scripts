@@ -1,60 +1,122 @@
 #! /bin/bash
 
-[[ $# = 0 ]] && {
+set -euo pipefail
+
+ASSUMEYES=
+PACKAGELIST=
+ACTION=
+CLEANUP=
+UPDATE=
+
+function printhelp {
 	cat <<EOF
 Usage
 
-	$0 list                 # list installed packages
-	$0 update               # updates the package list
-	$0 upgrade              # perform a straight package upgrade
-	$0 TERM                 # search for TERM
-	$0 {s|show} PACKAGE     # show information about PACKAGE
-	$0 {i|install} PACKAGES ...  # install packages
+	$(basename $0) [ACTION] TERMS ... [OPTIONS]
 
-Specify a package to search, show, or install.
+ACTIONS
 
-Installation and upgrade tasks run with the --assume-yes flag, and
-perform auto-remove and autoclean.
+-l|--list
+	List installed packages, use \`less\` pager.
+
+-s|--show
+	Show details of packages, use \`less\`pager.
+
+-i|--install
+	Install specified packages.
+
+-g|--upgrade
+	Do a system upgrade.
+
+OPTIONS
+
+-y|--assume-yes
+	Use the --assume-yes flag for operations which would normally prompt you.
+
+-ny|--no-assume-yes
+	Do not use the --assume-yes flag. You will be prompted
+	Supercedes a previously set '-y' option.
+
+-u|--update
+	Run an update of package listings.
+
+-nu|--no-update
+	Don't run an update of package listings.
+	Supercedes a previously set '-u' option.
+
+-c|--cleanup
+	Perform an autoclean and autoremove.
+
+-nc|--no-cleanup
+	Donot perform any autoclean or autoremove
+	Supercedes a previously set '-c' option.
 
 The tool uses sudo to run actions that require root.
 
 EOF
-	exit
 }
 
-iopt='^(i|install)$'
-if [[ $# -gt 1 ]] && [[ $1 =~ $iopt ]]; then
-	shift
-	sudo apt install $@ -y
-	sudo apt-get autoremove -y
-	sudo apt-get autoclean -y
-	exit
+while [[ -n "$@" ]]; do
+	ARG="$1" ; shift
+	case "$ARG" in
+	-l|--list)
+		ACTION=list
+		;;
+	-i|--install)
+		ACTION=install
+		;;
+	-s|--show)
+		ACTION=show
+		;;
+	-g|--upgrade)
+		ACTION=upgrade
+		;;
+	-y|--assume-yes)
+		ASSUMEYES=-y
+		;;
+	-ny|--no-assume-yes)
+		ASSUMEYES=
+		;;
+	-c|--cleanup)
+		CLEANUP=yes
+		;;
+	-nc|--no-cleanup)
+		CLEANUP=no
+		;;
+	-u|--update)
+		UPDATE=yes
+		;;
+	-nu|--no-update)
+		UPDATE=no
+		;;
+	--help)
+		printhelp
+		exit 0
+		;;
+	*)
+		PACKAGELIST="$PACKAGELIST $ARG"
+		;;
+	esac
+done
+
+if [[ $UPDATE = yes ]]; then
+	sudo apt-get update
 fi
 
-sopt='^(s|show)$'
-if [[ $# -gt 1 ]] && [[ $1 =~ $sopt ]]; then
-	shift
-	apt-cache show $@ | sed -r 's/^(Package: )/\n\n\1/' | less
-	exit
-fi
 
-if [[ $# = 1 ]] && [[ $1 = "update" ]]; then
-	sudo apt update
-	exit
-fi
-
-if [[ $# = 1 ]] && [[ $1 = "upgrade" ]]; then
-	sudo apt upgrade -y
-	sudo apt-get autoremove -y
-	sudo apt-get autoclean -y
-	exit
-fi
-
-if [[ $# = 1 ]] && [[ $1 = 'list' ]]; then
+if [[ $ACTION = install ]]; then
+	sudo apt-get install $PACKAGELIST $ASSUMEYES --show-progress
+elif [[ $ACTION = upgrade ]]; then
+	sudo apt-get upgrade $ASSUMEYES --show-progress
+elif [[ $ACTION = list ]]; then
 	dpkg --get-selections | less
-	exit
+elif [[ $ACTION = show ]]; then
+	apt-cache show $PACKAGELIST | sed -r 's/^(Package: )/\n\n[133m===[0m\1/' | less -R
+elif [[ -z "$ACTION" ]]; then
+	apt-cache search $PACKAGELIST | less
 fi
 
-
-# else search
-apt-cache search $@ | less
+if [[ $CLEANUP = yes ]]; then
+	sudo apt-get autoremove $ASSUMEYES --show-progress
+	sudo apt-get autoclean $ASSUMEYES --show-progress
+fi
