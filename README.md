@@ -3,48 +3,49 @@ handy-scripts
 
 Some handy scripts I tend to need all around
 
-`af`
-	wrapper around the apt-get tool for easily managing installs
+* af
+	* wrapper around the apt-get tool for easily managing installs
 
-connect
-	cli SSH connections manager
+* connect
+	* cli SSH connections manager
 
-etherpad
-	example init script to daemonize etherpad
+* etherpad
+	* example init script to daemonize etherpad
 
-gdiff
-	lazy git diffing, adding and committing
+* gdiff
+	* lazy git diffing, adding and committing
 
-gen_ss_ssl
-	generate an SSL key pair
-install
-	install the useful tools
+* gen_ss_ssl
+	* generate an SSL key pair
 
-launch
-	launch a GUI program from the command line, without hogging it
+* install
+	* install the useful tools
 
-letsen
-	let's encrypt automation
+* launch
+	* launch a GUI program from the command line, without hogging it
 
-pullall
-	iterate through child dirs for git folders to git-pull
+* letsen
+	* let's encrypt automation
 
-rmkernel.sh
-	generate script to removee old kernel data in /boot
+* pullall
+	* iterate through child dirs for git folders to git-pull
 
-rotate-screen
-	rotate screena and input devices, useful for touch screen usage
+* rmkernel.sh
+	* generate script to removee old kernel data in /boot
 
-secret
-	easy gpg key management
+* rotate-screen
+	* rotate screena and input devices, useful for touch screen usage
 
-sendme
-	mail-utils-based command line emailer, for mailing quick notes to yourself
-	supports some GPG signing features
+* secret
+	* easy gpg key management
 
-tpgi
-	wrapper for tazpkg
+* sendme
+	* mail-utils-based command line emailer, for mailing quick notes to yourself
+	* supports some GPG signing features
 
-vlcconv
-	use vlc to convert files. should probably deprecate this in favour of ffmpeg usage
+* tpgi
+	* wrapper for tazpkg
+
+* vlcconv
+	* use vlc to convert files. should probably deprecate this in favour of ffmpeg usage
 
