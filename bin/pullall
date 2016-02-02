@@ -36,16 +36,13 @@ for topdir in "$alldirs"; do
 		[[ -d "$thisdir" ]] && {
 		(
 		cd $thisdir
+		echo "[1;33mUpdating $thisdir ----------¬[0m"
 		[[ -d .git ]] && {
 			if [[ $(git status|grep -E "can be fast-forwarded|is up-to-date|working directory clean" -c) -gt 1 ]] && git fetch > /dev/null 2>&1 ; then
-				if [[ $(git status|grep -E "is up-to-date|working directory clean" -c) -gt 1 ]]; then
-					git pull
-				else
-					echo "[1;33mCannot update $thisdir ----------¬[0m"
-					git status
-				fi
+				git pull
 			else
-				echo "    Update failed -- check git status $thisdir, and network connection"
+				echo "    [1;31mUpdate failed[0m"
+				git status
 			fi
 		}
 		)
