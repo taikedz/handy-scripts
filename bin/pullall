@@ -37,7 +37,7 @@ for topdir in "$alldirs"; do
 		(
 		cd $thisdir
 		[[ -d .git ]] && {
-			if [[ $(git status|grep -E "is up-to-date|working directory clean" -c) -gt 1 ]] && git fetch > /dev/null 2>&1 ; then
+			if [[ $(git status|grep -E "can be fast-forwarded|is up-to-date|working directory clean" -c) -gt 1 ]] && git fetch > /dev/null 2>&1 ; then
 				if [[ $(git status|grep -E "is up-to-date|working directory clean" -c) -gt 1 ]]; then
 					git pull
 				else
