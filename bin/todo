@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Configuration ....
+
+MAINNOTES="$HOME/todo.txt"
+
+# Stop configuring.
+# ==========================
+
+
+CDEF='[0m'
+CRED='[1;31m'
+CGRN='[1;32m'
+CYEL='[1;33m'
+CBLU='[1;34m'
+CPUR='[1;35m'
+CCYN='[1;36m'
+
+starterchars="[*+        /=-]"
+
+function printwarn {
+	echo "${CYEL}$@$CDEF" >&2
+}
+function printerr {
+	echo "${CRED}$@$CDEF" >&2
+}
+
+function printhelp {
+cat <<EOF
+Keep a list of TO-DO items in a text file.
+
+Prioritize with a "!n" at the start of the line where "n" is prio, smallest number most important
+
+Only the characters in the set [*+/#-] as well as the space and tab characters can be before the prio string
+EOF
+}
+
+function printnotes {
+	NOTESFILE=$1
+	echo -e "${CGRN}Notes in  $NOTESFILE"
+	echo $CPUR
+	cat "$NOTESFILE" | grep -P "^$starterchars+![0-9!].+"|sed -r "s|^$starterchars+||" | sort -n | sed -r 's/^!([0-9!]+) */* [\1] /'
+	echo $CDEF
+}
+
+if [[ -n "$@" ]]; then
+	while [[ -n  "$@" ]]; do
+		NOTESFILE=$1 ; shift
+
+		if [[ "$NOTESFILE" = "--help" ]]; then
+			printhelp
+			exit 0
+		fi
+
+		if [[ ! -f "$NOTESFILE" ]]; then
+			printerr No notes file [$NOTESFILE]
+		else
+			printnotes "$NOTESFILE"
+		fi
+	done
+elif [[ -f "$MAINNOTES" ]]; then
+	printnotes "$MAINNOTES"
+else
+	printhelp
+	exit 0
+fi
