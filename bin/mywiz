@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Create user and database and assign privileges
+
+CDEF='[0m'
+CRED='[1;31m'
+CGRN='[1;32m'
+CYEL='[1;33m'
+CBLU='[1;34m'
+
+MYUSR=root
+
+while [[ -n "$@" ]]; do
+ARG=$1
+case "$ARG" in
+	*)
+		MYUSR="$ARG"
+		;;
+esac
+done
+
+# ====================================
+cat <<EOF
+${CGRN}Enter the name of the ${CBLU}database$CGRN to create.
+EOF
+
+read -p "$CYEL> $CDEF" DBNAME
+
+# ====================================
+cat <<EOF
+${CGRN}Enter the name of the$CBLU user$CGRN to create.
+EOF
+
+read -p "$CYEL> $CDEF" DBUSER
+
+# ====================================
+cat <<EOF
+${CGRN}What server will this use be connecting ${CBLU}from${CGRN}?
+EOF
+
+read -p "$CYEL> $CDEF" -i "localhost" USHOST
+
+# ====================================
+
+while [[ 1 = 1 ]]; do
+	cat <<EOF
+${CGRN}What password should be assigned?
+EOF
+
+	read -s -p "$CYEL Password        : $CDEF" DBPASS1
+	echo
+	read -s -p "$CYEL Confirm password: $CDEF" DBPASS2
+	echo
+
+	if [[ "$DBPASS1" = "$DBPASS2" ]]; then
+		DBPASS="$DBPASS1"
+		break
+	else
+		echo "${CRED}Passwords do not match$CDEF"
+	fi
+done
+
+cat <<EOF
+Confirmation
+DBNAME $DBNAME
+DBUSER '$DBUSER'@'$USHOST'
+DBPASS "$DBPASS"
+EOF
+
+echo "${CYEL}Connecting  ... please enter password for user ${CRED}$MYUSR$CDEF"
+cat <<EOSQL | mysql -u "$MYUSR" -p
+create database \`$DBNAME\`;
+create user '$DBUSER'@'$USHOST' identified by '$DBPASS';
+grant all privileges on \`$DBNAME\`.* to '$DBUSER'@'$USHOST';
+flush privileges;
+EOSQL
