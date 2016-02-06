@@ -39,7 +39,7 @@ function printnotes {
 	NOTESFILE=$1
 	echo -e "${CGRN}Notes in  $NOTESFILE"
 	echo $CPUR
-	cat "$NOTESFILE" | grep -P "^$starterchars+![0-9!].+"|sed -r "s|^$starterchars+||" | sort -n | sed -r 's/^!([0-9!]+) */* [\1] /'
+	cat "$NOTESFILE" | grep -P "^$starterchars*![0-9!].+"|sed -r "s|^$starterchars*||" | sort -n | sed -r 's/^!([0-9!]+) */* [\1] /'
 	echo $CDEF
 }
 
