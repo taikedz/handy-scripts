@@ -129,6 +129,7 @@ EOVARS
 			exit 1
 		fi
 	done
+	echo "OK"
 	set -u
 }
 
@@ -183,7 +184,7 @@ done
 # Load new config file, does no unset global pieces implicitely
 source "$CONFIGFILE"
 
-testconfig # run testconfig only now to check for issue
+[[ "$(testconfig)" != OK ]] && exit 1
 
 ## ++++++ Add main now +++++
 
@@ -212,5 +213,6 @@ if [[ "$DAYSLEFT" -lt "$DAYSTILRENEW" ]]; then
 	fi
 	# cleanup
 	rm "$CHALDIR/$NONCE" # this *should* be safe at this point....
+	rm "$CHALDIR/index.html"
 	rmdir "$CHALDIR"
 fi
