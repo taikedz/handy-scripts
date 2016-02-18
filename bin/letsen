@@ -5,17 +5,23 @@
 
 #trap 'exit' SIGINT
 
+set -u
+
 ## -------- Define colours
 
-CDEF='[0m'
-CRED='[0;31m' # Regular
-CGRN='[0;32m'
-CYEL='[0;33m'
-CBLU='[0;34m'
-CRDB='[1;31m' # Bold (if supported)
-CGNB='[1;32m'
-CYLB='[1;33m'
-CBUB='[1;34m'
+CDEF="[0m"
+CRED="[0;31m" # Regular
+CGRN="[0;32m"
+CYEL="[0;33m"
+CBLU="[0;34m"
+CRDB="[1;31m" # Bold (if supported)
+CGNB="[1;32m"
+CYLB="[1;33m"
+CBUB="[1;34m"
+
+# Mode options
+
+MODEDEBUG=
 
 # Config file
 CONFIGFILE=/etc/letsen/letsen.cfg
@@ -86,28 +92,46 @@ helppat='--help|-h'
 	exit
 }
 
-function testconfig {
-	set +e
-	# SURELY there's a better way to do this...??
-	# like ...
-	#
-	#	for x in var1 var2; do
-	#	[[ -z "$(bash "echo \$x")" ]] && {
-	#		echo "variable $x is empty"
-	#	}
-	#	done
-	#
-	# ..... no?
-	if [[ -z "$CONFIGFILE" ]] || [[ -z "$DAYSTILRENEW" ]] || [[ -z "$ADMINEM" ]] || [[ -z "$CERTEM" ]] || [[ -z "$LEXEC" ]] || [[ -z "$OPERATION" ]] || [[ -z "$CERTIFICATE" ]] || [[ -z "$WEBROOT" ]] || [[ -z "$FQDN" ]]; then
-	 	echo "Missing information."
-	fi
-	exit
-	set -e
+function faile {
+echo "${CRED}$@$CDEF" 1>&2
 }
 
-## -------- Set error handling
+function debuge {
+[[ "$MODEDEBUG" == yes ]] && echo "${CBLU}$@$CDEF" 1>&2
+}
 
-set -euo pipefail
+function warne {
+echo "${CYEL}$@$CDEF" 1>&2
+}
+
+# ---
+
+function testvar {
+	shift # first token is var name
+	echo "$@"
+}
+
+function testconfig {
+	set +u
+	cat <<EOVARS | while read x; do
+CONFIGFILE $CONFIGFILE
+DAYSTILRENEW $DAYSTILRENEW
+ADMINEM $ADMINEM
+CERTEM $CERTEM
+LEXEC $LEXEC
+OPERATION $OPERATION
+CERTIFICATE $CERTIFICATE
+WEBROOT $WEBROOT
+FQDN $FQDN
+EOVARS
+		if [[ -z "$(testvar $(echo $x) )" ]]; then
+			faile "Undefined $x"
+			exit 1
+		fi
+	done
+	echo "OK"
+	set -u
+}
 
 ## -------- Define script-wide variables
 
@@ -137,16 +161,19 @@ FQDN=
 
 ## -------- parse arguments
 
-# Load global config file before loading arguments
-. "$CONFIGFILE"
+# Load global config file before loading arguments and custom configs
+source "$CONFIGFILE"
 
-for arg in "$@"; do
+while [[ -n "$@" ]]; do
+	arg=$1 ; shift
 	case "$arg" in
-		--cert=*)
-			CERTIFICATE=${arg#--flag=}
+		-cert)
+			CERTIFICATE=$1
+			shift
 			;;
-		--config=*) # Override the config
-			CONFIGFILE=${arg#--config=}
+		-config) # Override the config
+			CONFIGFILE=$1
+			shift
 			;;
 		*)
 			echo "Unkown option ${CRDB}$arg${CDEF}"
@@ -154,39 +181,38 @@ for arg in "$@"; do
 	esac
 done
 
-# Load new config file, does no unset global pieces implecitly
-. "$CONFIGFILE"
+# Load new config file, does no unset global pieces implicitely
+source "$CONFIGFILE"
 
-testconfig # run testconfig only now to check for issue
+[[ "$(testconfig)" != OK ]] && exit 1
+
 ## ++++++ Add main now +++++
 
 if [[ -f "$CERTIFICATE" ]]; then
-
 	CVALIDTIL=$(date -d "$(openssl x509 -in "$CERTIFICATE" -text -noout|grep "Not After"|sed -r 's/^[^:]+?:\s*//')" "+%s")
 	TODAY=$(date -d "now" "+%s")
 
 	DAYSLEFT=$(( ($CVALIDTIL - $TODAY)/86400 )) # VALIDTIL should be in the future
-
 else
-
 	DAYSLEFT=0
-
 fi
 
 if [[ "$DAYSLEFT" -lt "$DAYSTILRENEW" ]]; then
 	# Try to renew now
 	NONCE=$RANDOM
-	CHALDIR="$WEBROOT/.well-known/acme-challenge"
-	CHALURL="http://$FQDN/.well-known/acme-challenge/$NONCE"
+	WEBPATH=.well-known/acme-challenge
+	CHALDIR="$WEBROOT/$WEBPATH"
+	CHALURL="http://$FQDN/$WEBPATH/$NONCE"
 	mkdir -p "$CHALDIR"
-	touch "$CHALDIR/index.html"
+	touch "$CHALDIR/index.html" # allow no listing of dir
 	echo "$FQDN" > "$CHALDIR/$NONCE"
-	set +e
-	if wget -O /dev/null -q "$CHALURL"; then
+	if wget -O /dev/null -q "$CHALURL"; then # make sure; if we cn't get it, Let's Encrypt certainly won't
 		"$LEXEC" --renew-by-default -a webroot --webroot-path "$WEBROOT" --server "https://acme-v01.api.letsencrypt.org/directory" --email "$CERTEM" --agree-tos --agree-dev-preview -d "$FQDN" auth
 	else
 		echo "Could not renew certificate for $FQDN" | mail -s "Certificate renew fail: $FQDN" "$ADMINEM"
 	fi
-	set -e
-	
+	# cleanup
+	rm "$CHALDIR/$NONCE" # this *should* be safe at this point....
+	rm "$CHALDIR/index.html"
+	rmdir "$CHALDIR"
 fi

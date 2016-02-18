@@ -39,6 +39,7 @@ OPTIONS
 
 -u|--update
 	Run an update of package listings.
+	Can be specified without actions, or used with other actions.
 
 -nu|--no-update
 	Don't run an update of package listings.
@@ -107,7 +108,7 @@ fi
 if [[ $ACTION = install ]]; then
 	[[ -n "$PACKAGELIST" ]] && sudo apt-get install $PACKAGELIST $ASSUMEYES --show-progress
 elif [[ $ACTION = upgrade ]]; then
-	[[ -n "$PACKAGELIST" ]] && sudo apt-get upgrade $ASSUMEYES --show-progress
+	sudo apt-get upgrade $ASSUMEYES --show-progress
 elif [[ $ACTION = list ]]; then
 	dpkg -l | less
 elif [[ $ACTION = show ]]; then
