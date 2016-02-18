@@ -109,7 +109,7 @@ if [[ $ACTION = install ]]; then
 elif [[ $ACTION = upgrade ]]; then
 	[[ -n "$PACKAGELIST" ]] && sudo apt-get upgrade $ASSUMEYES --show-progress
 elif [[ $ACTION = list ]]; then
-	dpkg --get-selections | less
+	dpkg -l | less
 elif [[ $ACTION = show ]]; then
 	[[ -n "$PACKAGELIST" ]] && apt-cache show $PACKAGELIST | sed -r 's/^(Package: )/[1;33m===[0m\n\1/' | less -R
 elif [[ -z "$ACTION" ]]; then
