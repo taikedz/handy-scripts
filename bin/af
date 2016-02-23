@@ -155,9 +155,9 @@ fi
 
 if [[ $ACTION = install ]]; then
 	[[ -n "$PACKAGELIST" ]] && sudo apt install $PACKAGELIST $ASSUMEYES
-if [[ $ACTION = remove ]]; then
+elif [[ $ACTION = remove ]]; then
 	[[ -n "$PACKAGELIST" ]] && sudo apt remove $PACKAGELIST $ASSUMEYES
-if [[ $ACTION = purge ]]; then
+elif [[ $ACTION = purge ]]; then
 	[[ -n "$PACKAGELIST" ]] && sudo apt-get purge $PACKAGELIST $ASSUMEYES
 elif [[ $ACTION = upgrade ]]; then
 	if [[ -n "$PACKAGELIST" ]] && [[ "$ASSUMEYES" != '-y' ]]; then
