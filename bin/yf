@@ -1,0 +1,147 @@
+#! /bin/bash
+
+set -uo pipefail
+
+ASSUMEYES=
+PACKAGELIST=
+ACTION=
+CLEANUP=
+UPDATE=
+
+if [[ $( which yum >/dev/null 2>&1 ; echo $? ) -gt 0 ]]; then
+	if [[ ! "$@" =~ -r ]]; then
+		echo "This script only works on 'yum'-based distributions."
+		exit 1
+	fi
+fi
+
+function printhelp {
+	cat <<EOF
+
+$(basename $0) - the 'yf' script
+
+[alpha version]
+
+This script is used on yum-based systems to perform common package management tasks.
+
+This script does not support cross-release upgrades.
+
+The tool uses sudo to run actions that require root.
+
+Usage
+
+	$(basename $0) [ACTION] TERMS ... [OPTIONS]
+
+ACTIONS
+
+-l|--list
+	List installed packages, uses \`less\` pager.
+
+-s|--show
+	Show details of packages, uses \`less\`pager.
+
+-i|--install
+	Install specified packages.
+
+-r|remove
+	Remove specified packages
+
+-g|--upgrade
+	Upgrade all packages on the system within the same release.
+
+OPTIONS
+
+-y|--assume-yes
+	Use the --assume-yes flag for operations which would normally prompt you.
+
+-ny|--no-assume-yes
+	Do not use the --assume-yes flag. You will be prompted
+	Supercedes a previously set '-y' option.
+
+-c|--cleanup
+	Perform an autoclean and autoremove.
+
+-nc|--no-cleanup
+	Donot perform any autoclean or autoremove
+	Supercedes a previously set '-c' option.
+
+EOF
+}
+
+# Echoes 'yes' on any confirmation, no in all other cases
+function areyousure {
+	read -p "$@ y/N> "
+	yespat='^y|Y|yes|YES|aye$'
+	if [[ "$REPLY" =~ $yespat ]]; then
+		echo "yes"
+	else
+		echo "no"
+	fi
+}
+
+while [[ -n "$@" ]]; do
+	ARG="$1" ; shift
+	case "$ARG" in
+# ACTIONS
+	-l|--list)
+		ACTION=list
+		;;
+	-i|--install)
+		ACTION=install
+		;;
+	-r|--remove)
+		ACTION=remove
+		;;
+	-s|--show)
+		ACTION=show
+		;;
+	-g|--upgrade)
+		ACTION=upgrade
+		;;
+# MODES
+	-y|--assume-yes)
+		ASSUMEYES=-y
+		;;
+	-ny|--no-assume-yes)
+		ASSUMEYES=
+		;;
+	-c|--cleanup)
+		CLEANUP=yes
+		;;
+	-nc|--no-cleanup)
+		CLEANUP=no
+		;;
+	--help)
+		printhelp
+		exit 0
+		;;
+	*)
+		PACKAGELIST="$PACKAGELIST $ARG"
+		;;
+	esac
+done
+
+
+if [[ $ACTION = install ]]; then
+	[[ -n "$PACKAGELIST" ]] && sudo yum install $PACKAGELIST $ASSUMEYES
+elif [[ $ACTION = remove ]]; then
+	[[ -n "$PACKAGELIST" ]] && sudo yum remove $PACKAGELIST $ASSUMEYES
+elif [[ $ACTION = purge ]]; then
+	echo "Not supported."
+	exit 1
+elif [[ $ACTION = upgrade ]]; then
+	sudo yum update $PACKAGELIST $ASSUMEYES
+elif [[ $ACTION = uprelease ]]; then
+	echo "Not supported."
+	exit 1
+elif [[ $ACTION = list ]]; then
+	yum list $PACKAGELIST | less
+elif [[ $ACTION = show ]]; then
+	[[ -n "$PACKAGELIST" ]] && yum info $PACKAGELIST|less -R # | sed -r 's/^(Package: )/[1;33m===[0m\n\1/' | less -R
+elif [[ -z "$ACTION" ]]; then
+	[[ -n "$PACKAGELIST" ]] && yum search $PACKAGELIST | less
+fi
+
+if [[ $CLEANUP = yes ]]; then
+	sudo yum clean $ASSUMEYES
+fi
