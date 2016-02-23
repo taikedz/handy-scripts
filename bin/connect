@@ -71,9 +71,15 @@ OPTIONS
 
 	-a DOMAIN
 		add a domain name to the servers file
+		You can specify simply a domain name, user@domain, or even add options for ssh
+		  for example, a port number; you need to escape spaces, or encapsulate in quotes
+
+		  $(basename $0) -a "example.com -p 8022"
+		  $(basename $0) -a user@example.com\\ -p 8222
 	
 	-f	force add server
 		forces adding a name that does not resolve
+		useful when adding servers whilst not currently on the target network
 	
 	-d PATTERN
 		disable all domains matching the pattern
