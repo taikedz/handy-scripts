@@ -8,7 +8,7 @@ if [[ "$UID" = 0 ]]; then
 fi
 
 mkdir -p "$HOME/bin"
-cp bin/{secret,sendme,connect,launch,rotate-screen} "$HOME/bin/"
+cp bin/{secret,sendme,connect,launch,rotate-screen,gdiff} "$HOME/bin/"
 
 
 
