@@ -8,8 +8,24 @@ ACTION=
 CLEANUP=
 UPDATE=
 
+if [[ $(uname -a | grep 'Ubuntu' -c) -lt 1 ]]; then
+	if [[ ! "$@" =~ -r ]]; then
+		echo "This script only works on Ubuntu and its derivatives. Use the -f option if you want to force usage"
+		exit 1
+	fi
+fi
+
 function printhelp {
 	cat <<EOF
+
+$(basename $0) - the 'af' script
+
+This script is used on Ubuntu systems to perform common package management tasks.
+
+If your distribution is derived from Ubuntu but this script does not want to run, use the '-f' option to force execution.
+
+The tool uses sudo to run actions that require root.
+
 Usage
 
 	$(basename $0) [ACTION] TERMS ... [OPTIONS]
@@ -17,18 +33,24 @@ Usage
 ACTIONS
 
 -l|--list
-	List installed packages, use \`less\` pager.
+	List installed packages, uses \`less\` pager.
 
 -s|--show
-	Show details of packages, use \`less\`pager.
+	Show details of packages, uses \`less\`pager.
 
 -i|--install
 	Install specified packages.
 
+-r|remove
+	Remove specified packages
+
+-p|--purge
+	Purge specified packages - removes both the packages an configuration files
+
 -g|--upgrade
 	Upgrade all packages on the system within the same release.
 
--r|--release-upgrade
+-R|--release-upgrade
 	Do a release upgrade.
 
 OPTIONS
@@ -55,8 +77,6 @@ OPTIONS
 	Donot perform any autoclean or autoremove
 	Supercedes a previously set '-c' option.
 
-The tool uses sudo to run actions that require root.
-
 EOF
 }
 
@@ -81,16 +101,25 @@ while [[ -n "$@" ]]; do
 	-i|--install)
 		ACTION=install
 		;;
+	-r|--remove)
+		ACTION=remove
+		;;
+	-p|--purge)
+		ACTION=purge
+		;;
 	-s|--show)
 		ACTION=show
 		;;
 	-g|--upgrade)
 		ACTION=upgrade
 		;;
-	-r|--release-upgrade)
+	-R|--release-upgrade)
 		ACTION=uprelease
 		;;
 # MODES
+	-f)
+		: # do nothing, used for forcing execution
+		;;
 	-y|--assume-yes)
 		ASSUMEYES=-y
 		;;
@@ -125,7 +154,11 @@ fi
 
 
 if [[ $ACTION = install ]]; then
-	[[ -n "$PACKAGELIST" ]] && sudo apt install $PACKAGELIST $ASSUMEYES --show-progress
+	[[ -n "$PACKAGELIST" ]] && sudo apt install $PACKAGELIST $ASSUMEYES
+if [[ $ACTION = remove ]]; then
+	[[ -n "$PACKAGELIST" ]] && sudo apt remove $PACKAGELIST $ASSUMEYES
+if [[ $ACTION = purge ]]; then
+	[[ -n "$PACKAGELIST" ]] && sudo apt-get purge $PACKAGELIST $ASSUMEYES
 elif [[ $ACTION = upgrade ]]; then
 	if [[ -n "$PACKAGELIST" ]] && [[ "$ASSUMEYES" != '-y' ]]; then
 		[[ $( areyousure "Upgrade the entire system and all packages, not just [$PACKAGELIST]?" ) != yes ]] && exit 1
