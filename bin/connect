@@ -41,7 +41,7 @@ while [[ -n "$@" ]]; do
 done
 
 
-set -euo pipefail
+set -uo pipefail
 TARGET=
 
 CDEF='[0m'
@@ -135,7 +135,6 @@ EOMSG
 fi
 
 if [[ -n "$NEWHOST" ]]; then
-	set +e
 	( [[ "$DOENABLE" = yes ]] || [[ "$DODISABLE" = yes ]] ) && { # redundant checking for grouping...
 		badpat='[/"'"']"
 		[[ "$NEWHOST" =~ $badpat ]] && { echo "${CYEL}Invalid pattern [$CRED$NEWHOST$CDEF]$CDEF" ; exit 3 ; }
@@ -152,9 +151,9 @@ if [[ -n "$NEWHOST" ]]; then
 		exit 0
 	}
 
-	THEHOST=$(echo "$NEWHOST"|sed -r 's/^([^@]+?@)?([a-zA-Z0-9.-]+).*$/\2/')
+	THEHOST=$(echo "$NEWHOST"|sed -r 's/^([^@]+?@)?([a-zA-Z0-9.-]+)(\s+-p\s+[0-9]+)?.*$/\2/')
 	RES=$(nslookup "$THEHOST"|tail -n +3 |grep 'Address:' -c)
-	if [[ ! $RES -gt 1 ]] && [[ ! "$FORCE" = "yes" ]]; then
+	if [[ ! $RES -gt 0 ]] && [[ ! "$FORCE" = "yes" ]]; then
 		echo "${CRED}Unknown host '$THEHOST'$CDEF"
 		exit 1
 	fi
@@ -163,7 +162,6 @@ if [[ -n "$NEWHOST" ]]; then
 		echo -e "${CYEL}It looks like $THEHOST may already be defined in the file:$CDEF\n\n$(grep "$THEHOST" "$SERVERFILE" -n)"
 		exit 3
 	fi
-	set -e
 	echo -e "+++++++++\nHost added $(date)\n" >> "$SERVERFILE"
 	echo "% $NEWHOST" >> "$SERVERFILE" # do NOT use "-e" switch!
 	echo >> "$SERVERFILE"
@@ -173,7 +171,7 @@ fi
 
 ALLSERVERS=$(grep -E '^%' "$SERVERFILE" | grep -E '^' -n | sed 's/:%//')
 
-while [[ x = x ]]; do
+while true; do
 	echo -e "Connect to: \n\n$ALLSERVERS"
 
 	CHOICE=
@@ -183,7 +181,7 @@ while [[ x = x ]]; do
 	[[ $CHOICE =~ $NUMPAT ]] && CHOICE="^$CHOICE\s"
 
 	if [[ -n "$CHOICE" ]]; then
-		TARGET=$(echo "$ALLSERVERS" | grep -P "$CHOICE" | sed -r -e 's/^[0-9]+ //'|sed -r 's/^([@_a-zA-Z0-9.-]+).*$/\1/')
+		TARGET=$(echo "$ALLSERVERS" | grep -P "$CHOICE" | sed -r -e 's/^[0-9]+ //'|sed -r 's/(#.*)$//')
 
 		if [[ $(echo "$TARGET"|wc -l ) -gt 1 ]]; then
 			echo -e "${CYEL}Multiple results\n\n$CBLU$TARGET$CDEF\n"
