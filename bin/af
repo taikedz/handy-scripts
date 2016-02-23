@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -euo pipefail
+set -uo pipefail
 
 ASSUMEYES=
 PACKAGELIST=
@@ -26,7 +26,10 @@ ACTIONS
 	Install specified packages.
 
 -g|--upgrade
-	Do a system upgrade.
+	Upgrade all packages on the system within the same release.
+
+-r|--release-upgrade
+	Do a release upgrade.
 
 OPTIONS
 
@@ -57,9 +60,21 @@ The tool uses sudo to run actions that require root.
 EOF
 }
 
+# Echoes 'yes' on any confirmation, no in all other cases
+function areyousure {
+	read -p "$@ y/N> "
+	yespat='^y|Y|yes|YES|aye$'
+	if [[ "$REPLY" =~ $yespat ]]; then
+		echo "yes"
+	else
+		echo "no"
+	fi
+}
+
 while [[ -n "$@" ]]; do
 	ARG="$1" ; shift
 	case "$ARG" in
+# ACTIONS
 	-l|--list)
 		ACTION=list
 		;;
@@ -72,6 +87,10 @@ while [[ -n "$@" ]]; do
 	-g|--upgrade)
 		ACTION=upgrade
 		;;
+	-r|--release-upgrade)
+		ACTION=uprelease
+		;;
+# MODES
 	-y|--assume-yes)
 		ASSUMEYES=-y
 		;;
@@ -101,14 +120,20 @@ while [[ -n "$@" ]]; do
 done
 
 if [[ $UPDATE = yes ]]; then
-	sudo apt-get update
+	sudo apt update
 fi
 
 
 if [[ $ACTION = install ]]; then
-	[[ -n "$PACKAGELIST" ]] && sudo apt-get install $PACKAGELIST $ASSUMEYES --show-progress
+	[[ -n "$PACKAGELIST" ]] && sudo apt install $PACKAGELIST $ASSUMEYES --show-progress
 elif [[ $ACTION = upgrade ]]; then
-	sudo apt-get upgrade $ASSUMEYES --show-progress
+	if [[ -n "$PACKAGELIST" ]] && [[ "$ASSUMEYES" != '-y' ]]; then
+		[[ $( areyousure "Upgrade the entire system and all packages, not just [$PACKAGELIST]?" ) != yes ]] && exit 1
+	fi
+	sudo apt upgrade $ASSUMEYES
+elif [[ $ACTION = uprelease ]]; then
+	which "do-release-upgrade" >/dev/null 2>&1 || "$0" --install update-manager-core $ASSUMEYES
+	sudo "do-release-upgrade" $ASSUMEYES
 elif [[ $ACTION = list ]]; then
 	dpkg -l | less
 elif [[ $ACTION = show ]]; then
@@ -118,6 +143,6 @@ elif [[ -z "$ACTION" ]]; then
 fi
 
 if [[ $CLEANUP = yes ]]; then
-	sudo apt-get autoremove $ASSUMEYES --show-progress
-	sudo apt-get autoclean $ASSUMEYES --show-progress
+	sudo apt autoremove $ASSUMEYES
+	sudo apt autoclean $ASSUMEYES
 fi
