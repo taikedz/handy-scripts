@@ -34,13 +34,18 @@ esac
 
 done
 
-mkdir -p "$HOME/bin"
-if [[ ! "$SERVERMODE" = yes ]]; then
-	cp bin/{launch,rotate-screen} "$HOME/bin/"
+destdir=/usr/local/bin
+if [[ $UID -ne 0 ]]; then
+	destdir="$HOME/bin"
+	mkdir -p "$destdir"
 fi
-cp bin/{secret,sendme,connect,gdiff} "$HOME/bin/"
 
-if [[ $( grep 'label:ADDBIN' "$HOME/.bashrc" -c ) -lt 1 ]]; then
+if [[ ! "$SERVERMODE" = yes ]]; then
+	cp bin/{launch,rotate-screen} "$destdir"
+fi
+cp bin/{secret,sendme,connect,gdiff} "$destdir"
+
+if [[ $UID -ne 0 ]] && [[ $( grep 'label:ADDBIN' "$HOME/.bashrc" -c ) -lt 1 ]]; then
 	echo 'PATH="$PATH:$HOME/bin" # label:ADDBIN' >> "$HOME/.bashrc"
 	echo "Please log in again for changes to take effect."
 fi
