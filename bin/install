@@ -34,17 +34,11 @@ esac
 
 done
 
-if [[ "$UID" = 0 ]]; then
-	mkdir -p /usr/local/bin/
-	which apt >/dev/null 2>&1 && cp bin/af /usr/local/bin/
-	which yum >/dev/null 2>&1 && cp bin/yf /usr/local/bin/
-else
-	mkdir -p "$HOME/bin"
-	if [[ ! "$SERVERMODE" = yes ]]; then
-		cp bin/{launch,rotate-screen} "$HOME/bin/"
-	fi
-	cp bin/{secret,sendme,connect,gdiff} "$HOME/bin/"
+mkdir -p "$HOME/bin"
+if [[ ! "$SERVERMODE" = yes ]]; then
+	cp bin/{launch,rotate-screen} "$HOME/bin/"
 fi
+cp bin/{secret,sendme,connect,gdiff} "$HOME/bin/"
 
 if [[ $( grep 'label:ADDBIN' "$HOME/.bashrc" -c ) -lt 1 ]]; then
 	echo 'PATH="$PATH:$HOME/bin" # label:ADDBIN' >> "$HOME/.bashrc"
