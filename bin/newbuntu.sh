@@ -151,9 +151,11 @@ mkdir /root/gitprojects
 cd /root/gitprojects
 git clone https://github.com/taikedz/handy-scripts
 git clone https://github.com/taikedz/vefirewall
+git clone https://github.com/taikedz/alpacka
 
-(cd vefirewall ; ./install)
-(cd handy-scripts ; bin/install)
+(cd vefirewall ; bash ./install)
+(cd handy-scripts ; bash bin/install)
+(cd alpacka; bash setup/install)
 
 vefirewall --apply # this will be run in interactive mode
 
