@@ -1,14 +1,52 @@
 #!/bin/bash
 
+set -u
+
 # Add the most common items
+
+SERVERMODE=no
+
+function printhelp {
+cat <<EOHELP
+If run as root, this script installs "af" or "yf" wrappers around apt (Ubuntu systems) or yum (dnf not yet supported) respectively
+
+If run as a regular user, installs individual user items to \$HOME/bin and adds a line to \$HOME/.bashrc to ensure this diredctory is in PATH
+
+Use -s or --server to enable server mode: Server mode does not install GUI tools for regular users, just CLI ones.
+EOHELP
+}
+
+while [[ -n "$@" ]]; do
+ARG="$1" ; shift
+case "$ARG" in
+-s|--server)
+	SERVERMODE=yes
+	;;
+-h|--help)
+	printhelp
+	exit 0
+	;;
+*)
+	echo "Unknown option $ARG"
+	exit 1
+	;;
+esac
+
+done
 
 if [[ "$UID" = 0 ]]; then
 	mkdir -p /usr/local/bin/
-	cp bin/af /usr/local/bin/
+	which apt >/dev/null 2>&1 && cp bin/af /usr/local/bin/
+	which yum >/dev/null 2>&1 && cp bin/yf /usr/local/bin/
+else
+	mkdir -p "$HOME/bin"
+	if [[ ! "$SERVERMODE" = yes ]]; then
+		cp bin/{launch,rotate-screen} "$HOME/bin/"
+	fi
+	cp bin/{secret,sendme,connect,gdiff} "$HOME/bin/"
 fi
 
-mkdir -p "$HOME/bin"
-cp bin/{secret,sendme,connect,launch,rotate-screen,gdiff} "$HOME/bin/"
-
-
-
+if [[ $( grep 'label:ADDBIN' "$HOME/.bashrc" -c ) -lt 1 ]]; then
+	echo 'PATH="$PATH:$HOME/bin" # label:ADDBIN' >> "$HOME/.bashrc"
+	echo "Please log in again for changes to take effect."
+fi
