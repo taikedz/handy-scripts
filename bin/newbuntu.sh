@@ -2,7 +2,7 @@
 
 set -uo pipefail
 
-newuser=newser
+newuser=
 sshserver=
 sshport=22
 DEBUG=no
@@ -24,12 +24,14 @@ cat <<EOHELP
 
 Set up your new server according to this basic script
 
-When run without options, operates on the current server, with a default user name of '$newuser'
+When run without options, operates on the current server.
+
+You need to specify a target user.
 
 OPTIONS
 
 -u USER
-	Target user name. By default this is '$newuser'
+	Target user name.
 
 -s SERVER
 	Target server name, or user+server. Typically you should specify 'root@YOURSERVER' to specify connecting with the root account
@@ -87,6 +89,12 @@ done
 
 debug Done getting args
 
+debug Check for user
+
+if [[ -z "$newuser" ]]; then
+	faile "No target user"
+fi
+
 if [[ -n "$sshserver" ]]; then
 	debug "SCP to $sshserver"
 	scp -P "$sshport" "$0" "$sshserver:./" || faile Cannot scp
@@ -108,16 +116,11 @@ fi
 # ===============
 # Add new user's keys, only if necessary
 debug "Key adding"
-cat <<EOSCRIPT | su - "$newuser"
-if [[ -d .ssh ]] && [[ -f .ssh/authorized_keys ]]; then exit 0 ; fi
 
-mkdir -p .ssh
-read -p "Enter public key for SSH > "
-echo "$REPLY" >> .ssh/authorized_keys
-chmod -R 700 .ssh
-
-echo "You will want to check that you can log in now"
-EOSCRIPT
+mkdir -p ~"$newuser"/.ssh
+cp -i -r ~/.ssh/authorized_keys ~"$newuser"/.ssh/
+chown -R $newuser:$newuser ~"$newuser"/.ssh
+chmod 700 ~"$newuser"/.ssh/authorized_keys
 
 # We have custom user, now remove SSH root login
 
@@ -144,7 +147,8 @@ if [[ "$REPLY" = "yes" ]] || [[ "$REPLY" = "y" ]]; then
 	gpasswd -a "$newuser" www-data
 fi
 
-cd /root
+mkdir /root/gitprojects
+cd /root/gitprojects
 git clone https://github.com/taikedz/handy-scripts
 git clone https://github.com/taikedz/vefirewall
 
