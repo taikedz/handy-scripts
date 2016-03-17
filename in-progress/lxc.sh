@@ -50,20 +50,38 @@ function setupuser {
 	myuser=$(cat /etc/passwd|cut -d ':' -f1|grep -P "^$REPLY\$")
 	userhome=$(cat /etc/passwd|grep -P "^$myuser:"|cut -d ':' -f6)
 	[[ -z "$myuser" ]] && faile "No such user [$myuser]"
-	echo "$myuser veth lxcbr0 10" >> /etc/lxc/lxc-usernet
-	mkdir -p "$userhome/.config/lxc"
-	cp /etc/lxc/default.conf "$userhome/.config/lxc/"
+
+	# there is an issue when setting up on ecryptfs encrypted home directories
+	# https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1389305
+	if [[ $(mount | grep "$myuser" | grep ecryptfs -c) -gt 0 ]]; then
+		uconfirm "$myuser seems to be using an encrypted home folder. Their containers will not allow suid executables. Install workaround at /var/nocryptlxc?" && {
+			$nclxcd="/var/nocryptlxc/$myuser"
+			mkdir -p "$nclxcd"
+			mkdir "$nclxcd/config"
+			mkdir "$nclxcd/store"
+
+			chown -R $myuser:$myuser "$nclxcd"
+
+			ln -s "$nclxcd/config" "$userhome/.config/lxc"
+			ln -s "$nclxcd/store" "$userhome/.local/share/lxc"
+		}
+	fi
+	[[ ! -e "$userhome/.config/lxc" ]] && mkdir -p "$userhome/.config/lxc"
 	chown -R $myuser:$myuser "$userhome/.config/lxc"
+
+	echo "$myuser veth lxcbr0 10" >> /etc/lxc/lxc-usernet
+	cp /etc/lxc/default.conf "$userhome/.config/lxc/"
+	chown $myuser:$myuser "$userhome/.config/lxc/default.conf"
 	cat <<EOF >> "$userhome/.config/lxc/default.conf"
 
 lxc.id_map = u 0 $(cat /etc/subuid |grep $myuser| awk -F ':' '{print $2,$3}')
 lxc.id_map = g 0 $(cat /etc/subgid |grep $myuser| awk -F ':' '{print $2,$3}')
 EOF
 	# these need to be set so as to be able to run unprivileged
-	# the rest of the structure in /home/tai/.local/share/lxc should be OK
-	chmod o+x /home/tai
-	chmod o+x /home/tai/.local
-	chmod o+x /home/tai/.local/share
+	# the rest of the structure in $userhome/.local/share/lxc should be OK
+	chmod o+x $userhome
+	chmod o+x $userhome/.local
+	chmod o+x $userhome/.local/share
 }
 
 function printhelp {
