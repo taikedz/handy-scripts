@@ -41,14 +41,20 @@ function attachcontainer {
 	fi
 }
 
+function usecontainer {
+	lxc-ls | grep "$CONTAINERNAME" || faile "No such container $CONTAINERNAME"
+}
+
 function setupuser {
-	read -p "Username: " myuser
-	[[ -d ~$myuser ]] || faile "No such user"
+	read -p "Username: "
+	myuser=$(cat /etc/passwd|cut -d ':' -f1|grep -P "^$REPLY\$")
+	userhome=$(cat /etc/passwd|grep -P "^$myuser:"|cut -d ':' -f6)
+	[[ -z "$myuser" ]] && faile "No such user [$myuser]"
 	echo "$myuser veth lxcbr0 10" >> /etc/lxc/lxc-usernet
-	mkdir -p ~$myuser/.config/lxc
-	cp /etc/lxc/default.conf ~$myuser/.config/lxc/
-	chown -R $myuser:$myuser ~$REPLY/.config/lxc
-	cat <<EOF >> ~$myuser/.config/lxc/default.conf
+	mkdir -p "$userhome/.config/lxc"
+	cp /etc/lxc/default.conf "$userhome/.config/lxc/"
+	chown -R $myuser:$myuser "$userhome/.config/lxc"
+	cat <<EOF >> "$userhome/.config/lxc/default.conf"
 
 lxc.id_map = u 0 $(cat /etc/subuid |grep $myuser| awk -F ':' '{print $2,$3}')
 lxc.id_map = g 0 $(cat /etc/subgid |grep $myuser| awk -F ':' '{print $2,$3}')
@@ -120,13 +126,11 @@ if [[ -z "$@" ]]; then
 	exit 0
 fi
 
-ACTION=$1 ; shift
-
 if [[ -z "$@" ]]; then
-	faile "You must specify the the container to operate on"
+	faile "You must specify the action to take"
 fi
 
-CONTAINERNAME=$1 ; shift
+ACTION=$1 ; shift
 
 while [[ -n "$@" ]]; do
 	ARG=$1 ; shift
@@ -150,13 +154,17 @@ while [[ -n "$@" ]]; do
 			printhelp
 			exit 0
 			;;
+		*)
+			CONTAINERNAME=$ARG
+			;;
 	esac
 done
 
 if [[ "$ACTION" = install ]]; then
+	[[ $UID -ne 0 ]] && faile "You need to be root"
 	which lxc-ls >/dev/null 2>&1 || ( uconfirm "Install LXC?" && {
-		sudo apt update
-		sudo apt install lxc
+		apt update
+		apt install lxc
 	}
 	)
 	lxc-checkconfig
@@ -167,12 +175,11 @@ fi
 
 if [[ -z "$CONTAINERNAME" ]]; then
 	faile "You must specify a container name"
-else
-	lxc-ls | grep "$CONTAINERNAME" || faile "No such container $CONTAINERNAME"
 fi
 
 
 if [[ -n "$EXPOSURE" ]]; then
+	usecontainer
 	CONIP=$(lxc-ls --fancy | tail -n +3|grep "$CONTAINERNAME" | awk '{print $3}')
 	for expx in $(echo "${EXPOSURE#,}" | sed 's/,/ /g'); do
 		myiface=$(echo $expx|cut -d':' -f 1)
@@ -183,21 +190,24 @@ if [[ -n "$EXPOSURE" ]]; then
 fi
 
 if [[ "$ACTION" = create ]]; then
-	if [[ -n "$TEMPLATEOS" ]]; then
+	if [[ -z "$TEMPLATEOS" ]]; then
 		faile "No template OS specified. Hint: try option '-t ubuntu'"
 	fi
 	time lxc-create -n "$CONTAINERNAME" -t "$TEMPLATEOS"
 	# this downloads from some online location... where??
 	attachcontainer
 elif [[ "$ACTION" = start ]]; then
+	usecontainer
 	lxc-start -n "$CONTAINERNAME" -d
 	attachcontainer
 elif [[ "$ACTION" = list ]]; then
 	lxc-ls --fancy | head -n 2
 	lxc-ls --fancy | tail -n +3 | grep "$CONTAINERNAME"
 elif [[ "$ACTION" = stop ]]; then
+	usecontainer
 	lxc-stop -n "$CONTAINERNAME"
 elif [[ "$ACTION" = confirm ]]; then
+	usecontainer
 	read -p "[1;31mTo destroy the container [1;32m$CONTAINERNAME[1;31m, type its name in again: [0m"
 	if [[ "$REPLY" = "$CONTAINERNAME" ]]; then
 		lxc-destroy -n "$CONTAINERNAME"
