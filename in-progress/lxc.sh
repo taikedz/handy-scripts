@@ -11,7 +11,7 @@ DOATTACH=no
 INTERFACES='^'$(ifconfig | grep -P '^[^\s]+'|cut -d' ' -f 1|xargs echo|sed 's/ /|/g')'$'
 numpat='^[0-9]+$'
 
-DEBUGMODE=yes
+DEBUGMODE=no
 
 function uconfirm {
 	reqanswer='y|yes|Y|YES'
@@ -36,7 +36,7 @@ function warne {
 
 function attachcontainer {
 	if [[ $DOATTACH = yes ]]; then
-		warne "Attaching container console. To exit, use ^A and 'q'"
+		#warne "Attaching to container root session"
 		lxc-attach -n "$CONTAINERNAME"
 	fi
 }
@@ -140,6 +140,10 @@ ACTION=$1 ; shift
 while [[ -n "$@" ]]; do
 	ARG=$1 ; shift
 	case "$ARG" in
+		-a)
+			debuge attach option
+			DOATTACH=yes
+			;;
 		-t)
 			TEMPLATEOS="$1" ; shift
 			;;
@@ -217,4 +221,7 @@ elif [[ "$ACTION" = confirm ]]; then
 	if [[ "$REPLY" = "$CONTAINERNAME" ]]; then
 		lxc-destroy -n "$CONTAINERNAME"
 	fi
+elif [[ "$ACTION" = use ]]; then
+	usecontainer
+	attachcontainer
 fi
