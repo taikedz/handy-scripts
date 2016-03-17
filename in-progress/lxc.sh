@@ -57,11 +57,13 @@ function setupuser {
 		uconfirm "$myuser seems to be using an encrypted home folder. Their containers will not allow suid executables. Install workaround at /var/nocryptlxc?" && {
 			$nclxcd="/var/nocryptlxc/$myuser"
 			mkdir -p "$nclxcd"
-			mkdir "$nclxcd/config"
-			mkdir "$nclxcd/store"
 
-			chown -R $myuser:$myuser "$nclxcd"
-
+			[[ -d "$userhome/.config/lxc" ]] && mv "$userhome/.config/lxc" "$nclxcd/config"
+			[[ -d "$userhome/.local/share/lxc" ]] && mv "$userhome/.local/share/lxc" "$nclxcd/store"
+			mkdir -p "$nclxcd/config"
+			mkdir -p "$nclxcd/store"
+			chown $myuser:$myuser "$nclxcd" "$nclxcd/config" "$nclxcd/store"
+			
 			ln -s "$nclxcd/config" "$userhome/.config/lxc"
 			ln -s "$nclxcd/store" "$userhome/.local/share/lxc"
 		}
