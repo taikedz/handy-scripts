@@ -1,0 +1,62 @@
+#!/bin/bash
+
+EMAILFROM=system@$(hostname)
+EMAILTO=youremail@example.com
+
+CLAMBIN=/usr/bin/clamscan
+FRESHBIN=/usr/bin/freshclam
+
+VERBOSE=no
+
+# Override variables externally
+
+if [[ -f ~/.config/easyclam.cfg ]]; then
+	source ~/.config/easyclam.cfg # TODO: use as variable, do proper extraction
+fi
+
+function echoe {
+	if [[ $VERBOSE = yes ]]; then
+		echo "[1;33m$@[0m" 1>&2
+	fi
+}
+
+function myclamscan {
+	echoe "Scanning ..."
+	/usr/local/cpanel/3rdparty/bin/clamscan -ri "$1" 2>&1
+	echoe "Scan done."
+}
+
+function myfreshclam {
+	echoe "Updating database ..."
+	/usr/local/cpanel/3rdparty/bin/freshclam --quiet
+	echoe "Database update done."
+}
+
+LOGDIR=/var/log/clams
+mkdir -p "$LOGDIR"
+LOGFILE="$LOGDIR/scan_$(date "+%F_%T").log"
+echoe "Create log file"
+touch "$LOGFILE"
+echoe "Perms"
+chmod 644 "$LOGFILE"
+
+echoe "myfreshclam"
+myfreshclam
+
+echoe "Newscan banner"
+echo -e "\n\n======== NEW SCAN ======\n\n" >> "$LOGFILE"
+
+echoe "Date 1"
+date >> "$LOGFILE"
+echoe "Launch scan"
+myclamscan "$1" >> "$LOGFILE"
+echoe "Date 2"
+date >> "$LOGFILE"
+
+echoe "Check log file"
+MALWARE=$(tail "$LOGFILE"|grep Infected|cut -d" " -f3)
+
+if [ "$MALWARE" -ne "0" ]; then
+	echoe "Sending email - ['$MALWARE' infections]"
+	echo "Malware alert on $(hostname)"|mail -a "$LOGFILE" -s "ClamAV: Malware in '$1'" -r "$EMAILFROM" "$EMAILTO"
+fi
