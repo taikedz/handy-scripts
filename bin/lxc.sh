@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# based on tutorial and odcs at
+# based on tutorial and docs at
 # https://www.digitalocean.com/community/tutorials/getting-started-with-lxc-on-an-ubuntu-13-04-vps
 # https://linuxcontainers.org/lxc/getting-started/
 # https://help.ubuntu.com/lts/serverguide/lxc.html
@@ -78,7 +78,7 @@ function setupuser {
 	userhome=$(cat /etc/passwd|grep -P "^$myuser:"|cut -d ':' -f6)
 	[[ -z "$myuser" ]] && faile "No such user [$myuser]"
 
-	grep -P "^\s*$mysuer" /etc/lxc/lxc-usernet >/dev/null || { warne "Skipping $myuser - they have already been set up." ; return ; }
+	grep -P "^\s*$myuser" /etc/lxc/lxc-usernet >/dev/null && { warne "Skipping $myuser - they have already been set up." ; return ; }
 
 	# there is an issue when setting up on ecryptfs encrypted home directories
 	# https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1389305
@@ -113,6 +113,7 @@ EOF
 	chmod o+x $userhome
 	chmod o+x $userhome/.local
 	chmod o+x $userhome/.local/share
+	chmod o+x $userhome/.local/share/lxc
 }
 
 function printhelp {
@@ -189,6 +190,15 @@ OPTIONS
 EOF
 }
 
+for x in $@; do
+	case "$x" in
+		--help|-h)
+			printhelp
+			exit 0
+			;;
+	esac
+done
+
 if [[ -z "$@" ]]; then
 	lxc-ls --fancy
 	exit 0
@@ -197,7 +207,6 @@ fi
 if [[ -z "$@" ]]; then
 	faile "You must specify the action to take"
 fi
-
 ACTION=$1 ; shift
 
 while [[ -n "$@" ]]; do
