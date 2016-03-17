@@ -6,10 +6,14 @@ CONTAINERNAME=
 TEMPLATEOS=
 ACTION=
 EXPOSURE=
+EPHEMERAL=no
 
 DOATTACH=no
 INTERFACES='^'$(ifconfig | grep -P '^[^\s]+'|cut -d' ' -f 1|xargs echo|sed 's/ /|/g')'$'
 numpat='^[0-9]+$'
+
+CLONEFROM=
+SNAPSHOT=
 
 DEBUGMODE=no
 
@@ -43,6 +47,24 @@ function attachcontainer {
 
 function usecontainer {
 	lxc-ls | grep "$CONTAINERNAME" || faile "No such container $CONTAINERNAME"
+}
+
+function exposecontainer {
+	if [[ -n "$EXPOSURE" ]]; then
+		usecontainer
+		CONIP=$(lxc-ls --fancy | tail -n +3|grep "$CONTAINERNAME" | awk '{print $3}')
+		if [[ -z "$CONIP" ]]; then
+			warne "Could not get container IP - no exposure performed"
+			return
+		fi
+		for expx in $(echo "${EXPOSURE#,}" | sed 's/,/ /g'); do
+			myiface=$(echo $expx|cut -d':' -f 1)
+			myext=$(echo $expx|cut -d':' -f 2)
+			myint=$(echo $expx|cut -d':' -f 3)
+			warne "Adding iptables rule ..."
+			sudo iptables -t nat -A PREROUTING -i $myiface -p tcp --dport $myext -j DNAT --to "$CONIP:$myint"
+		done
+	fi
 }
 
 function setupuser {
@@ -118,11 +140,18 @@ list
 use
 	generic action, use with modifier options
 
-create the named container
+create
+	create the named container as a new container
 	requires a template OS name
+
+copy
+	make a copy of the container, requires named container and the "-from" option
+	the default action is to clone
+	an optional switch is the "-s" switch which will make a snapshot instead of a clone
 
 start
 	start the named container
+	use the -ephemeral flag to start an ephemeral container
 
 stop
 	stop the named container
@@ -144,6 +173,13 @@ OPTIONS
 	operational option
 	expose the container's port (inport) to the host's port (export) on interface (iface)
 	can be used with start, create and use actions
+
+-s
+	a special switch for copying, which causes the action to snapshot rather than clone
+
+-ephemeral
+	a speacial flag for the start operation which causes an ephmeral instance to start
+	rather than a persistent-changes instance
 
 EOF
 }
@@ -178,6 +214,15 @@ while [[ -n "$@" ]]; do
 			fi
 			EXPOSURE="$EXPOSURE,$IFACE:$EXPORT:$INPORT"
 			;;
+		-from)
+			CLONEFROM=$1 ; shift
+			;;
+		-ephemeral)
+			EPHEMERAL=yes
+			;;
+		-s)
+			SNAPSHOT=-s
+			;;
 		--install)
 			DOINSTALL=yes
 			;;
@@ -204,21 +249,10 @@ if [[ "$ACTION" = install ]]; then
 	exit 0
 fi
 
+exposecontainer # ... not sure this is where it should really be.....
+
 if [[ -z "$CONTAINERNAME" ]]; then
 	faile "You must specify a container name"
-fi
-
-
-if [[ -n "$EXPOSURE" ]]; then
-	usecontainer
-	CONIP=$(lxc-ls --fancy | tail -n +3|grep "$CONTAINERNAME" | awk '{print $3}')
-	for expx in $(echo "${EXPOSURE#,}" | sed 's/,/ /g'); do
-		myiface=$(echo $expx|cut -d':' -f 1)
-		myext=$(echo $expx|cut -d':' -f 2)
-		myint=$(echo $expx|cut -d':' -f 3)
-		warne "Adding iptables rule ..."
-		sudo iptables -t nat -A PREROUTING -i $myiface -p tcp --dport $myext -j DNAT --to "$CONIP:$myint"
-	done
 fi
 
 if [[ "$ACTION" = create ]]; then
@@ -227,10 +261,13 @@ if [[ "$ACTION" = create ]]; then
 	fi
 	time lxc-create -n "$CONTAINERNAME" -t "$TEMPLATEOS"
 	# this downloads from some online location... where??
-	attachcontainer
 elif [[ "$ACTION" = start ]]; then
 	usecontainer
-	lxc-start -n "$CONTAINERNAME" -d
+	if [[ "$EPHEMERAL" = yes ]]; then
+		lxc-start-ephemeral -o "$CONTAINERNAME" -d
+	else
+		lxc-start -n "$CONTAINERNAME" -d
+	fi
 	attachcontainer
 elif [[ "$ACTION" = list ]]; then
 	lxc-ls --fancy | head -n 2
@@ -238,13 +275,18 @@ elif [[ "$ACTION" = list ]]; then
 elif [[ "$ACTION" = stop ]]; then
 	usecontainer
 	lxc-stop -n "$CONTAINERNAME"
-elif [[ "$ACTION" = confirm ]]; then
+elif [[ "$ACTION" = destroy ]]; then
 	usecontainer
 	read -p "[1;31mTo destroy the container [1;32m$CONTAINERNAME[1;31m, type its name in again: [0m"
 	if [[ "$REPLY" = "$CONTAINERNAME" ]]; then
 		lxc-destroy -n "$CONTAINERNAME"
 	fi
+elif [[ "$ACTION" = copy ]]; then
+	usecontainer
+	lxc-clone $SNAPSHOT -o "$CLONEFROM" -n "$CONTAINERNAME"
 elif [[ "$ACTION" = use ]]; then
 	usecontainer
 	attachcontainer
+else
+	faile "Unknown command [$ACTION]"
 fi
