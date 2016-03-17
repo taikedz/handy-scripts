@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# based on tutorial and odcs at
+# https://www.digitalocean.com/community/tutorials/getting-started-with-lxc-on-an-ubuntu-13-04-vps
+# https://linuxcontainers.org/lxc/getting-started/
+# https://help.ubuntu.com/lts/serverguide/lxc.html
+
 set -u
 
 CONTAINERNAME=
