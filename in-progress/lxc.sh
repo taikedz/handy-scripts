@@ -59,6 +59,11 @@ function setupuser {
 lxc.id_map = u 0 $(cat /etc/subuid |grep $myuser| awk -F ':' '{print $2,$3}')
 lxc.id_map = g 0 $(cat /etc/subgid |grep $myuser| awk -F ':' '{print $2,$3}')
 EOF
+	# these need to be set so as to be able to run unprivileged
+	# the rest of the structure in /home/tai/.local/share/lxc should be OK
+	chmod o+x /home/tai
+	chmod o+x /home/tai/.local
+	chmod o+x /home/tai/.local/share
 }
 
 function printhelp {
