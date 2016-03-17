@@ -51,6 +51,8 @@ function setupuser {
 	userhome=$(cat /etc/passwd|grep -P "^$myuser:"|cut -d ':' -f6)
 	[[ -z "$myuser" ]] && faile "No such user [$myuser]"
 
+	grep -P "^\s*$mysuer" /etc/lxc/lxc-usernet >/dev/null || { warne "Skipping $myuser - they have already been set up." ; return ; }
+
 	# there is an issue when setting up on ecryptfs encrypted home directories
 	# https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1389305
 	if [[ $(mount | grep "$myuser" | grep ecryptfs -c) -gt 0 ]]; then
@@ -174,7 +176,7 @@ while [[ -n "$@" ]]; do
 			if [[ ! "$IFACE" =~ $INTERFACES ]] || [[ ! "$EXPORT" =~ $numpat ]] || [[ ! "$INPORT" =~ $numpat ]]; then
 				faile "Invalid interface, external port or internal port: $IFACE $EXPORT $INPORT"
 			fi
-			EXPOSURE="$EXPORTS,$IFACE:$EXPORT:$INPORT"
+			EXPOSURE="$EXPOSURE,$IFACE:$EXPORT:$INPORT"
 			;;
 		--install)
 			DOINSTALL=yes
@@ -214,6 +216,7 @@ if [[ -n "$EXPOSURE" ]]; then
 		myiface=$(echo $expx|cut -d':' -f 1)
 		myext=$(echo $expx|cut -d':' -f 2)
 		myint=$(echo $expx|cut -d':' -f 3)
+		warne "Adding iptables rule ..."
 		sudo iptables -t nat -A PREROUTING -i $myiface -p tcp --dport $myext -j DNAT --to "$CONIP:$myint"
 	done
 fi
