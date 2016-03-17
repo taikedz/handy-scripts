@@ -24,7 +24,7 @@ DEBUGMODE=no
 
 function uconfirm {
 	reqanswer='y|yes|Y|YES'
-	read -p "[1;32$@[0m : y/N> "
+	read -p "[1;32m$@[0m : y/N> "
 	[[ $? = 0 ]] && [[ "$REPLY" =~ $reqanswer ]] # returns the status of this test combination
 }
 
