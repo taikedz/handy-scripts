@@ -57,9 +57,13 @@ function usecontainer {
 function exposecontainer {
 	if [[ -n "$EXPOSURE" ]]; then
 		usecontainer
-		CONIP=$(lxc-ls --fancy | tail -n +3|grep "$CONTAINERNAME" | awk '{print $3}')
+		CONIP=$(lxc-ls --fancy | tail -n +3|grep -P "^$CONTAINERNAME\s" | awk '{print $3}')
 		if [[ -z "$CONIP" ]]; then
 			warne "Could not get container IP - no exposure performed"
+			return
+		fi
+		if [[ "$CONIP" = '-' ]]; then
+			warne "Container [$CONTAINERNAME] is not started and has no IP address."
 			return
 		fi
 		for expx in $(echo "${EXPOSURE#,}" | sed 's/,/ /g'); do
@@ -292,6 +296,7 @@ elif [[ "$ACTION" = list ]]; then
 elif [[ "$ACTION" = stop ]]; then
 	usecontainer
 	lxc-stop -n "$CONTAINERNAME"
+	warne "Check 'iptables -t nat -L -v' for dangling rules"
 elif [[ "$ACTION" = destroy ]]; then
 	usecontainer
 	read -p "[1;31mTo destroy the container [1;32m$CONTAINERNAME[1;31m, type its name in again: [0m"
