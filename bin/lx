@@ -60,6 +60,34 @@ function getconip {
 	lxc-ls --fancy | tail -n +3|grep -P "^$CONTAINERNAME\s" | awk '{print $3}'
 }
 
+function waitcontainerip {
+	CONIP=-
+	while [[ "$CONIP" = - ]]; do
+		CONIP=$(getconip)
+		if [[ "$CONIP" -ne '-' ]]; then
+			echo "$CONIP"
+			return
+		else
+			sleep 5
+		fi
+	done
+}
+
+function makecontainerhost {
+	CONIP=$(waitcontainerip)
+	grep "$CONIP\s.+# LXC host" /etc/hosts && {
+		warne "Host already configured"
+		return
+	}
+
+	sudo su -c "echo '$CONIP $CONTAINERNAME.lxc # LXC host' >> /etc/hosts"
+}
+
+function removecontainerhost {
+	CONIP=$(waitcontainerip)
+	sudo sed -r "/^$CONIP\s.*# LXC host$/d" -i /etc/hosts
+}
+
 function exposecontainer {
 	if [[ -n "$EXPOSURE" ]]; then
 		usecontainer
@@ -309,12 +337,14 @@ elif [[ "$ACTION" = start ]]; then
 	else
 		lxc-start -n "$CONTAINERNAME" -d
 	fi
+	makecontainerhost
 	attachcontainer
 elif [[ "$ACTION" = list ]]; then
 	lxc-ls --fancy | head -n 2
 	lxc-ls --fancy | tail -n +3 | grep "$CONTAINERNAME"
 elif [[ "$ACTION" = stop ]]; then
 	usecontainer
+	removecontainerhost
 	lxc-stop -n "$CONTAINERNAME"
 	warne "Check 'iptables -t nat -L -v' for dangling rules"
 elif [[ "$ACTION" = destroy ]]; then
