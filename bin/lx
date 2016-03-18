@@ -61,10 +61,10 @@ function getconip {
 }
 
 function waitcontainerip {
-	CONIP=-
-	while [[ "$CONIP" = - ]]; do
+	CONIP="-"
+	while [[ "$CONIP" = "-" ]]; do
 		CONIP=$(getconip)
-		if [[ "$CONIP" -ne '-' ]]; then
+		if [[ "$CONIP" != '-' ]]; then
 			echo "$CONIP"
 			return
 		else
