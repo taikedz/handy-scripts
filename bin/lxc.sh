@@ -1,1 +1,1 @@
-Moved to bin/lx
+Moved to https://github.com/taikedz/easy-lxc
