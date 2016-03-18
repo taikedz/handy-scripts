@@ -8,7 +8,7 @@ SERVERMODE=no
 
 function printhelp {
 cat <<EOHELP
-If run as root, this script installs "af" or "yf" wrappers around apt (Ubuntu systems) or yum (dnf not yet supported) respectively
+If run as root, this script installs the 'lx' tool for managing Linux containers (use then 'lx install' to install lxc pacakage)
 
 If run as a regular user, installs individual user items to \$HOME/bin and adds a line to \$HOME/.bashrc to ensure this diredctory is in PATH
 
@@ -45,7 +45,9 @@ if [[ ! "$SERVERMODE" = yes ]]; then
 fi
 cp bin/{secret,sendme,connect,gdiff} "$destdir"
 
-if [[ $UID -ne 0 ]] && [[ $( grep 'label:ADDBIN' "$HOME/.bashrc" -c ) -lt 1 ]]; then
-	echo 'PATH="$PATH:$HOME/bin" # label:ADDBIN' >> "$HOME/.bashrc"
-	echo "Please log in again for changes to take effect."
+if [[ $UID = 0 ]]; then
+	mkdir -p /usr/local/bin
+	cp bin/lx /usr/local/bin/
+elif [[ $( grep 'label:ADDBIN' "$HOME/.bashrc" -c ) -lt 1 ]]; then
+	echo 'PATH="$PATH:$HOME/bin" # label:ADDBIN' >> "$HOME/.bashrc" && echo "Please log in again for changes to take effect."
 fi
