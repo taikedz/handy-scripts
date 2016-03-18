@@ -48,6 +48,7 @@ cp bin/{secret,sendme,connect,gdiff} "$destdir"
 if [[ $UID = 0 ]]; then
 	mkdir -p /usr/local/bin
 	cp bin/lx /usr/local/bin/
+	chmod a+rx /usr/local/bin/lx
 elif [[ $( grep 'label:ADDBIN' "$HOME/.bashrc" -c ) -lt 1 ]]; then
 	echo 'PATH="$PATH:$HOME/bin" # label:ADDBIN' >> "$HOME/.bashrc" && echo "Please log in again for changes to take effect."
 fi

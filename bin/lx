@@ -45,7 +45,6 @@ function warne {
 
 function attachcontainer {
 	if [[ $DOATTACH = yes ]]; then
-		#warne "Attaching to container root session"
 		lxc-attach -n "$CONTAINERNAME"
 	fi
 }
