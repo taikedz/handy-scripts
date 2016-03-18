@@ -17,7 +17,7 @@ DOATTACH=no
 INTERFACES='^'$(ifconfig | grep -P '^[^\s]+'|cut -d' ' -f 1|xargs echo|sed 's/ /|/g')'$'
 numpat='^[0-9]+$'
 
-CLONEFROM=
+CLONETO=
 SNAPSHOT=
 
 DEBUGMODE=no
@@ -51,7 +51,7 @@ function attachcontainer {
 }
 
 function usecontainer {
-	lxc-ls | grep "$CONTAINERNAME" || faile "No such container $CONTAINERNAME"
+	lxc-ls | grep "$CONTAINERNAME" >/dev/null || faile "No such container $CONTAINERNAME"
 }
 
 function exposecontainer {
@@ -151,7 +151,7 @@ create
 	requires a template OS name
 
 copy
-	make a copy of the container, requires named container and the "-from" option
+	make a copy of the container, requires named container and the "-to" option
 	the default action is to clone
 	an optional switch is the "-s" switch which will make a snapshot instead of a clone
 
@@ -179,6 +179,9 @@ OPTIONS
 	operational option
 	expose the container's port (inport) to the host's port (export) on interface (iface)
 	can be used with start, create and use actions
+
+-to DESTCONTAINER
+	specify the name of the new container to create
 
 -s
 	a special switch for copying, which causes the action to snapshot rather than clone
@@ -228,8 +231,8 @@ while [[ -n "$@" ]]; do
 			fi
 			EXPOSURE="$EXPOSURE,$IFACE:$EXPORT:$INPORT"
 			;;
-		-from)
-			CLONEFROM=$1 ; shift
+		-to)
+			CLONETO=$1 ; shift
 			;;
 		-ephemeral)
 			EPHEMERAL=yes
@@ -297,7 +300,10 @@ elif [[ "$ACTION" = destroy ]]; then
 	fi
 elif [[ "$ACTION" = copy ]]; then
 	usecontainer
-	lxc-clone $SNAPSHOT -o "$CLONEFROM" -n "$CONTAINERNAME"
+	if [[ -z "$CLONETO" ]]; then
+		faile "You did not define destination container with -to option"
+	fi
+	lxc-clone $SNAPSHOT -o "$CONTAINERNAME" -n "$CLONETO"
 elif [[ "$ACTION" = use ]]; then
 	usecontainer
 	attachcontainer
