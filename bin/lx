@@ -13,6 +13,9 @@ ACTION=
 EXPOSURE=
 EPHEMERAL=no
 
+CUSER=$(whoami)
+CPORT=22
+
 DOATTACH=no
 INTERFACES='^'$(ifconfig | grep -P '^[^\s]+'|cut -d' ' -f 1|xargs echo|sed 's/ /|/g')'$'
 numpat='^[0-9]+$'
@@ -53,10 +56,14 @@ function usecontainer {
 	lxc-ls | grep "$CONTAINERNAME" >/dev/null || faile "No such container $CONTAINERNAME"
 }
 
+function getconip {
+	lxc-ls --fancy | tail -n +3|grep -P "^$CONTAINERNAME\s" | awk '{print $3}'
+}
+
 function exposecontainer {
 	if [[ -n "$EXPOSURE" ]]; then
 		usecontainer
-		CONIP=$(lxc-ls --fancy | tail -n +3|grep -P "^$CONTAINERNAME\s" | awk '{print $3}')
+		CONIP=$(getconip)
 		if [[ -z "$CONIP" ]]; then
 			warne "Could not get container IP - no exposure performed"
 			return
@@ -142,6 +149,7 @@ ACTIONS
 install
 	install LXC if it is not yet installed
 	offers to set up a non-privileged user
+	run again to set up a different user
 
 list
 	list the details of the specirfied container
@@ -171,17 +179,24 @@ destroy
 OPTIONS
 
 -t TEMPLATEOS
+	for create action
 	Name of the target OS, e.g. "ubuntu"
 
 -a
-	operational option
+	for start and use actions
 	attach to the console of the named container
-	can only be used with create and start actions
+
+-p PORT
+	for ssh action
+	use SSH to connect to the container on this port
+
+-u USER
+	for ssh action
+	use SSH to connect to the container with this user
 
 -e iface export inport
 	operational option
 	expose the container's port (inport) to the host's port (export) on interface (iface)
-	can be used with start, create and use actions
 
 -to DESTCONTAINER
 	specify the name of the new container to create
@@ -233,6 +248,12 @@ while [[ -n "$@" ]]; do
 				faile "Invalid interface, external port or internal port: $IFACE $EXPORT $INPORT"
 			fi
 			EXPOSURE="$EXPOSURE,$IFACE:$EXPORT:$INPORT"
+			;;
+		-u)
+			CUSER=$1 ; shift
+			;;
+		-p)
+			CPORT=$1 ; shift
 			;;
 		-to)
 			CLONETO=$1 ; shift
@@ -307,7 +328,15 @@ elif [[ "$ACTION" = copy ]]; then
 	if [[ -z "$CLONETO" ]]; then
 		faile "You did not define destination container with -to option"
 	fi
-	lxc-clone $SNAPSHOT -o "$CONTAINERNAME" -n "$CLONETO"
+	if [[ "$SNAPSHOT" = '-s' ]]; then
+		lxc-snapshot -o "$CONTAINERNAME" -n "$CLONETO"
+	else
+		lxc-clone -o "$CONTAINERNAME" -n "$CLONETO"
+	fi
+elif [[ "$ACTION" = ssh ]]; then
+	usecontainer
+	CONIP=$(getconip)
+	ssh ${CUSER}@$CONIP -p $CPORT
 elif [[ "$ACTION" = use ]]; then
 	usecontainer
 	attachcontainer
