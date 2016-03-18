@@ -7,6 +7,8 @@
 
 set -u
 
+NOROOT=no
+
 CONTAINERNAME=
 TEMPLATEOS=
 ACTION=
@@ -80,12 +82,12 @@ function makecontainerhost {
 		return
 	}
 
-	sudo su -c "echo '$CONIP $CONTAINERNAME.lxc # LXC host' >> /etc/hosts"
+	mysu su -c "echo '$CONIP $CONTAINERNAME.lxc # LXC host' >> /etc/hosts"
 }
 
 function removecontainerhost {
 	CONIP=$(waitcontainerip)
-	sudo sed -r "/^$CONIP\s.*# LXC host$/d" -i /etc/hosts
+	mysu sed -r "/^$CONIP\s.*# LXC host$/d" -i /etc/hosts
 }
 
 function exposecontainer {
@@ -105,9 +107,15 @@ function exposecontainer {
 			myext=$(echo $expx|cut -d':' -f 2)
 			myint=$(echo $expx|cut -d':' -f 3)
 			warne "Adding iptables rule ..."
-			sudo iptables -t nat -A PREROUTING -i $myiface -p tcp --dport $myext -j DNAT --to "$CONIP:$myint"
+			mysu iptables -t nat -A PREROUTING -i $myiface -p tcp --dport $myext -j DNAT --to "$CONIP:$myint"
 		done
 	fi
+}
+
+function mysu {
+	if [[ "$NOROOT" = yes ]]; then return; fi
+
+	sudo $@
 }
 
 function setupuser {
@@ -166,7 +174,13 @@ Easy wrapper for managing LXC containers
 
 If LXC is not installed, you will be prompted to install.
 
-Installation and other root tasks require sudo access.
+Several tasks require root permissions:
+	* installation
+	* adding the container name to hosts file
+	* adding the container to IP tables forwarding rules
+
+These are normally done automatically. To turn this off, use the '-z' option
+
 
 USAGE
 
@@ -209,6 +223,8 @@ OPTIONS
 -t TEMPLATEOS
 	for create action
 	Name of the target OS, e.g. "ubuntu"
+-z
+	does not run steps that require root access
 
 -a
 	for start and use actions
@@ -245,6 +261,9 @@ for x in $@; do
 			printhelp
 			exit 0
 			;;
+		-z)
+			NOROOT=yes
+			;;
 	esac
 done
 
@@ -256,6 +275,7 @@ fi
 if [[ -z "$@" ]]; then
 	faile "You must specify the action to take"
 fi
+
 ACTION=$1 ; shift
 
 while [[ -n "$@" ]]; do
@@ -346,7 +366,7 @@ elif [[ "$ACTION" = stop ]]; then
 	usecontainer
 	removecontainerhost
 	lxc-stop -n "$CONTAINERNAME"
-	warne "Check 'iptables -t nat -L -v' for dangling rules"
+	warne "Run 'iptables -t nat -L -v' to check for dangling port forward rules"
 elif [[ "$ACTION" = destroy ]]; then
 	usecontainer
 	read -p "[1;31mTo destroy the container [1;32m$CONTAINERNAME[1;31m, type its name in again: [0m"
