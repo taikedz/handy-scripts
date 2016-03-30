@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# Script to mount / unmount singular secure diredctories
+
+# Released under BSD license:
+# Copyright (c) 2016 Tai Kedzierski.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms are permitted
+# provided that the above copyright notice and this paragraph are
+# duplicated in all such forms and that any documentation,
+# advertising materials, and other materials related to such
+# distribution and use acknowledge that the software was developed
+# by Tai Kedzierski. The name of Tai Kedzierski
+# may not be used to endorse or promote products derived
+# from this software without specific prior written permission.
+# THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+set -u
+
+function printhelp {
+cat <<EOHELP
+Manage, Mount and Unmount EncFS encrypted directory
+
+$(basename $0) {list|init}
+$(basename $0) {mount|unmount} DIRNAME [LINK ...]
+
+Uses a .enc directory in the current working directory to store the encrypted files.
+
+The secure directory is mounted in the current working directory.
+
+OPTIONS
+
+list
+	list secure directories configured at current working directory
+
+init
+	set current working directory up as a location for secure directories
+
+mount
+	mount the secure directory. If it does not exist, offers to create it.
+
+unmount
+	unmount a mounted secure directory.
+
+EOHELP
+}
+
+function linkall {
+	while [[ -n "$@" ]]; do
+		local TGT=$(abspath "$1") ; shift
+		ln -s "$TGT" "$OPEDIR" && echo "$TGT" >> "$PWD/.enc/${CUST}.links"
+	done
+}
+
+function delinkall {
+	cat "$PWD/.enc/${CUST}.links" | while read lfile; do
+		unlink "$lfile"
+		sed "/$(echo "$lfile"|sed 's|/|\\/|g')/d" -i "$PWD/.enc/${CUST}.links"
+	done
+	[[ $(wc -l "$PWD/.enc/${CUST}.links") -lt 1 ]]
+}
+
+function abspath {
+}
+
+if [[ ! -f /usr/bin/encfs ]]; then
+	encfs # try calling it anyway; some systems may hint which package needs installing
+	echo ""
+	echo "Please install package 'encfs' "
+	exit 0
+fi
+
+if [[ ! -d "$PWD/.enc" ]]; then
+	echo "Current directory $PWD is not a valid secdir location."
+	exit 1
+fi
+
+if [[ -z "$@" ]]; then
+	echo "No arguments given."
+	exit 1
+fi
+
+ACTION="$1" ; shift
+
+case "$ACTION" in
+list)
+	for x in $(ls .enc); do
+		echo "$x"
+	done
+	exit 0
+	;;
+init)
+	mkdir -p "$PWD/.enc" && echo "secdir has been set up for use in $PWD"
+	;;
+esac
+
+if [[ -z "$@" ]]; then
+	echo "You must specify the name of a secure directory to load"
+	exit
+fi
+
+CUST="$1" ; shift
+SECDIR="$PWD/.enc/$CUST"
+OPEDIR="$PWD/$CUST"
+
+case "$ACTION" in
+	mount)
+		echo "Opening $CUST"
+		mkdir -p "$OPEDIR"
+		encfs "$SECDIR" "$OPEDIR"
+		linkall $@
+		;;
+	unmount)
+		echo "Closing $CUST"
+		if delinkall ; then
+			fusermount -u "$OPEDIR"
+			rmdir "$OPEDIR"
+		else
+			echo -e "Could not unlink some directories:\n$( cat "$PWD/.enc/${CUST}.links")"
+			exit 3
+		fi
+		;;
+	*)
+		echo "Invalid action $ARG. Use 'mount' or 'unmount' followed by the directory name."
+		exit 1
+		;;
+esac
