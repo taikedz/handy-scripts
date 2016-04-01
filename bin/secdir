@@ -25,7 +25,7 @@ cat <<EOHELP
 Manage, Mount and Unmount EncFS encrypted directory
 
 $(basename $0) {list|init}
-$(basename $0) {mount|unmount} DIRNAME [LINK ...]
+$(basename $0) {mount|unmount|open|close} DIRNAME [LINK ...]
 
 Uses a .enc directory in the current working directory to store the encrypted files.
 
@@ -40,9 +40,11 @@ init
 	set current working directory up as a location for secure directories
 
 mount
+open
 	mount the secure directory. If it does not exist, offers to create it.
 
 unmount
+close
 	unmount a mounted secure directory.
 
 EOHELP
@@ -60,10 +62,11 @@ function delinkall {
 		unlink "$lfile"
 		sed "/$(echo "$lfile"|sed 's|/|\\/|g')/d" -i "$PWD/.enc/${CUST}.links"
 	done
-	[[ $(wc -l "$PWD/.enc/${CUST}.links") -lt 1 ]]
+	[[ $(wc -l "$PWD/.enc/${CUST}.links") -lt 1 ]] && rm "$PWD/.enc/${CUST}.links"
 }
 
 function abspath {
+	python -c "import os ; print os.path.abspath('$1')"
 }
 
 if [[ ! -f /usr/bin/encfs ]]; then
@@ -71,11 +74,6 @@ if [[ ! -f /usr/bin/encfs ]]; then
 	echo ""
 	echo "Please install package 'encfs' "
 	exit 0
-fi
-
-if [[ ! -d "$PWD/.enc" ]]; then
-	echo "Current directory $PWD is not a valid secdir location."
-	exit 1
 fi
 
 if [[ -z "$@" ]]; then
@@ -97,6 +95,12 @@ init)
 	;;
 esac
 
+if [[ ! -d "$PWD/.enc" ]]; then
+	echo "Current directory $PWD is not a valid secdir location."
+	exit 1
+fi
+
+
 if [[ -z "$@" ]]; then
 	echo "You must specify the name of a secure directory to load"
 	exit
@@ -107,13 +111,13 @@ SECDIR="$PWD/.enc/$CUST"
 OPEDIR="$PWD/$CUST"
 
 case "$ACTION" in
-	mount)
+	mount|open)
 		echo "Opening $CUST"
 		mkdir -p "$OPEDIR"
 		encfs "$SECDIR" "$OPEDIR"
-		linkall $@
+		linkall $*
 		;;
-	unmount)
+	unmount|close)
 		echo "Closing $CUST"
 		if delinkall ; then
 			fusermount -u "$OPEDIR"
