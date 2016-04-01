@@ -20,17 +20,22 @@ while [[ -n "$@" ]]; do
 		break
 		;;
 	-a)
-		ACTION=add
+		echo "No such option [$ARG]"
+		exit 1
 		;;
 	*)
-		[[ -f "$ARG" ]] && ADDFILE="$ADDFILE $ARG"
+		if [[ -f "$ARG" ]]; then
+			ADDFILE="$ADDFILE $ARG"
+		else
+			echo "No such file [$ARG]"
+			exit 2
+		fi
 		;;
 	esac
 done
 
-if [[ "$ACTION" = add ]]; then
+if [[ "$ACTION" = commit ]]; then
 	git add $ADDFILE
-elif [[ "$ACTION" = commit ]]; then
 	if [[ -z "$COMMIT" ]]; then
 		git commit
 	else
