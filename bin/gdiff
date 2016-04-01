@@ -9,6 +9,11 @@ ADDFILE=
 COMMIT=
 ACTION=
 
+if [[ -z "$@" ]]; then
+	git status
+	exit 0
+fi
+
 while [[ -n "$@" ]]; do
 	ARG=$1
 	shift
@@ -24,7 +29,7 @@ while [[ -n "$@" ]]; do
 		exit 1
 		;;
 	*)
-		if [[ -f "$ARG" ]]; then
+		if [[ -e "$ARG" ]]; then
 			ADDFILE="$ADDFILE $ARG"
 		else
 			echo "No such file [$ARG]"
@@ -43,6 +48,10 @@ if [[ "$ACTION" = commit ]]; then
 	fi
 else
 	for cfile in $ADDFILE; do
+		if [[ -d "$cfile" ]]; then
+			echo "Skipping directory [$cfile]"
+			continue
+		fi
 		git diff "$cfile" | sed -r -e 's//^[/g' -e "s/^(-.*)$/${CRED}\1${CDEF}/" -e "s/^(\+.*)$/${CGRN}\1${CDEF}/" -e "s/^(@@.+)$/${CBLU}\1${CDEF}/" | less -R
 	done
 fi
