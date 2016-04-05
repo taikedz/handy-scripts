@@ -58,6 +58,7 @@ function linkall {
 }
 
 function delinkall {
+	if [[ ! -f "$PWD/.enc/${CUST}.links" ]]; then return 0; fi
 	cat "$PWD/.enc/${CUST}.links" | while read lfile; do
 		unlink "$lfile"
 		sed "/$(echo "$lfile"|sed 's|/|\\/|g')/d" -i "$PWD/.enc/${CUST}.links"
