@@ -1,4 +1,0 @@
-#! /bin/bash
-
-ls | parallel "if [[ -d {} ]]; then cd {}; echo -n 'Updating '{}' : '; git pull; cd ..; fi;"
-
