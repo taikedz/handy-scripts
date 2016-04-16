@@ -50,6 +50,8 @@ close
 EOHELP
 }
 
+if [[ "$*" =~ --help ]]; then printhelp; fi
+
 function linkall {
 	while [[ -n "$@" ]]; do
 		local TGT=$(abspath "$1") ; shift
