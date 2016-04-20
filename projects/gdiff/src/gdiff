@@ -38,14 +38,24 @@ function switchbranch {
 	CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
 }
 
+debuge "Rudimentary check that we are in a safe state"
+
+if [[ -n "$(git status | egrep 'unmerged|both modified' | sed -r 's/^(\s.+)$/[0;31m\1[0m/')" ]]; then
+	warne "Conflicts identified."
+	faile "gdiff cannot operate on this state."
+fi
+
+# ======
+
 if [[ -z "$@" ]]; then
 	git fetch
-	git status
 
 	if [[ "$CURBRANCH" = master ]]; then
 		warne "${CBRED}\n\tYou are currently on master\n"
 		uconfirm "Move changes to a different branch?" && switchchangestobranch
 	fi
+
+	git status
 	exit 0
 fi
 
