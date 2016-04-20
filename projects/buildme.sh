@@ -22,5 +22,5 @@ if [[ "$*" =~ --install ]]; then
 	sudo mv "$bname.tgz" "/usr/local/bin/$bname" && echo "Installed $bname to /usr/local/bin"
 else
 	mv "$bname".tgz "test/$bname"
-	echo "Stored "$bname" in test/$bname"
+	echo "Stored "$bname" in $PWD/test/$bname"
 fi
