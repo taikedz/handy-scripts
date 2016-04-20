@@ -12,6 +12,7 @@ ADDFILE=
 COMMIT=
 ACTION=
 CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
+branchpat='^[a-zA-Z0-9_-]+$'
 
 function switchchangestobranch {
 	local dash="$-"; set -e
@@ -38,6 +39,7 @@ function switchbranch {
 }
 
 if [[ -z "$@" ]]; then
+	git fetch
 	git status
 
 	if [[ "$CURBRANCH" = master ]]; then
@@ -46,6 +48,8 @@ if [[ -z "$@" ]]; then
 	fi
 	exit 0
 fi
+
+# need to also consider - merge and rollback
 
 while [[ -n "$@" ]]; do
 	ARG=$1
