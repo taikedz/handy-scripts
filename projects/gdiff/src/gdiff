@@ -24,7 +24,13 @@ branchpat='^[a-zA-Z0-9_-]+$'
 function switchchangestobranch {
 	local dash="$-"; set -e
 
-	gotobranch=$(uchoose "Which branch should ALL tracked and uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')")
+	gotobranch=$(echo $(uchoose "Which branch should ALL tracked and uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')"))
+	# extra echo wrap to remove trailing whitespaces
+	if [[ -z "$gotobranch" ]]; then
+		faile "aborted switch"
+	elif [[ ! "$gotobranch" =~ $branchpat ]]; then
+		faile "Invalid branch [$gotobranch]"
+	fi
 	git stash
 	git checkout "$gotobranch"
 	git stash apply
@@ -37,7 +43,13 @@ function switchbranch {
 	local newbranch=$1; shift
 
 	if ! (git branch|grep "$newbranch" >/dev/null); then
-		uconfirm "'$newbranch' does not exits. Create it?" && git branch "$newbranch"
+		uconfirm "'$newbranch' does not exits. Create it?" && {
+			if [[ "$newbranch" =~ $branchpat ]]; then
+				git branch "$newbranch"
+			else
+				faile "Invalid branch name. Branch name can only contain a-z A-Z 0-9, '_' and '-'"
+			fi
+		}
 	fi
 	git checkout "$newbranch"
 	CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
