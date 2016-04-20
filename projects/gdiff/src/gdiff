@@ -24,7 +24,8 @@ branchpat='^[a-zA-Z0-9_-]+$'
 function switchchangestobranch {
 	local dash="$-"; set -e
 
-	gotobranch=$(uchoose "Which branch should ALL tracked and uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')")
+	gotobranch=$(echo $(uchoose "Which branch should ALL tracked and uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')"))
+	# extra echo wrap to remove trailing whitespaces
 	if [[ -z "$gotobranch" ]]; then
 		faile "aborted switch"
 	elif [[ ! "$gotobranch" =~ $branchpat ]]; then
