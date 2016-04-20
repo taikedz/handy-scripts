@@ -6,6 +6,13 @@
 #
 ###
 
+#% bundle help/info.txt
+
+if [[ "$*" =~ --help ]]; then
+	cat help/info.txt
+	exit 0
+fi
+
 #% include autohelp bashout askuser
 
 ADDFILE=
@@ -29,12 +36,10 @@ function switchchangestobranch {
 function switchbranch {
 	local newbranch=$1; shift
 
-	if (git branch|grep "$newbranch" >/dev/null); then
-		git checkout "$newbranch"
-	else
-		git branch "$newbranch"
-		git checkout "$newbranch"
+	if ! (git branch|grep "$newbranch" >/dev/null); then
+		uconfirm "'$newbranch' does not exits. Create it?" && git branch "$newbranch"
 	fi
+	git checkout "$newbranch"
 	CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
 }
 
@@ -81,10 +86,19 @@ while [[ -n "$@" ]]; do
 		ACTION=add
 		;;
 	-s|--push)
+		infoe "git push origin $CURBRANCH"
 		git push origin "$CURBRANCH"
+		exit $?
 		;;
 	-l|--pull)
+		infoe "git pull origin $CURBRANCH"
 		git pull origin "$CURBRANCH"
+		exit $?
+		;;
+	-u|--rebase)
+		infoe "git rebase $CURBRANCH"
+		git rebase "$1"; shift
+		exit $?
 		;;
 	*)
 		if [[ -e "$ARG" ]]; then

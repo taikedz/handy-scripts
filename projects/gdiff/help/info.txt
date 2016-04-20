@@ -1,0 +1,66 @@
+                 +-------------------+
+                 |       gdiff       |
+                 +-------------------+
+
+
+
+Shorthands for managing git repositories, and some guided automation around common pitfalls
+
+USAGE
+
+gdiff will tell you whether you have been working on master and allow you to move current changes to a different branch
+
++++
+	gdiff
+
+gdiff on its own will perform `git fetch` and `git status`
+
++++
+	gdiff FILES ...
+
+gdiff stated without actions will display each specified file in turn, and show changes in `less` using coloured output.
+
++++
+	gdiff FILES ... -a
+
+This will cause "git add" to be called on the files
+
++++
+	gdiff { FILES ... | "." } -m [MESSAGE ...]
+
+If FILES are specified, adds and commits those files, as well as any currently staged files.
+
+If "." is specified instead of a list of files, adds all unstaged changes, and commits them with the message.
+
+
++++
+	gdiff [-u|--pull]
+
+Pull remote data from origin
+
++++
+	gdiff [-s|--push]
+
+Push current commit state to origin
+
++++
+	gdiff {-b|--rebranch} BRANCH
+
+Switch to specified branch. If branch does not yet exist, you are prompted to create it.
+
++++
+	gdiff {-r|--rebranch} BRANCH
+
+Move current tracked and unstaged changes to a different branch BRANCH. Does not affect currently untracked files.
+
++++
+	gdiff {-u|--rebase} BRANCH
+
+rebase current branch off of BRANCH
+
+-----------------------
+
+AUTHOR & LICENSE
+
+(C) 2016 Tai Kedziersk.
+License: 3-Clause BSD -- TL;DR = You may use this for any purpose, provided the author is credited and this copyright notice remains.
