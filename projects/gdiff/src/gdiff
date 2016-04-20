@@ -1,0 +1,102 @@
+#!/bin/bash
+
+### Git Shorthands Usage:help
+#
+# Some shorthands for managing git repositories.
+#
+###
+
+#% include autohelp bashout askuser
+
+ADDFILE=
+COMMIT=
+ACTION=
+CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
+
+function switchchangestobranch {
+	local dash="$-"; set -e
+
+	gotobranch=$(uchoose "Which branch should ALL uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')")
+	git stash
+	git checkout "$gotobranch"
+	git stash apply
+	CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
+
+	if [[ ! $dash =~ e ]]; then set +e; fi
+}
+
+function switchbranch {
+	local newbranch=$1; shift
+
+	if (git branch|grep "$newbranch" >/dev/null); then
+		git checkout "$newbranch"
+	else
+		git branch "$newbranch"
+		git checkout "$newbranch"
+	fi
+	CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
+}
+
+if [[ -z "$@" ]]; then
+	git status
+
+	if [[ "$CURBRANCH" = master ]]; then
+		warne "${CBRED}\n\tYou are currently on master\n"
+		uconfirm "Move changes to a different branch?" && switchchangestobranch
+	fi
+	exit 0
+fi
+
+while [[ -n "$@" ]]; do
+	ARG=$1
+	shift
+
+	case "$ARG" in
+	-b|--branch)
+		switchbranch "$1"; shift
+		;;
+	-r|--rebranch)
+		switchchangestobranch "$1"; shift
+		;;
+	-m)
+		ACTION=commit
+		COMMIT="$*" # get the rest of the arguments as commit message
+		break
+		;;
+	-a)
+		ACTION=add
+		;;
+	-s|--push)
+		git push origin "$CURBRANCH"
+		;;
+	-l|--pull)
+		git pull origin "$CURBRANCH"
+		;;
+	*)
+		if [[ -e "$ARG" ]]; then
+			ADDFILE="$ADDFILE $ARG"
+		else
+			faile "No such file [$ARG]" 2
+		fi
+		;;
+	esac
+done
+
+if [[ "$ACTION" = commit ]]; then
+	git add $ADDFILE
+	if [[ -z "$COMMIT" ]]; then
+		git commit
+	else
+		git commit -m "$COMMIT"
+	fi
+elif [[ "$ACTION" = add ]]; then
+	git add $ADDFILE
+else
+	for cfile in $ADDFILE; do
+		if [[ -d "$cfile" ]]; then
+			echo "Skipping directory [$cfile]"
+			continue
+		fi
+		git diff "$cfile" | sed -r -e 's//^[/g' -e "s/^(-.*)$/${CRED}\1${CDEF}/" -e "s/^(\+.*)$/${CGRN}\1${CDEF}/" -e "s/^(@@.+)$/${CBLU}\1${CDEF}/" | less -R
+	done
+fi
