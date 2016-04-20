@@ -17,7 +17,7 @@ branchpat='^[a-zA-Z0-9_-]+$'
 function switchchangestobranch {
 	local dash="$-"; set -e
 
-	gotobranch=$(uchoose "Which branch should ALL uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')")
+	gotobranch=$(uchoose "Which branch should ALL tracked and uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')")
 	git stash
 	git checkout "$gotobranch"
 	git stash apply
