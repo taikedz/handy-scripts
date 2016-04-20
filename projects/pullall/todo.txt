@@ -1,0 +1,1 @@
+Need to re-work this pull-all to also work on all branches (iterate branches, fetch only if remote exists for the branch)
