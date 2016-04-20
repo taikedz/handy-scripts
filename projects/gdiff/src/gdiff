@@ -86,14 +86,17 @@ while [[ -n "$@" ]]; do
 		ACTION=add
 		;;
 	-s|--push)
+		infoe "git push origin $CURBRANCH"
 		git push origin "$CURBRANCH"
 		exit $?
 		;;
 	-l|--pull)
+		infoe "git pull origin $CURBRANCH"
 		git pull origin "$CURBRANCH"
 		exit $?
 		;;
 	-u|--rebase)
+		infoe "git rebase $CURBRANCH"
 		git rebase "$1"; shift
 		exit $?
 		;;
