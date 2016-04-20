@@ -13,7 +13,7 @@ if [[ "$*" =~ --help ]]; then
 	exit 0
 fi
 
-#% include autohelp bashout askuser
+#% include bashout askuser
 
 ADDFILE=
 COMMIT=
@@ -54,13 +54,13 @@ fi
 
 if [[ -z "$@" ]]; then
 	git fetch
+	git status
 
-	if [[ "$CURBRANCH" = master ]]; then
-		warne "${CBRED}\n\tYou are currently on master\n"
+	if [[ "$CURBRANCH" = master ]] && ! (git status|grep 'nothing to commit' -i >/dev/null); then
+		warne "${CBRED}\n\tYou are on master ; and there are changes. Don't develop on master!\n"
 		uconfirm "Move changes to a different branch?" && switchchangestobranch
 	fi
 
-	git status
 	exit 0
 fi
 
