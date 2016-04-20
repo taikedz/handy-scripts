@@ -1,4 +1,8 @@
-gdiff
+                 +-------------------+
+                 |       gdiff       |
+                 +-------------------+
+
+
 
 Shorthands for managing git repositories, and some guided automation around common pitfalls
 
