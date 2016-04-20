@@ -18,6 +18,7 @@ fi
 ADDFILE=
 COMMIT=
 ACTION=
+FETCHING=yes
 CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
 branchpat='^[a-zA-Z0-9_-]+$'
 
@@ -27,7 +28,11 @@ function switchchangestobranch {
 	gotobranch=$(echo $(uchoose "Which branch should ALL tracked and uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')"))
 	# extra echo wrap to remove trailing whitespaces
 	if [[ -z "$gotobranch" ]]; then
-		faile "aborted switch"
+		if uconfirm "Nothing selected. Create a new branch?" ; then
+			if ! (git branch "$(uask "Name of new branch")" ); then faile "Aborting switch" fi
+		elif ! (uconfirm "Proceed anyway?"); then
+			faile "Ran away!"
+		fi
 	elif [[ ! "$gotobranch" =~ $branchpat ]]; then
 		faile "Invalid branch [$gotobranch]"
 	fi
@@ -70,10 +75,6 @@ function checkmaster {
 		if ! (git status|grep 'nothing to commit' -i >/dev/null); then
 			warne "${CBRED}\tand there are changes. Don't develop on master!\n"
 			if uconfirm "Move changes to a different branch?"; then
-				git branch
-				uconfirm "Will you need a new branch?" && {
-					git branch "$(uask "Name of new branch")" || faile "Aborting"
-				}
 				switchchangestobranch
 			else
 				uconfirm "Proceed anyway?" || faile "Aborted." 
@@ -83,7 +84,7 @@ function checkmaster {
 }
 
 if [[ -z "$@" ]]; then
-	if [[ $(git remote | wc -l) -gt 0 ]]; then git fetch; fi
+	if [[ "$FETCHING" = yes ]] && [[ $(git remote | wc -l) -gt 0 ]]; then git fetch; fi
 	git status
 	
 	checkmaster
@@ -110,6 +111,9 @@ while [[ -n "$@" ]]; do
 		;;
 	-a)
 		ACTION=add
+		;;
+	-nf)
+		FETCHING=no
 		;;
 	-s|--push)
 		infoe "git push origin $CURBRANCH"
