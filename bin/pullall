@@ -14,39 +14,39 @@ printed.
 EOHELP
 }
 
-alldirs=
+exclusions=
+declare -a allfiles=
 
-if [[ -z "$@" ]]; then
+if [[ -z "$*" ]] || [[ "$*" =~ --help ]]; then
 	printhelp
 	exit 0
 fi
 
-while [[ -n "$@" ]]; do
-	if [[ "$1" = "--help" ]]; then
-		printhelp
-		exit 0
-	fi
-	alldirs=$(echo "$1"|sed 's/ //g')
-	shift
+while [[ -n "$*" ]]; do
+	ARG="$1"; shift
+	case "$ARG" in
+	--exclude)
+		while [[ -n "$*" ]] && [[ "$1" != "--" ]]; do
+			exclusions="$exclusions|$1"; shift
+		done
+		exlusions=${exclusions#|}
+		;;
+	*)
+		allfiles=(${allfiles[@]} $ARG)
+		;;
+	esac
 done
 
-for topdir in "$alldirs"; do
-	( cd $(echo "$topdir"|sed 's// /g')
-	for thisdir in $(ls --color=never); do
-		[[ -d "$thisdir" ]] && {
-		(
-		cd $thisdir
-		echo "[1;33mUpdating $thisdir ----------¬[0m"
-		[[ -d .git ]] && {
-			if [[ $(git status|grep -E "can be fast-forwarded|is up-to-date|working directory clean" -c) -gt 1 ]] && git fetch > /dev/null 2>&1 ; then
-				git pull
-			else
-				echo "    [1;31mUpdate failed[0m"
-				git status
-			fi
-		}
-		)
-		}
-	done
-	)
+for x in "${allfiles[@]}"; do
+	(echo "$x"|egrep "$exclusions") && continue
+
+	cd "$x"
+	echo "^[[1;32m$x^[[0m"
+	git fetch
+	if (git status|egrep 'can be fast-forwarded' -i) ; then
+		git pull
+	else
+		git status
+	fi
 done
+
