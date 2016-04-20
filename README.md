@@ -3,49 +3,57 @@ handy-scripts
 
 Some handy scripts I tend to need all around
 
-* af
-	* wrapper around the apt-get tool for easily managing installs
+* `af` and `tgpi`
+	* package manager wrappers
+	* have been moved to [alpacka](https://github.com/taikedz/alpacka)
 
-* connect
+* `lx`
+	* LXC commands wrapper for managing Linux Containers
+	* has been moved to [easy-lxc](https://github.com/taikedz/easy-lxc)
+
+* `connect`
 	* cli SSH connections manager
 
-* etherpad
+* `etherpad`
 	* example init script to daemonize etherpad
 
-* gdiff
+* `gdiff`
 	* lazy git diffing, adding and committing
+	* this has been re-developed into a self-containing project using [bash-builder](https://github.com/taikedz/bash-builder)
+	* source has moved to `projects/`, its executable is now a binary
 
-* gen_ss_ssl
-	* generate an SSL key pair
-
-* install
+* `install`
 	* install the useful tools
 
-* launch
+* `launch`
 	* launch a GUI program from the command line, without hogging it
 
-* letsen
-	* let's encrypt automation
+* `gen_ss_ssl`
+	* generate an SSL key pair
+	* only for private/internal servers
+	* for public servers, use Let's Encrypt
 
-* pullall
+* `letsen`
+	* let's encrypt automation
+	* in development
+
+* `pullall`
 	* iterate through child dirs for git folders to git-pull
 
-* rmkernel.sh
-	* generate script to removee old kernel data in /boot
+* `rmkernel.sh`
+	* generate script to remove old kernel files in `/boot`
 
-* rotate-screen
+* `rotate-screen`
 	* rotate screena and input devices, useful for touch screen usage
+	* would suit having a GUI
 
-* secret
+* `secret`
 	* easy gpg key management
 
-* sendme
+* `sendme`
 	* mail-utils-based command line emailer, for mailing quick notes to yourself
 	* supports some GPG signing features
 
-* tpgi
-	* wrapper for tazpkg
-
-* vlcconv
+* `vlcconv`
 	* use vlc to convert files. should probably deprecate this in favour of ffmpeg usage
 
