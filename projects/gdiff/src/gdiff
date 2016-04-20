@@ -64,15 +64,29 @@ fi
 
 # ======
 
-if [[ -z "$@" ]]; then
-	git fetch
-	git status
-
-	if [[ "$CURBRANCH" = master ]] && ! (git status|grep 'nothing to commit' -i >/dev/null); then
-		warne "${CBRED}\n\tYou are on master ; and there are changes. Don't develop on master!\n"
-		uconfirm "Move changes to a different branch?" && switchchangestobranch
+function checkmaster {
+	if [[ "$CURBRANCH" = master ]]; then
+		warne "\n\tYou are on master"
+		if ! (git status|grep 'nothing to commit' -i >/dev/null); then
+			warne "${CBRED}\tand there are changes. Don't develop on master!\n"
+			if uconfirm "Move changes to a different branch?"; then
+				git branch
+				uconfirm "Will you need a new branch?" && {
+					git branch "$(uask "Name of new branch")" || faile "Aborting"
+				}
+				switchchangestobranch
+			else
+				uconfirm "Proceed anyway?" || faile "Aborted." 
+			fi
+		fi
 	fi
+}
 
+if [[ -z "$@" ]]; then
+	if [[ $(git remote | wc -l) -gt 0 ]]; then git fetch; fi
+	git status
+	
+	checkmaster
 	exit 0
 fi
 
@@ -123,6 +137,7 @@ while [[ -n "$@" ]]; do
 done
 
 if [[ "$ACTION" = commit ]]; then
+	checkmaster
 	git add $ADDFILE
 	if [[ -z "$COMMIT" ]]; then
 		git commit
@@ -130,6 +145,7 @@ if [[ "$ACTION" = commit ]]; then
 		git commit -m "$COMMIT"
 	fi
 elif [[ "$ACTION" = add ]]; then
+	checkmaster
 	git add $ADDFILE
 else
 	for cfile in $ADDFILE; do
