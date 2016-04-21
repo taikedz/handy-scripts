@@ -25,6 +25,8 @@ gdiff stated without actions will display each specified file in turn, and show 
 
 This will cause "git add" to be called on the files
 
+Will warn of operating on master.
+
 +++
 	gdiff { FILES ... | "." } -m [MESSAGE ...]
 
@@ -32,9 +34,10 @@ If FILES are specified, adds and commits those files, as well as any currently s
 
 If "." is specified instead of a list of files, adds all unstaged changes, and commits them with the message.
 
+Will warn of operating on master
 
 +++
-	gdiff [-u|--pull]
+	gdiff [-l|--pull]
 
 Pull remote data from origin
 
@@ -44,7 +47,7 @@ Pull remote data from origin
 Push current commit state to origin
 
 +++
-	gdiff {-b|--rebranch} BRANCH
+	gdiff {-b|--branch} BRANCH
 
 Switch to specified branch. If branch does not yet exist, you are prompted to create it.
 

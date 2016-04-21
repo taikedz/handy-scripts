@@ -18,6 +18,7 @@ fi
 ADDFILE=
 COMMIT=
 ACTION=
+FETCHING=yes
 CURBRANCH="$(git branch|grep -P '(?<=\* ).+' -o)"
 branchpat='^[a-zA-Z0-9_-]+$'
 
@@ -27,7 +28,11 @@ function switchchangestobranch {
 	gotobranch=$(echo $(uchoose "Which branch should ALL tracked and uncommitted changes be moved to?" "$(git branch|egrep -v '^\* ')"))
 	# extra echo wrap to remove trailing whitespaces
 	if [[ -z "$gotobranch" ]]; then
-		faile "aborted switch"
+		if uconfirm "Nothing selected. Create a new branch?" ; then
+			if ! (git branch "$(uask "Name of new branch")" ); then faile "Aborting switch"; fi
+		elif ! (uconfirm "Proceed anyway?"); then
+			faile "Ran away!"
+		fi
 	elif [[ ! "$gotobranch" =~ $branchpat ]]; then
 		faile "Invalid branch [$gotobranch]"
 	fi
@@ -64,17 +69,19 @@ fi
 
 # ======
 
-if [[ -z "$@" ]]; then
-	git fetch
-	git status
-
-	if [[ "$CURBRANCH" = master ]] && ! (git status|grep 'nothing to commit' -i >/dev/null); then
-		warne "${CBRED}\n\tYou are on master ; and there are changes. Don't develop on master!\n"
-		uconfirm "Move changes to a different branch?" && switchchangestobranch
+function checkmaster {
+	if [[ "$CURBRANCH" = master ]]; then
+		warne "\n\tYou are on master"
+		if ! (git status|grep 'nothing to commit' -i >/dev/null); then
+			warne "${CBRED}\tand there are changes. Don't develop on master!\n"
+			if uconfirm "Move changes to a different branch?"; then
+				switchchangestobranch
+			else
+				uconfirm "Proceed anyway?" || faile "Aborted." 
+			fi
+		fi
 	fi
-
-	exit 0
-fi
+}
 
 # need to also consider - merge and rollback
 
@@ -83,6 +90,9 @@ while [[ -n "$@" ]]; do
 	shift
 
 	case "$ARG" in
+	--debug)
+		MODE_DEBUG=yes
+		;;
 	-b|--branch)
 		switchbranch "$1"; shift
 		;;
@@ -96,6 +106,9 @@ while [[ -n "$@" ]]; do
 		;;
 	-a)
 		ACTION=add
+		;;
+	-nf)
+		FETCHING=no
 		;;
 	-s|--push)
 		infoe "git push origin $CURBRANCH"
@@ -122,7 +135,16 @@ while [[ -n "$@" ]]; do
 	esac
 done
 
+if [[ -z "$ACTION" ]] && [[ -z "$ADDFILE" ]]; then
+	if [[ "$FETCHING" = yes ]] && [[ $(git remote | wc -l) -gt 0 ]]; then git fetch; fi
+	git status
+	
+	checkmaster
+	exit 0
+fi
+
 if [[ "$ACTION" = commit ]]; then
+	checkmaster
 	git add $ADDFILE
 	if [[ -z "$COMMIT" ]]; then
 		git commit
@@ -130,6 +152,7 @@ if [[ "$ACTION" = commit ]]; then
 		git commit -m "$COMMIT"
 	fi
 elif [[ "$ACTION" = add ]]; then
+	checkmaster
 	git add $ADDFILE
 else
 	for cfile in $ADDFILE; do

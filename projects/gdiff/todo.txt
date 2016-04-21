@@ -2,8 +2,6 @@ Things that need doing
 
 Some of these items shouuld be in help, others can be part of the automation.
 
-* alert when you are on master
-	* always, but only prompt when changes present
 * delete branches
 * supprt blames and resets
 * support commit ammending
@@ -13,3 +11,8 @@ Some of these items shouuld be in help, others can be part of the automation.
 * add byte formatting to documentation
 	* underscore
 	* bold
+
+See some extra tips:
+
+* [git tips and tricks](http://geant.cern.ch/content/git-tips-and-tricks)
+* [19 git tips for everyday use](http://www.alexkras.com/19-git-tips-for-everyday-use/)
