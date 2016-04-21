@@ -29,7 +29,7 @@ function switchchangestobranch {
 	# extra echo wrap to remove trailing whitespaces
 	if [[ -z "$gotobranch" ]]; then
 		if uconfirm "Nothing selected. Create a new branch?" ; then
-			if ! (git branch "$(uask "Name of new branch")" ); then faile "Aborting switch" fi
+			if ! (git branch "$(uask "Name of new branch")" ); then faile "Aborting switch"; fi
 		elif ! (uconfirm "Proceed anyway?"); then
 			faile "Ran away!"
 		fi
@@ -83,14 +83,6 @@ function checkmaster {
 	fi
 }
 
-if [[ -z "$@" ]]; then
-	if [[ "$FETCHING" = yes ]] && [[ $(git remote | wc -l) -gt 0 ]]; then git fetch; fi
-	git status
-	
-	checkmaster
-	exit 0
-fi
-
 # need to also consider - merge and rollback
 
 while [[ -n "$@" ]]; do
@@ -98,6 +90,9 @@ while [[ -n "$@" ]]; do
 	shift
 
 	case "$ARG" in
+	--debug)
+		MODE_DEBUG=yes
+		;;
 	-b|--branch)
 		switchbranch "$1"; shift
 		;;
@@ -139,6 +134,14 @@ while [[ -n "$@" ]]; do
 		;;
 	esac
 done
+
+if [[ -z "$ACTION" ]] && [[ -z "$ADDFILE" ]]; then
+	if [[ "$FETCHING" = yes ]] && [[ $(git remote | wc -l) -gt 0 ]]; then git fetch; fi
+	git status
+	
+	checkmaster
+	exit 0
+fi
 
 if [[ "$ACTION" = commit ]]; then
 	checkmaster
