@@ -1,11 +1,33 @@
 #!/bin/bash
 
-if [[ -z "$*" ]]; then
+bfile=
+mybbuild=bbuild
+mytarrun=tarrun
+
+while [[ -n "$*" ]]; do
+	ARG=$1; shift
+	case "$ARG" in
+	-b|--bbuild)
+		mybbuild=$1; shift
+		;;
+	-t|-tarrun)
+		mytarrun=$1; shift
+		;;
+	*)
+		if [[ -n "$bfile" ]]; then
+			echo "Please only specify ONE file to build at a time."
+		fi
+		bfile=$1; shift
+		;;
+	esac
+done
+
+
+if [[ -z "$bfile" ]]; then
 	echo "Please specify a file to compile"
 	exit 1
 fi
 
-bfile="$1"
 bname="$(basename "$bfile")"
 
 if [[ ! -f "$bfile" ]]; then
