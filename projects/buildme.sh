@@ -13,18 +13,23 @@ if [[ ! -f "$bfile" ]]; then
 	exit 2
 fi
 
-# =======
+# ======= optional shellcheck block, if installed ----¬
 
-shellcheck "$bfile"
-scstatus=$?
-read -p "Build ? [y/N] > "
+if [[ -n "$(which /usr/bin/shellcheck 2>/dev/null)" ]]; then
+	shellcheck "$bfile"
+	scstatus=$?
+	read -p "Build ? [y/N] > "
 
-if [[ "$REPLY" = y ]]; then
-	bbuild "$bfile"
+	if [[ "$REPLY" != y ]]; then
+		exit $scstatus
+	fi
 else
-	echo "Shellcheck exited with code $scstatus"
-	exit $scstatus
+	echo "Install 'shellcheck' for pre-build syntax check. Proceeding with build now." 1>&2
 fi
+
+# ========/
+
+bbuild "$bfile"
 
 mkdir -p test/
 
