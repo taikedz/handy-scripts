@@ -11,3 +11,9 @@ Some of these items shouuld be in help, others can be part of the automation.
 * add byte formatting to documentation
 	* underscore
 	* bold
+
+See some extra tips:
+
+* [git tips and tricks](http://geant.cern.ch/content/git-tips-and-tricks)
+* [19 git tips for everyday use](http://www.alexkras.com/19-git-tips-for-everyday-use/)
+
