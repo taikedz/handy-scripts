@@ -15,7 +15,17 @@ fi
 
 # =======
 
-bbuild "$bfile"
+shellcheck "$bfile"
+scstatus=$?
+read -p "Build ? [y/N] > "
+
+if [[ "$REPLY" = y ]]; then
+	bbuild "$bfile"
+else
+	echo "Shellcheck exited with code $scstatus"
+	exit $scstatus
+fi
+
 mkdir -p test/
 
 if [[ "$*" =~ --install ]]; then
