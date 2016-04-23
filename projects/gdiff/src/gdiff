@@ -88,6 +88,8 @@ function checkmaster {
 	fi
 }
 
+#% include functions/pushmaster.sh functions/givemaster.sh
+
 # need to also consider - merge and rollback
 
 while [[ -n "$@" ]]; do
@@ -126,8 +128,21 @@ while [[ -n "$@" ]]; do
 		exit $?
 		;;
 	-u|--rebase)
-		infoe "git rebase $CURBRANCH"
-		git rebase "$1"; shift
+		if [[ -z "$*" ]]; then faile "Specify a branch to rebase from"; fi
+		infoe "rebasing [$CURBRANCH] to [$1]"
+		git rebase "$1"
+		exit $?
+		;;
+	--pushmaster)
+		pushmaster
+		exit $?
+		;;
+	--givemaster)
+		if [[ -n "$*" ]]; then
+			givemaster "$1"
+		else
+			givemaster
+		fi
 		exit $?
 		;;
 	*)
