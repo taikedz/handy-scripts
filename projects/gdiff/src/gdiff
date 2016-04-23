@@ -88,7 +88,7 @@ function checkmaster {
 	fi
 }
 
-#% include functions/pushmaster.sh function/givemaster.sh
+#% include functions/pushmaster.sh functions/givemaster.sh
 
 # need to also consider - merge and rollback
 
