@@ -1,0 +1,229 @@
+#!/bin/bash
+ cd "$USER_WD" 
+
+source "$APPLICATION_WD/build-common/abspath.source"
+source "$APPLICATION_WD/build-common/askuser.source"
+source "$APPLICATION_WD/build-common/bashout.source"
+
+set -eu
+
+### bbuild 2.0 Usage:
+#
+# Second version of bbuild - does not compile to single bash file, instead compiles entire project into a self-extracting file
+#
+###/doc
+
+function printhelp {
+cat <<EOHELP
+[0m
+	bbuild - the bash builder
+
+Version 2.0.5
+
+DESCRIPTION
+===========
+
+Build a single executable from a bash script as a self-extracting and executing tarball.
+
+Supports bundling other bash files to be source', as well as any other files to include in the package.
+
+When writing scripts, replace any
+
+	source script1.sh
+	source other/script2.sh
+
+with "#% include" directives:
+
+[0m	#% include script1.sh other/script2.sh
+
+Specify
+
+[0m	#% bundle path/to/file.py and/any/others.png
+
+to include these files in the tarball.
+
+All paths must be relative to, and under, the working directory, and not use "../" directory climbing.
+
+Symlinks become bundled as standalone files; use symlinks in the working directory to include files from outside the working directory.
+
+Files are only ever included or bundled once, but they are sourced at every point an "#% include" appears
+
+USAGE
+=====
+
+	bbuild SCRIPT [ -C WORKDIR ] [ -O OUTFILE ]
+
+Build script SCRIPT
+
+This will use the current working directory as the root for any paths for inclusion or bundling, and output to a ./SCRIPT.tgz.sh file
+
+If you specify WORKDIR, that directory is used as the root for any paths that are included.
+
+If you specify OUTFILE, then the resulting file will be named OUTFILE.tgz.sh
+
+OPTIONS
+=======
+
+If you have shellcheck installed, bbuild will run each included (not bundled) script through shellcheck, and prompt if you want to build. By default shellcheck is run against all the files, and you are then prompted. There are two other variants:
+
+-nc, --no-check
+	Don't cehck at all.
+
+-pc, --pause-check
+	Pause after each file
+	You will be asked whether to exit (y)
+	  or whetehr to continue (default)
+
+EOHELP
+}
+
+
+SFILE=
+OUTFILE=
+ORIGINAL_WD=$PWD
+MYTARRUN=tarrun
+MODE_CHECK=yes
+
+while [[ -n "$*" ]]; do
+	ARG="$1"; shift
+	case "$ARG" in
+	-C)
+		cd "$ORIGINAL_WD/$1"; shift # ensure path is always relative to the current working dir at call time
+		;;
+	-O)
+		OUTFILE="$1"; shift
+		;;
+	-TR)
+		MYTARRUN=$1 ; shift
+		;;
+	-h|--help)
+		printhelp
+		exit 0
+		;;
+	--debug)
+		MODE_DEBUG=yes
+		;;
+	-nc|--no-check)
+		MODE_CHECK=no
+		;;
+	-pc|--pause-check)
+		MODE_CHECK=pause
+		;;
+	*)
+		SFILE="$ARG"
+		;;
+	esac
+done
+
+if [[ -z "$SFILE" ]]; then
+	faile "No script file specified"
+fi
+
+infoe "Starting bbuild"
+
+FNAME="$(basename "$SFILE")"
+if [[ -z "$OUTFILE" ]]; then OUTFILE="$FNAME"; fi
+
+BBWD=$(mktemp --tmpdir -d bbuild-$FNAME-XXXXX.tmp)
+BBWD="$BBWD/$OUTFILE"
+TFILE="$BBWD/$FNAME"
+STACKFILE="$BBWD/inclusion-stack"
+debuge "Building into $BBWD"
+
+mkdir "$BBWD"
+debuge "We are in $PWD"
+cp "$SFILE" "$BBWD/$FNAME"
+chmod 755 "$TFILE"
+mkdir -p "$BBWD/build-common"
+
+echo "$TFILE" > "$STACKFILE"
+
+while grep -P '^\s*#% (include|bundle)' $(cat "$STACKFILE"|xargs echo) -q; do # FIXME dirty cat. how to clean it?
+	EFILE="$(grep '^\s*#% include' $(cat "$STACKFILE"|xargs echo) -l |head -n 1)" # FIXME dirty cat. how to clean it?
+
+	debuge "processing file $EFILE"
+	grep -n -P '^\s*#% include' "$EFILE"|tac | while read incline; do
+		incline="$(echo "$incline" |sed -r 's/^([0-9]+:)\s*#%\s*include\s*/\1/')"
+		declare -a ifiles=( $(echo "$incline"|cut -d':' -f2) )
+		incline=$(echo "$incline"|cut -d':' -f1)
+
+		debuge "  processing line $incline"
+		for infile in "${ifiles[@]}"; do
+			debuge "    processing inclusion $infile"
+			newindir="$BBWD/$(dirname "$infile")"
+			newinfile="$(basename "$infile")"
+			if [[ -f "$BBPATH/$infile.source" ]] && ! grep "$BBWD/build-common/$infile.source" "$STACKFILE" >/dev/null; then
+				sed "$incline "'s|$|\nsource "$APPLICATION_WD/build-common/'"$infile"'.source"|' -i "$EFILE" # FIXME ugly code-generating code
+				sed "$incline "'s|$APPLICATION_WD/$APPLICATION_WD|$APPLICATION_WD|' -i "$EFILE"
+				cp "$BBPATH/$infile.source" "$BBWD/build-common/"
+				echo "$BBWD/build-common/$infile.source" >> "$STACKFILE"
+
+			elif [[ -f "$infile" ]] && [[ ! "$infile" =~ '../' ]] && ! grep "$newindir/$newinfile" "$STACKFILE" >/dev/null ; then
+				sed "$incline "'s|$|\nsource "$APPLICATION_WD/'"$infile"'"|' -i "$EFILE" # FIXME ugly code-generating code
+				sed "$incline "'s|$APPLICATION_WD/$APPLICATION_WD|$APPLICATION_WD|' -i "$EFILE"
+				mkdir -p "$newindir"
+				cp "$infile" "$newindir/$newinfile"
+				echo "$newindir/$newinfile" >> "$STACKFILE"
+			
+			elif grep "$BBWD/build-common/$infile.source" "$STACKFILE" >/dev/null || grep "$newindir/$newinfile" "$STACKFILE" >/dev/null ; then
+				: # warne "$infile will be sourced multiple times - verify that you intended this."
+
+			else
+				faile "Invalid inclusion file $infile"
+			fi
+		done
+		sed "$incline d" -i "$EFILE"
+	done
+
+	grep -n -P '^\s*#% bundle' "$EFILE"|tac | while read bundline; do
+		bundline="$(echo "$bundline" |sed -r 's/^([0-9]+:)\s*#%\s*bundle\s*/\1/')"
+		declare -a bfiles=( $(echo "$bundline"|cut -d':' -f2) )
+		bundline=$(echo "$bundline"|cut -d':' -f1)
+
+		debuge "  processing line $bundline"
+		for bunfile in "${bfiles[@]}"; do
+			debuge "    processing bundle $bunfile"
+			newbundir="$BBWD/$(dirname "$bunfile")"
+			newbunfile="$(basename "$bunfile")"
+			if [[ -f "$bunfile" ]] && [[ ! "$bunfile" =~ '../' ]] && ! grep -e "^$newbundir/$newbunfile$" "$STACKFILE" >/dev/null ; then
+				sed "s|$bunfile|\$APPLICATION_WD/$bunfile|g" -i "$EFILE" # force appdir context
+				sed 's|$APPLICATION_WD/$APPLICATION_WD|$APPLICATION_WD|' -i "$EFILE"
+				mkdir -p "$newbundir"
+				cp "$bunfile" "$newbundir/$newbunfile"
+				echo "$newbundir/$newbunfile" >> "$STACKFILE"
+			
+			elif grep "$newbundir/$newbunfile" "$STACKFILE" >/dev/null ; then
+				: # skip it, we've already copied it in, we don't want to revert changes by writing in a fresh copy
+
+			else
+				faile "Invalid bundle file $bunfile" 2
+			fi
+		done
+		sed "$bundline d" -i "$EFILE"
+	done
+done
+
+dash=$-
+set +e
+if [[ -n "$(which /usr/bin/shellcheck 2>/dev/null)" ]] && [[ $MODE_CHECK != no ]]; then
+	cat "$STACKFILE"|while read bfile; do
+		shellcheck "$bfile"
+		([[ $? -gt 0 ]] && [[ "$MODE_CHECK" = pause ]]) && uconfirm "${CYEL}Quit? (press return to simply continue)$CDEF"
+	done
+
+	if ! uconfirm "${CYEL}Proceed with build?$CDEF"; then
+		exit
+	fi
+else
+	infoe "${CBBLU}Install 'shellcheck' for pre-build syntax check. Proceeding with build now." 1>&2
+fi
+[[ $dash =~ e ]] && set -e
+
+
+debuge "Stackfile: $(echo;cat "$STACKFILE")"
+rm "$STACKFILE"
+
+infoe "Calling $MYTARRUN"
+"$MYTARRUN" "$TFILE"
+debuge "from $TFILE"
+infoe "Done build."

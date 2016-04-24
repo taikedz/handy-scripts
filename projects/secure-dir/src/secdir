@@ -1,0 +1,159 @@
+#!/bin/bash
+
+# Script to mount / unmount singular secure diredctories
+
+# Released under BSD license:
+# Copyright (c) 2016 Tai Kedzierski.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms are permitted
+# provided that the above copyright notice and this paragraph are
+# duplicated in all such forms and that any documentation,
+# advertising materials, and other materials related to such
+# distribution and use acknowledge that the software was developed
+# by Tai Kedzierski. The name of Tai Kedzierski
+# may not be used to endorse or promote products derived
+# from this software without specific prior written permission.
+# THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+
+### secdir Usage:help
+# Manage, Mount and Unmount EncFS encrypted directory
+# 
+# $(basename $0) {list|init}
+# $(basename $0) {mount|unmount|open|close} DIRNAME [-to MOUNTPOINT] [LINK ...]
+# 
+# Uses a .enc directory in the current working directory to store the encrypted files.
+# 
+# The secure directory is mounted in the current working directory.
+# 
+# If you do not specify a MOUNTPOINT, creates a directory in the current working directory and mounts there, if allowed.
+# 
+# 
+# OPTIONS
+# 
+# list
+# 	list secure directories configured at current working directory
+# 
+# init
+# 	set current working directory up as a location for secure directories
+# 
+# mount
+# open
+# 	mount the secure directory. If it does not exist, offers to create it.
+# 
+# unmount
+# close
+# 	unmount a mounted secure directory.
+# 
+# CONFIGURATION
+# 
+# A configuration file is stored in .enc/config. It is an INI-style key-value store
+# 
+# Main/welcome
+# 	A welcome message.
+# 
+# Mount/load_in_cwd
+# 	yes --> allows mounting directories in current working directory
+# 	* --> do not allow
+# 
+# Mount/home
+# 	This must be a directory
+# 	By default secure directories are mounted here instead of in the current working directory
+###/doc 
+
+set -u
+
+#% include autohelp bashout abspath configreader
+
+#% bundle files/config
+#% include files/linkage.sh
+
+
+
+if [[ ! -f /usr/bin/encfs ]]; then
+	encfs # try calling it anyway; some systems may hint which package needs installing
+	echo ""
+	faile "Please install package 'encfs' "
+	exit 0
+fi
+
+if [[ -z "$*" ]]; then
+	faile "No arguments given."
+fi
+
+ACTION="$1" ; shift
+
+case "$ACTION" in
+list)
+	for x in .enc/*; do
+		if [[ -d "$x" ]]; then
+			echo "$(basename $x)"
+		fi
+	done
+	exit 0
+	;;
+init)
+	infoe "Initialize a new directory"
+	debuge "App dir is $APPLICATION_WD"
+	{
+		mkdir -p "$PWD/.enc"
+		cp files/config .enc/
+	} && echo "secdir has been set up for use in $PWD"
+	exit
+	;;
+mount|open|unmount|close|--debug)
+	: # ignore for now
+	;;
+*)
+	faile "Unknown action"
+	;;
+esac
+
+if [[ ! -d "$PWD/.enc" ]]; then
+	faile "Current directory $PWD is not a valid secdir location."
+fi
+
+
+if [[ -z "$*" ]]; then
+	faile "You must specify the name of a secure directory to load"
+fi
+
+#% include files/config-init.sh
+
+
+if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]]; then
+	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "PWD")" ]]; then # use grep comparison to prevent any directories under too
+		faile "Cannot load under current working directory"
+	fi
+fi
+
+CUST="$1" ; shift
+SECDIR="$PWD/.enc/$CUST"
+OPEDIR="$(abspath "$LOADDIR/$CUST")"
+
+case "$ACTION" in
+	mount|open)
+		infoe "Opening $CUST"
+		debuge "Making $OPEDIR"
+		mkdir -p "$OPEDIR"
+		debuge "Loading ... $SECDIR > $OPEDIR"
+		encfs "$SECDIR" "$OPEDIR"
+		debuge "Creating softlinks"
+		linkall $*
+		;;
+	unmount|close)
+		infoe "Closing $CUST"
+		if delinkall ; then
+			fusermount -u "$OPEDIR"
+			rmdir "$OPEDIR"
+		else
+			faile "Could not unlink some directories:$(echo; cat "$PWD/.enc/${CUST}.links")" 3
+		fi
+		;;
+	*)
+		faile "Invalid action $ACTION. Use 'mount' or 'unmount' followed by the directory name."
+		;;
+esac
