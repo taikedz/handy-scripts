@@ -22,8 +22,9 @@
 ### secdir Usage:help
 # Manage, Mount and Unmount EncFS encrypted directory
 # 
-# $(basename $0) {list|init}
-# $(basename $0) {mount|unmount|open|close} DIRNAME [-to MOUNTPOINT] [LINK ...]
+# 	secdir {list|init}
+# 	secdir {mount|open} ACCOUNT [-to MOUNTPOINT] [LINK ...]
+# 	secdir {unmount|close} ACCOUNT
 # 
 # Uses a .enc directory in the current working directory to store the encrypted files.
 # 
@@ -35,25 +36,34 @@
 # OPTIONS
 # 
 # list
-# 	list secure directories configured at current working directory
+# 	list secure directories by account name configured at current working directory
 # 
 # init
-# 	set current working directory up as a location for secure directories
+# 	set current working directory up as a location to store secure directories' encrypted data
 # 
-# mount
-# open
+# {mount|open} [-to MOUNTPOINT] [LINKS ...]
 # 	mount the secure directory. If it does not exist, offers to create it.
+#
+# 	You can specify `-to MOUNTPOINT` to explicitly mount the directory at that location.
+#
+# 	You can specify any number of softlinks to create pointing to the mounted directory.
+#
+# 	Will fail if you cannot write to the mountpoint
+#
+# 	If you have configured against mounting in the current working directory, you MUST point the `-to MOUNTPOINT`
+# 	  to a different location. This allows secure directories to be distributed on a network
+# 	  whilst reducing the risk of a user indavertently mounting in a publicly shared directory.
+#
+# 	  This is a Molly-guard, NOT a security lock.
 # 
-# unmount
-# close
+# {unmount|close}
 # 	unmount a mounted secure directory.
+#
+# 	Any soft links created during mount will be removed.
 # 
 # CONFIGURATION
 # 
 # A configuration file is stored in .enc/config. It is an INI-style key-value store
-# 
-# Main/welcome
-# 	A welcome message.
 # 
 # Mount/load_in_cwd
 # 	yes --> allows mounting directories in current working directory
@@ -174,6 +184,8 @@ case "$ACTION" in
 		debuge "Creating softlinks"
 		linkall "$@"
 		;;
+	
+
 	unmount|close)
 		mountpointdir=
 		if ! grep -E "^$CUST:" "$MOUNTFILE" -q; then
@@ -192,6 +204,9 @@ case "$ACTION" in
 			faile "Could not unlink some directories:$(echo; cat "$PWD/.enc/${CUST}.links")" 3
 		fi
 		;;
+
+
+
 	*)
 		faile "Invalid action $ACTION. Use 'mount' or 'unmount' followed by the directory name."
 		;;

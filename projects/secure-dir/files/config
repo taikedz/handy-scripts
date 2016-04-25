@@ -1,7 +1,3 @@
-[Main]
-
-welcome=owned by []
-
 [Mount]
 
 load_in_cwd=no

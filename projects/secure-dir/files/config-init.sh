@@ -3,10 +3,6 @@
 #% include configreader
 export CONFFILE=.enc/config
 
-config_usesection Main
-export GREETING=$(config_readval welcome)
-
-
 
 config_usesection Mount
 
@@ -18,3 +14,4 @@ if config_isset home; then
 	LOADDIR=$(config_readval home)
 	LOADDIR=${LOADDIR//'$HOME'/$HOME}
 fi
+debuge "Loading to $LOADDIR"
