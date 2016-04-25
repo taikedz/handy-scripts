@@ -1,3 +1,6 @@
 .*.swp
 test/
 *test.sh
+release-cand/
+scratch/
+*-test.sh
