@@ -158,7 +158,7 @@ debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
 debuge ""[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]
 if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
 	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
-		faile "Cannot load under current working directory"
+		faile "Cannot load under current working directory - use the '-to MOUNTPOINT' option"
 	fi
 fi
 
