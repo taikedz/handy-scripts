@@ -121,7 +121,26 @@ if [[ -z "$*" ]]; then
 	faile "You must specify the name of a secure directory to load"
 fi
 
+# =====
+# Get the secured directory
+
+CUST="$1" ; shift
+SECDIR="$PWD/.enc/$CUST"
+
+# =====
+# Load the configs
+# might need to separate this differently if other configs need reading elsewhere
 #% include files/config-init.sh
+
+# =====
+# Override target dir if applicable
+if [[ -n "$*" ]]; then
+	if [[ "x$1" = "x-to" ]]; then
+		shift
+		LOADDIR=$(abspath "$1")
+		shift
+	fi
+fi
 
 
 if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]]; then
@@ -130,8 +149,6 @@ if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]]; then
 	fi
 fi
 
-CUST="$1" ; shift
-SECDIR="$PWD/.enc/$CUST"
 OPEDIR="$(abspath "$LOADDIR/$CUST")"
 
 case "$ACTION" in
@@ -142,7 +159,7 @@ case "$ACTION" in
 		debuge "Loading ... $SECDIR > $OPEDIR"
 		encfs "$SECDIR" "$OPEDIR"
 		debuge "Creating softlinks"
-		linkall $*
+		linkall "$@"
 		;;
 	unmount|close)
 		infoe "Closing $CUST"
