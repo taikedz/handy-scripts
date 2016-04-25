@@ -158,7 +158,7 @@ debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
 debuge ""[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]
 if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
 	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
-		faile "Cannot load under current working directory"
+		faile "Cannot load under current working directory - use the '-to MOUNTPOINT' option"
 	fi
 fi
 
@@ -175,10 +175,13 @@ case "$ACTION" in
 
 		infoe "Opening $CUST"
 		debuge "Making $OPEDIR"
-		mkdir -p "$OPEDIR"
+		mkdir -p "$OPEDIR" || faile "Cannot write to [$OPEDIR]"
 		
 		debuge "Loading ... $SECDIR > $OPEDIR"
-		encfs "$SECDIR" "$OPEDIR"
+		encfs "$SECDIR" "$OPEDIR" || {
+			rmdir "$OPEDIR" 2>/dev/null
+			faile "Could not open [$CUST]"
+		}
 		echo "$CUST:$OPEDIR" >> "$MOUNTFILE"
 		
 		debuge "Creating softlinks"
@@ -197,7 +200,7 @@ case "$ACTION" in
 
 		infoe "Closing $CUST"
 		if delinkall ; then
-			fusermount -u "$mountpointdir"
+			fusermount -u "$mountpointdir" || faile "Could not close $CUST"
 			rmdir "$mountpointdir"
 			sed "/^$CUST:/d" -i "$MOUNTFILE"
 		else
@@ -208,6 +211,6 @@ case "$ACTION" in
 
 
 	*)
-		faile "Invalid action $ACTION. Use 'mount' or 'unmount' followed by the directory name."
+		faile "Invalid action $ACTION. Use 'mount' or 'unmount' followed by the directory name. See --help for more information"
 		;;
 esac
