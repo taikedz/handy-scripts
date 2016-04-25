@@ -71,7 +71,7 @@ set -u
 #% bundle files/config
 #% include files/linkage.sh
 
-
+MOUNTFILE=.enc/mounts
 
 if [[ ! -f /usr/bin/encfs ]]; then
 	encfs # try calling it anyway; some systems may hint which package needs installing
@@ -134,38 +134,60 @@ SECDIR="$PWD/.enc/$CUST"
 
 # =====
 # Override target dir if applicable
+OPEDIR="$(abspath "$LOADDIR/$CUST")"
 if [[ -n "$*" ]]; then
 	if [[ "x$1" = "x-to" ]]; then
 		shift
 		LOADDIR=$(abspath "$1")
+		OPEDIR=$(abspath "$1")
 		shift
 	fi
 fi
 
-
-if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]]; then
-	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "PWD")" ]]; then # use grep comparison to prevent any directories under too
+debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
+debuge ""[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]
+if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
+	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
 		faile "Cannot load under current working directory"
 	fi
 fi
 
-OPEDIR="$(abspath "$LOADDIR/$CUST")"
+debuge "Operating on $OPEDIR"
+if [[ ! -f "$MOUNTFILE" ]]; then
+	touch "$MOUNTFILE" || faile "Cannot create $MOUNTFILE"
+fi
 
 case "$ACTION" in
 	mount|open)
+		if grep -E "^$CUST:" "$MOUNTFILE" -q; then
+			faile "$CUST is already mounted at $(grep -E "^$CUST:" "$MOUNTFILE"|cut -d':' -f2)"
+		fi
+
 		infoe "Opening $CUST"
 		debuge "Making $OPEDIR"
 		mkdir -p "$OPEDIR"
+		
 		debuge "Loading ... $SECDIR > $OPEDIR"
 		encfs "$SECDIR" "$OPEDIR"
+		echo "$CUST:$OPEDIR" >> "$MOUNTFILE"
+		
 		debuge "Creating softlinks"
 		linkall "$@"
 		;;
 	unmount|close)
+		mountpointdir=
+		if ! grep -E "^$CUST:" "$MOUNTFILE" -q; then
+			warne "$CUST is not mounted"
+			exit 0
+		else
+			mountpointdir="$(grep -E "^$CUST:" "$MOUNTFILE"|cut -d':' -f2)"
+		fi
+
 		infoe "Closing $CUST"
 		if delinkall ; then
-			fusermount -u "$OPEDIR"
-			rmdir "$OPEDIR"
+			fusermount -u "$mountpointdir"
+			rmdir "$mountpointdir"
+			sed "/^$CUST:/d" -i "$MOUNTFILE"
 		else
 			faile "Could not unlink some directories:$(echo; cat "$PWD/.enc/${CUST}.links")" 3
 		fi
