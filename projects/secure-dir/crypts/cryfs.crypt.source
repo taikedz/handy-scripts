@@ -1,0 +1,24 @@
+#!/bin/bash
+
+### cryptlib file Usage:bbuild
+# provides support for cryfs
+###/doc
+
+function _open_crypt {
+	cryfs "$1" "$2"
+}
+
+function _close_crypt {
+	fusermount -u "$1"
+}
+
+
+function _check_crypt { # just returns the status of the check
+	[[ -n "$(which cryfs 2>/dev/null)" ]]
+}
+
+function _howto_crypt {
+	if [[ -f /usr/bin/apt-cache ]]; then
+		echo "You need CryFS - check your package manager, or download it from https://www.cryfs.org/"
+	fi
+}

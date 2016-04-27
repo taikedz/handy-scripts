@@ -1,0 +1,36 @@
+#!/bin/bash
+
+### cryptlib file Usage:bbuild
+# library providing encfs support
+###/doc
+
+function _open_crypt {
+	encfs "$1" "$2"
+}
+
+function _close_crypt {
+	fusermount -u "$1"
+}
+
+
+function _check_crypt { # just returns the status of the check
+	[[ -n "$(which encfs 2>/dev/null)" ]]
+}
+
+function _howto_crypt {
+	if [[ -f /usr/bin/apt-cache ]]; then
+		echo "EncFS is mentioned in these packages:"
+		apt-cache search encfs
+	elif [[ -f /usr/bin/dnf ]]; then
+		echo "EncFS is mentioned in these packages:"
+		dnf search encfs
+	elif [[ -f /usr/bin/yum ]]; then
+		echo "EncFS is mentioned in these packages:"
+		yum search encfs
+	elif [[ -f /usr/bin/zypper ]]; then
+		echo "EncFS is mentioned in these packages:"
+		zypper search encfs
+	else
+		echo "You need EncFS - check your package manager, or donload it from https://vgough.github.io/encfs/"
+	fi
+}

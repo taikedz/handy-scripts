@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#% include configreader
-export CONFFILE=.enc/config
-
-
 config_usesection Mount
 
 export CWDALLOWED=yes
