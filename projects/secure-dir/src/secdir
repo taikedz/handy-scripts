@@ -86,6 +86,10 @@ set -u
 #% bundle files/config
 #% include files/linkage.sh
 
+if [[ "$1" = init ]]; then
+	#% include files/init-enc.sh
+fi
+
 if [[ ! -d "$HOME/.config/secdir" ]]; then
 	mkdir "$HOME/.config/secdir"
 fi
@@ -138,49 +142,11 @@ fi
 # stops at first non-option-flag
 #% include files/swallow-options.source
 
-# ========================================
-# Process non-changing actions
-
-ACTION="$1" ; shift
-
-
-
-case "$ACTION" in
-list)
-	for x in .enc/*; do
-		if [[ -d "$x" ]]; then
-			x="$(basename $x)"
-			echo "$x"
-			ps aux | grep "^$(whoami).+$x" | grep -v grep # display any currently open items
-		fi
-	done
+if [[ "$1" = list ]]; then
+	#% include files/listall.sh
 	exit 0
-	;;
-init)
-	if [[ -d ./.enc ]]; then
-		uconfirm "It seems this directory has already been initialized. Overwrite? This will destroy configs!!" ||
-			faile "Aborting re-initalization"
-	fi
-	infoe "Initialize a new directory"
-	debuge "App dir is $APPLICATION_WD"
-	{
-		mkdir -p "$PWD/.enc"
-		cp files/config .enc/
-	} && echo "secdir has been set up for use in $PWD"
-	exit
-	;;
-mount|open|unmount|close)
-	: # ignore for now
-	;;
-*)
-	faile "Unknown action '$ACTION'"
-	;;
-esac
+fi
 
-
-
-# ======================================
-# Operate on the directory
 
 if [[ ! -f "$MOUNTFILE" ]]; then
 	touch "$MOUNTFILE" || faile "Cannot create $MOUNTFILE"
@@ -198,74 +164,21 @@ CUST="$1" ; shift
 
 case "$ACTION" in
 	mount|open)
-		SECDIR="$PWD/.enc/$CUST"
-		# =======================================
-		# Check that the current directory is a secdir directory
-
-		if [[ ! -d "$PWD/.enc" ]]; then
-			faile "Current directory $PWD is not a valid secdir location."
-		fi
-
-
-		if [[ -z "$*" ]]; then
-			faile "You must specify the name of a secure directory to load"
-		fi
-
-		# =====
-		# Load the mount configuration options
-		#% include files/load-mount-configs.sh
-
-		# =====
-		# Target dir - will be overridden by next options
-		OPEDIR="$(abspath "$LOADDIR/$CUST")"
-
-		debuge "Operating on $OPEDIR"
-		# =======================================
-		# Check that we are allowed to mount in current working directory
-
-		debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
-		debuge "[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]"
-
-		if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
-			if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
-				faile "Cannot load under current working directory - use the '-to MOUNTPOINT' option"
-			fi
-		fi
-
-		# ================
-		# Do mount
-
-		if grep -E "^$CUST:" "$MOUNTFILE" -q; then
-			faile "$CUST is already mounted at $(grep -E "^$CUST:" "$MOUNTFILE"|cut -d':' -f2)"
-		fi
-
-		infoe "Opening $CUST"
-		debuge "Making $OPEDIR"
-		mkdir -p "$OPEDIR" || faile "Cannot write to [$OPEDIR]"
-		
-		debuge "Loading ... $SECDIR > $OPEDIR"
-		_open_crypt "$SECDIR" "$OPEDIR" || {
-			rmdir "$OPEDIR" 2>/dev/null
-			faile "Could not open [$CUST]"
-		}
-		echo "$CUST:$OPEDIR" >> "$MOUNTFILE"
-		
-		debuge "Creating softlinks"
-		linkall "$@"
+		#% include files/opendir.sh
 		;;
-	
 
 	unmount|close)
 		mountpointdir=
-		if ! grep -E "^$CUST:" "$MOUNTFILE" -q; then
-			warne "$CUST is not mounted"
-			exit 0
-		else
+		if grep -E "^$CUST:" "$MOUNTFILE" -q; then
 			mountpointdir="$(grep -E "^$CUST:" "$MOUNTFILE"|cut -d':' -f2)"
+		elif grep -E "$CUST" "$MOUNTFILE"
+			mountpointdir="$CUST"
+		else
+			faile "$CUST is neither a secure-profile or a recognized mounted location."
 		fi
 
 		infoe "Closing $CUST"
-		if delinkall ; then
+		if delinkall ; then # or, 'if delinkall is successfule, then:'
 			_close_crypt "$mountpointdir" || faile "Could not close $CUST"
 			rmdir "$mountpointdir"
 			sed "/^$CUST:/d" -i "$MOUNTFILE"
@@ -277,6 +190,6 @@ case "$ACTION" in
 
 
 	*)
-		faile "Invalid action $ACTION. Use 'mount' or 'unmount' followed by the directory name. See --help for more information"
+		faile "Invalid action [$ACTION]. See --help for more information"
 		;;
 esac

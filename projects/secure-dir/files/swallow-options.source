@@ -10,7 +10,7 @@ while [[ -n "$*" ]]; do
 			LOADDIR=$(abspath "$1")
 			OPEDIR=$(abspath "$1")
 			shift
-		-*) warne "Ignoring unknown option $1"; shift ;;
+		-*) faile "Unknown option [$1]"; ;;
 		*) break ;; # not an option-flag - break out
 	esac
 done
