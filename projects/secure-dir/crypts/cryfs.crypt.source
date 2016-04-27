@@ -1,0 +1,32 @@
+#!/bin/bash
+
+### cryptlib file Usage:bbuild
+# Override this file with the desired cryptographic library
+#
+# Your version must provide a _open_crypt command that takes a token representing the encrypted data store, and a token representing the decrypted data store
+#
+# Your version must provide a _close_crypt command that takes a token representing the decrypted data store for closing
+#
+# Your version must provide
+#
+# For EncFS for example, the tokens are file system paths.
+###/doc
+
+function _open_crypt {
+	cryfs "$1" "$2"
+}
+
+function _close_crypt {
+	cry "$1"
+}
+
+
+function _check_crypt { # just returns the status of the check
+	[[ -n "$(which cryfs 2>/dev/null)" ]]
+}
+
+function _howto_crypt {
+	if [[ -f /usr/bin/apt-cache ]]; then
+		echo "You need CryFS - check your package manager, or download it from https://www.cryfs.org/"
+	fi
+}

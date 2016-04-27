@@ -1,3 +1,6 @@
+[Crypt]
+engine=encfs
+
 [Mount]
 
 load_in_cwd=no
