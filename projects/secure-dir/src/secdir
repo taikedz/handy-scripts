@@ -86,15 +86,27 @@ set -u
 #% bundle files/config
 #% include files/linkage.sh
 
+if [[ ! -d "$HOME/.config/secdir" ]]; then
+	mkdir "$HOME/.config/secdir"
+fi
+
 CONFFILE=./.enc/config
-MOUNTFILE=.enc/mounts
+MOUNTFILE="$HOME/.config/secdir/mounts" # make it global so we can close it from anywhere
 
 #% bundle crypts/encfs.crypt.source
 #% bundle crypts/cryfs.crypt.source
-if [[ ! -d "$HOME/.config/secdir/crypts" ]]; then
+if [[ ! -d "$HOME/.config/secdir/crypts" ]] || [[ "$*" =~ --installcrypts ]]; then
 	mkdir -p "$HOME/.config/secdir/crypts"
 	cp crypts/encfs.crypt.source "$HOME/.config/secdir/crypts/"
 	cp crypts/cryfs.crypt.source "$HOME/.config/secdir/crypts/"
+fi
+
+# =============================
+# load config of mounts file
+
+config_usesection Mount
+if config_isset mountfile; then
+	MOUNTFILE=$(config_readval mountfile)
 fi
 
 # =============================
@@ -121,16 +133,25 @@ if [[ -z "$*" ]]; then
 	faile "No arguments given."
 fi
 
+# ====
+# Swallow optional options
+# stops at first non-option-flag
+#% include files/swallow-options.source
+
 # ========================================
 # Process non-changing actions
 
 ACTION="$1" ; shift
 
+
+
 case "$ACTION" in
 list)
 	for x in .enc/*; do
 		if [[ -d "$x" ]]; then
-			echo "$(basename $x)"
+			x="$(basename $x)"
+			echo "$x"
+			ps aux | grep "^$(whoami).+$x" | grep -v grep # display any currently open items
 		fi
 	done
 	exit 0
@@ -148,7 +169,7 @@ init)
 	} && echo "secdir has been set up for use in $PWD"
 	exit
 	;;
-mount|open|unmount|close|--debug)
+mount|open|unmount|close)
 	: # ignore for now
 	;;
 *)
@@ -156,62 +177,64 @@ mount|open|unmount|close|--debug)
 	;;
 esac
 
-# =======================================
-# Check that the current directory is a secdir directory
-
-if [[ ! -d "$PWD/.enc" ]]; then
-	faile "Current directory $PWD is not a valid secdir location."
-fi
 
 
-if [[ -z "$*" ]]; then
-	faile "You must specify the name of a secure directory to load"
+# ======================================
+# Operate on the directory
+
+if [[ ! -f "$MOUNTFILE" ]]; then
+	touch "$MOUNTFILE" || faile "Cannot create $MOUNTFILE"
 fi
 
 # ====================================
 # Get the secured directory
 
 CUST="$1" ; shift
-SECDIR="$PWD/.enc/$CUST"
 
-# =====
-# Load the mount configuration options
-#% include files/load-mount-configs.sh
-
-# =====
-# Override target dir if applicable
-OPEDIR="$(abspath "$LOADDIR/$CUST")"
-if [[ -n "$*" ]]; then
-	if [[ "x$1" = "x-to" ]]; then
-		shift
-		LOADDIR=$(abspath "$1")
-		OPEDIR=$(abspath "$1")
-		shift
-	fi
-fi
-
-# =======================================
-# Check that we are allowed to mount in current working directory
-
-debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
-debuge "[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]"
-
-if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
-	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
-		faile "Cannot load under current working directory - use the '-to MOUNTPOINT' option"
-	fi
-fi
-
-# ======================================
-# Operate on the directory
-
-debuge "Operating on $OPEDIR"
-if [[ ! -f "$MOUNTFILE" ]]; then
-	touch "$MOUNTFILE" || faile "Cannot create $MOUNTFILE"
-fi
+# ====
+# Swallow optional options
+# stops at first non-option-flag
+#% include files/swallow-options.source
 
 case "$ACTION" in
 	mount|open)
+		SECDIR="$PWD/.enc/$CUST"
+		# =======================================
+		# Check that the current directory is a secdir directory
+
+		if [[ ! -d "$PWD/.enc" ]]; then
+			faile "Current directory $PWD is not a valid secdir location."
+		fi
+
+
+		if [[ -z "$*" ]]; then
+			faile "You must specify the name of a secure directory to load"
+		fi
+
+		# =====
+		# Load the mount configuration options
+		#% include files/load-mount-configs.sh
+
+		# =====
+		# Target dir - will be overridden by next options
+		OPEDIR="$(abspath "$LOADDIR/$CUST")"
+
+		debuge "Operating on $OPEDIR"
+		# =======================================
+		# Check that we are allowed to mount in current working directory
+
+		debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
+		debuge "[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]"
+
+		if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
+			if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
+				faile "Cannot load under current working directory - use the '-to MOUNTPOINT' option"
+			fi
+		fi
+
+		# ================
+		# Do mount
+
 		if grep -E "^$CUST:" "$MOUNTFILE" -q; then
 			faile "$CUST is already mounted at $(grep -E "^$CUST:" "$MOUNTFILE"|cut -d':' -f2)"
 		fi
