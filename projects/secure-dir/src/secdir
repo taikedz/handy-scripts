@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to mount / unmount singular secure diredctories
+# Script to mount / unmount singular secure directories
 
 # Released under BSD license:
 # Copyright (c) 2016 Tai Kedzierski.
@@ -65,6 +65,11 @@
 # 
 # A configuration file is stored in .enc/config. It is an INI-style key-value store
 # 
+# Crypt/utility
+# 	the name of the cryptographic utility to use
+# 	by default, encfs and cryfs are both supported
+# 	you can extend these with your own utilities in `~/.config/secdir/crypt`
+#
 # Mount/load_in_cwd
 # 	yes --> allows mounting directories in current working directory
 # 	* --> do not allow
@@ -81,18 +86,43 @@ set -u
 #% bundle files/config
 #% include files/linkage.sh
 
+CONFFILE=./.enc/config
 MOUNTFILE=.enc/mounts
 
-if [[ ! -f /usr/bin/encfs ]]; then
-	encfs # try calling it anyway; some systems may hint which package needs installing
-	echo ""
-	faile "Please install package 'encfs' "
-	exit 0
+#% bundle crypts/encfs.crypt.source
+#% bundle crypts/cryfs.crypt.source
+if [[ ! -d "$HOME/.config/secdir/crypts" ]]; then
+	mkdir -p "$HOME/.config/secdir/crypts"
+	cp crypts/encfs.crypt.source "$HOME/.config/secdir/crypts/"
+	cp crypts/cryfs.crypt.source "$HOME/.config/secdir/crypts/"
+fi
+
+# =============================
+# Loading encryption utility
+
+config_usesection Crypt
+if ! config_isset utility; then
+	faile "No encryption utility specified in .enc/config"
+else
+	cryptutil=$(config_readval utility)
+	if [[ -f "$HOME/.config/secdir/crypts/$cryptutil.crypt.source" ]]; then
+		source "$HOME/.config/secdir/crypts/$cryptutil.crypt.source"
+	else
+		faile "Encryption utility '$cryptutil' not defined"
+	fi
+fi
+
+if ! _check_crypt ; then
+	warne "$(_hoto_crypt)"
+	faile "The selected encryption utility is not installed"
 fi
 
 if [[ -z "$*" ]]; then
 	faile "No arguments given."
 fi
+
+# ========================================
+# Process non-changing actions
 
 ACTION="$1" ; shift
 
@@ -106,6 +136,10 @@ list)
 	exit 0
 	;;
 init)
+	if [[ -d ./.enc ]]; then
+		uconfirm "It seems this directory has already been initialized. Overwrite? This will destroy configs!!" ||
+			faile "Aborting re-initalization"
+	fi
 	infoe "Initialize a new directory"
 	debuge "App dir is $APPLICATION_WD"
 	{
@@ -118,9 +152,12 @@ mount|open|unmount|close|--debug)
 	: # ignore for now
 	;;
 *)
-	faile "Unknown action"
+	faile "Unknown action '$ACTION'"
 	;;
 esac
+
+# =======================================
+# Check that the current directory is a secdir directory
 
 if [[ ! -d "$PWD/.enc" ]]; then
 	faile "Current directory $PWD is not a valid secdir location."
@@ -131,16 +168,15 @@ if [[ -z "$*" ]]; then
 	faile "You must specify the name of a secure directory to load"
 fi
 
-# =====
+# ====================================
 # Get the secured directory
 
 CUST="$1" ; shift
 SECDIR="$PWD/.enc/$CUST"
 
 # =====
-# Load the configs
-# might need to separate this differently if other configs need reading elsewhere
-#% include files/config-init.sh
+# Load the mount configuration options
+#% include files/load-mount-configs.sh
 
 # =====
 # Override target dir if applicable
@@ -154,13 +190,20 @@ if [[ -n "$*" ]]; then
 	fi
 fi
 
+# =======================================
+# Check that we are allowed to mount in current working directory
+
 debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
-debuge ""[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]
+debuge "[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]"
+
 if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
 	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
 		faile "Cannot load under current working directory - use the '-to MOUNTPOINT' option"
 	fi
 fi
+
+# ======================================
+# Operate on the directory
 
 debuge "Operating on $OPEDIR"
 if [[ ! -f "$MOUNTFILE" ]]; then
@@ -178,7 +221,7 @@ case "$ACTION" in
 		mkdir -p "$OPEDIR" || faile "Cannot write to [$OPEDIR]"
 		
 		debuge "Loading ... $SECDIR > $OPEDIR"
-		encfs "$SECDIR" "$OPEDIR" || {
+		_open_crypt "$SECDIR" "$OPEDIR" || {
 			rmdir "$OPEDIR" 2>/dev/null
 			faile "Could not open [$CUST]"
 		}
@@ -200,7 +243,7 @@ case "$ACTION" in
 
 		infoe "Closing $CUST"
 		if delinkall ; then
-			fusermount -u "$mountpointdir" || faile "Could not close $CUST"
+			_close_crypt "$mountpointdir" || faile "Could not close $CUST"
 			rmdir "$mountpointdir"
 			sed "/^$CUST:/d" -i "$MOUNTFILE"
 		else
