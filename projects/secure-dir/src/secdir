@@ -26,7 +26,7 @@
 # 	secdir {mount|open} ACCOUNT [-to MOUNTPOINT] [LINK ...]
 # 	secdir {unmount|close} ACCOUNT
 # 
-# Uses a .enc directory in the current working directory to store the encrypted files.
+# Uses a ./secdir.enc directory in the current working directory to store the encrypted files.
 # 
 # The secure directory is mounted in the current working directory.
 # 
@@ -63,12 +63,12 @@
 # 
 # CONFIGURATION
 # 
-# A configuration file is stored in .enc/config. It is an INI-style key-value store
+# A configuration file is stored in secdir.enc/config. It is an INI-style key-value store
 # 
 # Crypt/utility
 # 	the name of the cryptographic utility to use
 # 	by default, encfs and cryfs are both supported
-# 	you can extend these with your own utilities in `~/.config/secdir/crypt`
+# 	you can extend these with your own utilities in `./secdir.enc/crypts`
 #
 # Mount/load_in_cwd
 # 	yes --> allows mounting directories in current working directory
@@ -94,7 +94,7 @@ if [[ ! -d "$HOME/.config/secdir" ]]; then
 	mkdir "$HOME/.config/secdir"
 fi
 
-CONFFILE=./.enc/config
+CONFFILE=./secdir.enc/config
 MOUNTFILE="$HOME/.config/secdir/mounts" # make it global so we can close it from anywhere
 
 #% bundle crypts/encfs.crypt.source
@@ -118,7 +118,7 @@ fi
 
 config_usesection Crypt
 if ! config_isset utility; then
-	faile "No encryption utility specified in .enc/config"
+	faile "No encryption utility specified in secdir.enc/config"
 else
 	cryptutil=$(config_readval utility)
 	if [[ -f "$HOME/.config/secdir/crypts/$cryptutil.crypt.source" ]]; then
@@ -183,7 +183,7 @@ case "$ACTION" in
 			rmdir "$mountpointdir"
 			sed "/^$CUST:/d" -i "$MOUNTFILE"
 		else
-			faile "Could not unlink some directories:$(echo; cat "$PWD/.enc/${CUST}.links")" 3
+			faile "Could not unlink some directories:$(echo; cat "$PWD/secdir.enc/${CUST}.links")" 3
 		fi
 		;;
 

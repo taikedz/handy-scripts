@@ -11,7 +11,7 @@ Requires EncFS and Linux (bash and GNU tools)
 	secdir {mount|open} ACCOUNT [-to MOUNTPOINT] [LINK ...]
 	secdir {unmount|close} ACCOUNT
 
-Uses a `.enc` directory in the current working directory to store the encrypted files.
+Uses a `secdir.enc` directory in the current working directory to store the encrypted files.
 
 The secure directory is mounted in the current working directory.
 
@@ -44,12 +44,18 @@ If you do not specify a `MOUNTPOINT`, creates a directory in the current working
 
 ## CONFIGURATION
 
-A configuration file is stored in .enc/config. It is an INI-style key-value store
+A configuration file is stored in `secdir.enc/config`. It is an INI-style key-value store
+
+`Crypt/utility`
+
+* defines which security module to use
+* these are stored in `secdir.enc/crypts`
+* by default this is `encfs`
 
 `Mount/load_in_cwd`
 
 * `yes` --> allows mounting directories in current working directory
-* `*` --> do not allow
+* (anything else) --> do not allow
 
 `Mount/home`
 

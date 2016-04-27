@@ -2,12 +2,12 @@
 
 # Opening a secure directory
 
-SECDIR="$PWD/.enc/$CUST"
+SECDIR="$PWD/secdir.enc/$CUST"
 
 # =======================================
 # Check that the current directory is a secdir directory
 
-if [[ ! -d "$PWD/.enc" ]]; then
+if [[ ! -d "$PWD/secdir.enc" ]]; then
 	faile "Current directory $PWD is not a valid secdir location."
 fi
 

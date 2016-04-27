@@ -1,5 +1,5 @@
 
-	for x in .enc/*; do
+	for x in secdir.enc/*; do
 		if [[ -d "$x" ]]; then
 			x="$(basename $x)"
 			echo "$x"

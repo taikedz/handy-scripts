@@ -38,7 +38,7 @@ function loadarchive {
 		debuge "Argument: [$ARG]"
 		case "$ARG" in
 			-s|--store)
-				if [[ -d "$1/.enc" ]]; then
+				if [[ -d "$1/secdir.enc" ]]; then
 					STOREDIR=$1; shift
 				else
 					faile "Not a valid store directory [$1]"
@@ -63,22 +63,22 @@ function loadarchive {
 		if [[ -z "$ACCOUNT" ]]; then continue; fi
 
 		if [[ "$ACTION" = push ]]; then
-			if [[ ! -d "$STOREDIR/.enc/$ACCOUNT" ]]; then
+			if [[ ! -d "$STOREDIR/secdir.enc/$ACCOUNT" ]]; then
 				warne "Skipping non-existent account [$ACCOUNT]"
 				continue
 			fi
 			infoe "Uploading $ACCOUNT"
-			echo "$(qualdate)" > "$STOREDIR/.enc/$ACCOUNT/.tar-timestamp" || warne "Could not set date" # repeat this on every dir closure!
-			debuge "qualified date is $(cat "$STOREDIR/.enc/$ACCOUNT/.tar-timestamp")"
-			tar cz  -C "$STOREDIR/.enc/$ACCOUNT/" ./ | _cryptfilter encrypt "-" > "$DESTDIR/$ACCOUNT.tgz"
+			echo "$(qualdate)" > "$STOREDIR/secdir.enc/$ACCOUNT/.tar-timestamp" || warne "Could not set date" # repeat this on every dir closure!
+			debuge "qualified date is $(cat "$STOREDIR/secdir.enc/$ACCOUNT/.tar-timestamp")"
+			tar cz  -C "$STOREDIR/secdir.enc/$ACCOUNT/" ./ | _cryptfilter encrypt "-" > "$DESTDIR/$ACCOUNT.tgz"
 		else
 			if [[ ! -f "$DESTDIR/$ACCOUNT.tgz" ]]; then
 				warne "Skipping non-existent archive [$DESTDIR/$ACCOUNT.tgz]"
 				continue
 			fi
 			infoe "Downloading $ACCOUNT"
-			mkdir -p "$STOREDIR/.enc/$ACCOUNT"
-			if [[ ! -f "$STOREDIR/.enc/$ACCOUNT/.tar-timestamp" ]] &&
+			mkdir -p "$STOREDIR/secdir.enc/$ACCOUNT"
+			if [[ ! -f "$STOREDIR/secdir.enc/$ACCOUNT/.tar-timestamp" ]] &&
 				! uconfirm "$CYEL No ${CBLU}local${CYEL} timestamp file - are you sure you want to overwrite this directory?$CDEF"; then
 				
 				faile "Aborting download - no local timestamp"
@@ -86,7 +86,7 @@ function loadarchive {
 			if ! (_cryptfilter decrypt "$DESTDIR/$ACCOUNT.tgz" | tar xz "./.tar-timestamp") && ! uconfirm "$CRED No ${CYEL}archive${CDEF} timestamp file - are you sure you want to import this archive?$CDEF"; then
 				faile "Aborting download - no archive timestamp"
 			fi
-			local curtime="$(cat "$STOREDIR/.enc/$ACCOUNT/.tar-timestamp")"
+			local curtime="$(cat "$STOREDIR/secdir.enc/$ACCOUNT/.tar-timestamp")"
 			local tartime="$(_cryptfilter decrypt "$DESTDIR/$ACCOUNT.tgz" | tar xzf ./.tar-timestamp)"
 			local curtimet="$(echo "$curtime"|cut -d':' -f2)"
 			local tartimet="$(echo "$tartime"|cut -d':' -f2)"
@@ -101,7 +101,7 @@ function loadarchive {
 				uconfirm "Current edit time $curtimet is later than archive time $tartimet - are you sure you want to ${CRED}squash your copy$CDEF?" || faile "Abort"
 			fi
 
-			_cryptfilter decrypt "$DESTDIR/$ACCOUNT.tgz" | tar xz -C "$STOREDIR/.enc/$ACCOUNT/"
+			_cryptfilter decrypt "$DESTDIR/$ACCOUNT.tgz" | tar xz -C "$STOREDIR/secdir.enc/$ACCOUNT/"
 		fi
 	done
 	
