@@ -1,5 +1,5 @@
 [Crypt]
-engine=encfs
+utility=encfs
 
 [Mount]
 
