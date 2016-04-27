@@ -1,6 +1,6 @@
 # Encryption utilities
 
-Store in `~/.config/secdir/crypt/` any handlers for encryption. You can also define your own, and refer to it in your `./.enc/config` configuration file.
+Store in `~/.config/secdir/crypts/` any handlers for encryption. You can also define your own, and refer to it in your `./.enc/config` configuration file.
 
 Your handler must provide
 

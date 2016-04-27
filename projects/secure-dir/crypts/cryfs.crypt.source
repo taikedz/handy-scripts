@@ -1,15 +1,7 @@
 #!/bin/bash
 
 ### cryptlib file Usage:bbuild
-# Override this file with the desired cryptographic library
-#
-# Your version must provide a _open_crypt command that takes a token representing the encrypted data store, and a token representing the decrypted data store
-#
-# Your version must provide a _close_crypt command that takes a token representing the decrypted data store for closing
-#
-# Your version must provide
-#
-# For EncFS for example, the tokens are file system paths.
+# provides support for cryfs
 ###/doc
 
 function _open_crypt {
@@ -17,7 +9,7 @@ function _open_crypt {
 }
 
 function _close_crypt {
-	cry "$1"
+	fusermount -u "$1"
 }
 
 
