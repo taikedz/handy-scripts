@@ -1,6 +1,5 @@
-[Main]
-
-welcome=owned by []
+[Crypt]
+utility=encfs
 
 [Mount]
 
