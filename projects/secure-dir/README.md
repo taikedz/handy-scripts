@@ -1,6 +1,12 @@
 secdir
 ===
 
+WARNING
+
+# NOT READY (1.x series)
+
+Major mounting bug found, please do not use any 1.x series releases!
+
 Manage, Mount and Unmount encrypted directories
 
 Requires EncFS or CryFS and Linux (bash and GNU tools). Extensible to other directory encryption tools.
