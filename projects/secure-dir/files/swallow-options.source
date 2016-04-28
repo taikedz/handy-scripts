@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# =====
+# Swallow extra options
+while [[ -n "$*" ]]; do
+	case "$1" in
+		--debug) MODE_DEBUG="yes" ; shift ;;
+		-to)
+			shift
+			LOADDIR=$(abspath "$1")
+			OPEDIR=$(abspath "$1")
+			debuge "Set LOADDIR and OPEDIR to '$1'"
+			shift
+			;;
+		-*) faile "Unknown option [$1]"; ;;
+		*) break ;; # not an option-flag - break out
+	esac
+done

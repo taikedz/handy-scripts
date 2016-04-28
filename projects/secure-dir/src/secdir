@@ -18,83 +18,69 @@
 # IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
+#% bundle README.md
+function printhelp {
+	cat README.md | sed -r 's/^(\s*\*)/\t\1/'
+}
 
-### secdir Usage:help
-# Manage, Mount and Unmount EncFS encrypted directory
-# 
-# 	secdir {list|init}
-# 	secdir {mount|open} ACCOUNT [-to MOUNTPOINT] [LINK ...]
-# 	secdir {unmount|close} ACCOUNT
-# 
-# Uses a .enc directory in the current working directory to store the encrypted files.
-# 
-# The secure directory is mounted in the current working directory.
-# 
-# If you do not specify a MOUNTPOINT, creates a directory in the current working directory and mounts there, if allowed.
-# 
-# 
-# OPTIONS
-# 
-# list
-# 	list secure directories by account name configured at current working directory
-# 
-# init
-# 	set current working directory up as a location to store secure directories' encrypted data
-# 
-# {mount|open} [-to MOUNTPOINT] [LINKS ...]
-# 	mount the secure directory. If it does not exist, offers to create it.
-#
-# 	You can specify `-to MOUNTPOINT` to explicitly mount the directory at that location.
-#
-# 	You can specify any number of softlinks to create pointing to the mounted directory.
-#
-# 	Will fail if you cannot write to the mountpoint
-#
-# 	If you have configured against mounting in the current working directory, you MUST point the `-to MOUNTPOINT`
-# 	  to a different location. This allows secure directories to be distributed on a network
-# 	  whilst reducing the risk of a user indavertently mounting in a publicly shared directory.
-#
-# 	  This is a Molly-guard, NOT a security lock.
-# 
-# {unmount|close}
-# 	unmount a mounted secure directory.
-#
-# 	Any soft links created during mount will be removed.
-# 
-# CONFIGURATION
-# 
-# A configuration file is stored in .enc/config. It is an INI-style key-value store
-# 
-# Crypt/utility
-# 	the name of the cryptographic utility to use
-# 	by default, encfs and cryfs are both supported
-# 	you can extend these with your own utilities in `~/.config/secdir/crypt`
-#
-# Mount/load_in_cwd
-# 	yes --> allows mounting directories in current working directory
-# 	* --> do not allow
-# 
-# Mount/home
-# 	This must be a directory
-# 	By default secure directories are mounted here instead of in the current working directory
-###/doc 
+if [[ "$*" =~ --help ]]; then printhelp; exit 0; fi
 
 set -u
 
-#% include autohelp bashout abspath configreader
+#% include bashout abspath configreader askuser
 
 #% bundle files/config
-#% include files/linkage.sh
+# #% include files/linkage.sh
 
-CONFFILE=./.enc/config
-MOUNTFILE=.enc/mounts
+if [[ -z "$*" ]]; then
+	infoe "Nothing to do. Try running '$(basename "$0") --help' for more info"
+	exit
+fi
+
+ACTION="$1"; shift
+
+if [[ "$ACTION" = init ]]; then
+	:
+	#% include files/init-enc.sh
+fi
+
+# =======================================
+# Check that the current directory is a secdir directory
+
+if [[ ! -d "$PWD/secdir.enc" ]]; then
+	faile "Current directory $PWD is not a valid secdir location."
+fi
+
+CONFFILE=./secdir.enc/config
+MOUNTFILE="$HOME/.config/secdir/mounts" # make it global so we can close it from anywhere
+
+if [[ "$ACTION" = "list" ]] ; then
+	cd secdir.enc
+	infoe "Configured encryption utility: $(grep -o -P '(?<=utility=).+' "config")"
+	ownfiles='^(crypts|README.md|config)$'
+	for x in *; do
+		if [[ ! "$x" =~ $ownfiles ]]; then
+			echo "$x"
+		fi
+	done
+	exit
+fi
+
 
 #% bundle crypts/encfs.crypt.source
 #% bundle crypts/cryfs.crypt.source
-if [[ ! -d "$HOME/.config/secdir/crypts" ]]; then
-	mkdir -p "$HOME/.config/secdir/crypts"
-	cp crypts/encfs.crypt.source "$HOME/.config/secdir/crypts/"
-	cp crypts/cryfs.crypt.source "$HOME/.config/secdir/crypts/"
+if [[ ! -d "./secdir.enc/crypts" ]] || [[ "$*" =~ --installcrypts ]]; then
+	mkdir -p "./secdir.enc/crypts"
+	cp crypts/encfs.crypt.source "./secdir.enc/crypts/"
+	cp crypts/cryfs.crypt.source "./secdir.enc/crypts/"
+fi
+
+# =============================
+# load config of mounts file
+
+config_usesection Mount
+if config_isset mountfile; then
+	MOUNTFILE=$(config_readval mountfile)
 fi
 
 # =============================
@@ -102,11 +88,11 @@ fi
 
 config_usesection Crypt
 if ! config_isset utility; then
-	faile "No encryption utility specified in .enc/config"
+	faile "No encryption utility specified in secdir.enc/config"
 else
 	cryptutil=$(config_readval utility)
-	if [[ -f "$HOME/.config/secdir/crypts/$cryptutil.crypt.source" ]]; then
-		source "$HOME/.config/secdir/crypts/$cryptutil.crypt.source"
+	if [[ -f "./secdir.enc/crypts/$cryptutil.crypt.source" ]]; then
+		source "./secdir.enc/crypts/$cryptutil.crypt.source"
 	else
 		faile "Encryption utility '$cryptutil' not defined"
 	fi
@@ -121,47 +107,20 @@ if [[ -z "$*" ]]; then
 	faile "No arguments given."
 fi
 
-# ========================================
-# Process non-changing actions
+# ====
+# Swallow optional options
+# stops at first non-option-flag
+#% include files/swallow-options.source
 
-ACTION="$1" ; shift
 
-case "$ACTION" in
-list)
-	for x in .enc/*; do
-		if [[ -d "$x" ]]; then
-			echo "$(basename $x)"
-		fi
-	done
-	exit 0
-	;;
-init)
-	if [[ -d ./.enc ]]; then
-		uconfirm "It seems this directory has already been initialized. Overwrite? This will destroy configs!!" ||
-			faile "Aborting re-initalization"
-	fi
-	infoe "Initialize a new directory"
-	debuge "App dir is $APPLICATION_WD"
-	{
-		mkdir -p "$PWD/.enc"
-		cp files/config .enc/
-	} && echo "secdir has been set up for use in $PWD"
-	exit
-	;;
-mount|open|unmount|close|--debug)
-	: # ignore for now
-	;;
-*)
-	faile "Unknown action '$ACTION'"
-	;;
-esac
-
-# =======================================
-# Check that the current directory is a secdir directory
-
-if [[ ! -d "$PWD/.enc" ]]; then
-	faile "Current directory $PWD is not a valid secdir location."
+if [[ ! -f "$MOUNTFILE" ]]; then
+	touch "$MOUNTFILE" || faile "Cannot create $MOUNTFILE"
 fi
+
+# ====
+# Swallow optional options
+# stops at first non-option-flag
+#% include files/swallow-options.source
 
 
 if [[ -z "$*" ]]; then
@@ -172,88 +131,41 @@ fi
 # Get the secured directory
 
 CUST="$1" ; shift
-SECDIR="$PWD/.enc/$CUST"
-
-# =====
-# Load the mount configuration options
-#% include files/load-mount-configs.sh
-
-# =====
-# Override target dir if applicable
-OPEDIR="$(abspath "$LOADDIR/$CUST")"
-if [[ -n "$*" ]]; then
-	if [[ "x$1" = "x-to" ]]; then
-		shift
-		LOADDIR=$(abspath "$1")
-		OPEDIR=$(abspath "$1")
-		shift
-	fi
-fi
-
-# =======================================
-# Check that we are allowed to mount in current working directory
-
-debuge "[[ -n ${CWDALLOWED+x} ]] && [[ ! $CWDALLOWED = yes ]]"
-debuge "[[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]"
-
-if [[ -n "${CWDALLOWED+x}" ]] && [[ ! "$CWDALLOWED" = yes ]] && [[ ! "$ACTION" =~ $(echo "close|unmount") ]]; then
-	if [[ "$(abspath "$LOADDIR")" =~ "$(abspath "$PWD")" ]]; then # use grep comparison to prevent any directories under too
-		faile "Cannot load under current working directory - use the '-to MOUNTPOINT' option"
-	fi
-fi
-
-# ======================================
-# Operate on the directory
-
-debuge "Operating on $OPEDIR"
-if [[ ! -f "$MOUNTFILE" ]]; then
-	touch "$MOUNTFILE" || faile "Cannot create $MOUNTFILE"
-fi
 
 case "$ACTION" in
 	mount|open)
-		if grep -E "^$CUST:" "$MOUNTFILE" -q; then
-			faile "$CUST is already mounted at $(grep -E "^$CUST:" "$MOUNTFILE"|cut -d':' -f2)"
-		fi
-
-		infoe "Opening $CUST"
-		debuge "Making $OPEDIR"
-		mkdir -p "$OPEDIR" || faile "Cannot write to [$OPEDIR]"
-		
-		debuge "Loading ... $SECDIR > $OPEDIR"
-		_open_crypt "$SECDIR" "$OPEDIR" || {
-			rmdir "$OPEDIR" 2>/dev/null
-			faile "Could not open [$CUST]"
-		}
-		echo "$CUST:$OPEDIR" >> "$MOUNTFILE"
-		
-		debuge "Creating softlinks"
-		linkall "$@"
+		#% include files/opendir.sh
 		;;
-	
 
 	unmount|close)
 		mountpointdir=
-		if ! grep -E "^$CUST:" "$MOUNTFILE" -q; then
-			warne "$CUST is not mounted"
-			exit 0
-		else
+		if grep -E "^$CUST:" "$MOUNTFILE" -q; then
 			mountpointdir="$(grep -E "^$CUST:" "$MOUNTFILE"|cut -d':' -f2)"
+		elif grep -E "$CUST" "$MOUNTFILE"; then
+			mountpointdir="$CUST"
+		else
+			faile "$CUST is neither a secure-profile or a recognized mounted location."
 		fi
 
+		#if [[ -f "$PWD/secdir.enc/${CUST}.links" ]]; then
+		#	infoe "Unlinking registered soft links"
+		#	dlinkall || {
+		#		warne "Could not unlink some directories:$(echo; cat "$PWD/secdir.enc/${CUST}.links")"
+		#		uconfirm "Unmount anyway?" || faile "Failed to unlink, aborting."
+		#	}
+		#fi
+
 		infoe "Closing $CUST"
-		if delinkall ; then
-			_close_crypt "$mountpointdir" || faile "Could not close $CUST"
-			rmdir "$mountpointdir"
-			sed "/^$CUST:/d" -i "$MOUNTFILE"
-		else
-			faile "Could not unlink some directories:$(echo; cat "$PWD/.enc/${CUST}.links")" 3
-		fi
+		_close_crypt "$mountpointdir" || faile "Could not close $CUST"
+		rmdir "$mountpointdir"
+		sed -r "/(^$CUST:|:$CUST$)/d" -i "$MOUNTFILE"
 		;;
 
 
 
 	*)
-		faile "Invalid action $ACTION. Use 'mount' or 'unmount' followed by the directory name. See --help for more information"
+		faile "Invalid action [$ACTION]. See --help for more information"
 		;;
 esac
+
+#% bundle files/config
