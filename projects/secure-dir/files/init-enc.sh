@@ -9,6 +9,7 @@
 	{
 		mkdir -p "$PWD/secdir.enc"
 		#% bundle files/config
-		cp files/config secdir.enc/
+		cp $APPLICATION_WD/files/config secdir.enc/
+		cp $APPLICATION_WD/README.md secdir.enc/
 	} && echo "secdir has been set up for use in $PWD"
 	exit

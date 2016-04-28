@@ -5,42 +5,46 @@ Manage, Mount and Unmount EncFS encrypted directory
 
 Requires EncFS and Linux (bash and GNU tools)
 
+You can view this help in any HTML viewer by running:
+
+	secdir --help | markdown > /tmp/secdirhelp && $htmlviewer /tmp/secdirhelp 
+
+Or see the latest release documentation at [the secdir main page](https://github.com/taikedz/handy-scripts/tree/master/projects/secure-dir)
+
 ## Usage
 
-	secdir {list|init}
-	secdir {mount|open} ACCOUNT [-to MOUNTPOINT] [LINK ...]
+	secdir init
+	secdir {mount|open} ACCOUNT
 	secdir {unmount|close} ACCOUNT
 
 Uses a `secdir.enc` directory in the current working directory to store the encrypted files.
 
-The secure directory is mounted in the current working directory.
+The secure directory is mounted in the current working directory, or the "home=" directory you configure in the config file.
 
-If you do not specify a `MOUNTPOINT`, creates a directory in the current working directory and mounts there, if allowed.
+You need to be in the parent directory of the `secdir.enc` directory to open the secure directories it contains.
 
+You can be anywhere when closing the mounted directory.
 
 ## OPTIONS
 
 `list`
 
-* list secure directories by account name configured at current working directory
+* List local secure directories, and the current active security utility
 
 `init`
 
 * set current working directory up as a location to store secure directories' encrypted data
 
-`{mount|open} [-to MOUNTPOINT] [LINKS ...]`
+`{mount|open} ACCOUNT`
 
 * mount the secure directory. If it does not exist, offers to create it.
-* You can specify `-to MOUNTPOINT` to explicitly mount the directory at that location.
-* You can specify any number of softlinks to create pointing to the mounted directory.
 * Will fail if you cannot write to the mountpoint
-* If you have configured against mounting in the current working directory, you MUST point the `-to MOUNTPOINT` to a different location. This allows secure directories to be distributed on a network whilst reducing the risk of a user indavertently mounting in a publicly shared directory.
-	*  This is a Molly-guard, NOT a security lock.
+* If you have configured against mounting in the current working directory, you MUST point the `home=` option to a different location. This allows secure directories to be distributed on a network whilst reducing the risk of a user __indavertently__ mounting in a publicly shared directory (and thus propagating the plaintext files over the network).
+	* **This is a molly-guard, NOT a security lock !!** Modifying the `secdir.enc/config` file can override this.
 
 `{unmount|close}`
 
 * unmount a mounted secure directory.
-* Any soft links created during mount will be removed.
 
 ## CONFIGURATION
 
@@ -51,6 +55,11 @@ A configuration file is stored in `secdir.enc/config`. It is an INI-style key-va
 * defines which security module to use
 * these are stored in `secdir.enc/crypts`
 * by default this is `encfs`
+	* encfs is available in standard repositories
+	* However a [secuirty audit](https://defuse.ca/audits/encfs.htm) revealed it to be potentially weak when the secured store is itself public and can be monitored for changes
+* A module to take advantage of `cryfs` is available, but you will need to [install cryfs](https://www.cryfs.org/tutorial) first
+	* I'm currently working on a way to integrate cryfs straight into secdir. Stay tuned.
+* You can extend this with any security module you wish -- see the [crypts page on GitHub](https://github.com/taikedz/handy-scripts/tree/master/projects/secure-dir/crypts).
 
 `Mount/load_in_cwd`
 
