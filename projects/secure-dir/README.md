@@ -1,15 +1,9 @@
 secdir
 ===
 
-Manage, Mount and Unmount EncFS encrypted directory
+Manage, Mount and Unmount encrypted directories
 
-Requires EncFS and Linux (bash and GNU tools)
-
-You can view this help in any HTML viewer by running:
-
-	secdir --help | markdown > /tmp/secdirhelp && $htmlviewer /tmp/secdirhelp 
-
-Or see the latest release documentation at [the secdir main page](https://github.com/taikedz/handy-scripts/tree/master/projects/secure-dir)
+Requires EncFS or CryFS and Linux (bash and GNU tools). Extensible to other directory encryption tools.
 
 ## Usage
 
