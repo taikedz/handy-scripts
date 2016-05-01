@@ -1,0 +1,33 @@
+#!/bin/bash
+
+### encrypted passwd Usage:help
+# change password on an encrypted home
+#
+# Usage
+#
+# 	cpasswd USER
+#
+# Change they password of this user
+###/doc
+
+#% include bashout autohelp
+
+if [[ -n "$*" ]]; then
+	TUSER=$1
+elif [[ "$UID" -gt 0 ]]; then
+	TUSER=$(whoami)
+else
+	printhelp; exit 0
+fi
+
+infoe "Changing system password for $TUSER"
+[[ $UID -gt 0 ]] && infoe "Type $TUSER's old password first"
+
+passwd "$TUSER"
+
+warne "Changing encrypted directory password for $TUSER"
+warne "You MUST type the old password first"
+
+cd ~"$TUSER"/ # FIXME ned to do a check at this point to see if the user dir really actually is encrypted
+# FIXME need to check if needs mounting `ecryptfs-mount-private`
+ecryptfs-rewrap-passphrase ~/.ecryptfs/wrapped-passphrase
