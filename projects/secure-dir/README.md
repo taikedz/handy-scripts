@@ -1,15 +1,48 @@
 secdir
 ===
 
-WARNING
-
-# NOT READY (1.x series)
-
-Major mounting bug found, please do not use any 1.x series releases!
-
 Manage, Mount and Unmount encrypted directories
 
 Requires EncFS or CryFS and Linux (bash and GNU tools). Extensible to other directory encryption tools.
+
+## WARNING
+
+Two known issues, with workarounds.
+
+### EncFS
+
+The EncFS library is mostly suitable for general-case privacy; however you may want to take into account the Dfeuse Security audit that points out some shortcomings when using encfs in places where third-parties have read-write access to the encrypted store itself.
+
+If you want to ensure better privacy, you can try using CryFS, though that library is not currently deemed stable.
+
+If you want to implement any other crypto library, see the [crypts](crypts) directory and RADME file
+
+### Directories stored in a cloud service
+
+secdir will mount to the current working directory, even if the `home` parameter is set to mount elsewhere, making this unsuitable for directly working directly in a cloud-synchronized directory.
+
+The workaround consists of preventing mounting in one explicity-named non-safe location; this of course is not scalable, and I'm working to fix this, stay tuned.
+
+In the mean time, this is the workaround:
+
+* create a directory in a non-sync'd location
+
+	mkdir $HOME/Documents/Safe
+
+* softlink the `secdir.enc` directory
+
+	ln -s $HOME/DropBox/SecureStorage/secdir.enc $HOME/Documents/Safe/secdir.enc
+
+* edit the config, set `home=` to the directory where we must **not** mount
+
+	home=$HOME/DropBox/SecureStorage
+
+* operate directly there
+
+	cd $HOME/Documents/Safe
+	secdir list
+	secdir mount myfiles
+	secdir unmount myfiles
 
 ## Usage
 
