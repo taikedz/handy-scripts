@@ -39,6 +39,7 @@ In the mean time, this is the workaround:
 
 * operate directly there
 
+.
 
 	cd $HOME/Documents/Safe
 	secdir list
