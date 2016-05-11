@@ -1,0 +1,16 @@
+#!/bin/bash
+
+for x in *; do
+	[[ ! -d $x ]] && continue
+	cd $x
+	theorigin=$(git remote -v | grep fetch|cut -f1)
+	theurl="$(git remote -v | grep fetch|cut -f2|cut -f1 -d' ')"
+	thessh="$(echo "$theurl"|sed 's|https://|ssh://taikedz@|')"
+	echo $x ':' $theorigin
+	echo "	$theurl => $thessh"
+
+	#git remote set-url $theorigin $thessh
+
+	echo
+	cd - > /dev/null
+done
