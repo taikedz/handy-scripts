@@ -3,5 +3,5 @@
 test/
 *test.sh
 release-cand/
-*/scratch/
+*scratch/
 *-test.sh

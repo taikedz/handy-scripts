@@ -1,17 +1,54 @@
 secdir
 ===
 
-WARNING
-
-# NOT READY (1.x series)
-
-Major mounting bug found, please do not use any 1.x series releases!
-
 Manage, Mount and Unmount encrypted directories
 
 Requires EncFS or CryFS and Linux (bash and GNU tools). Extensible to other directory encryption tools.
 
+## WARNING
+
+Two known issues, with workarounds.
+
+### EncFS
+
+The EncFS library is mostly suitable for general-case privacy; however you may want to take into account the [Defuse Security](https://defuse.ca/audits/encfs.htm) audit that points out some shortcomings when using encfs in places where third-parties have read-write access to the encrypted store itself.
+
+If you want to ensure better privacy, you can try using CryFS, though that library is not currently deemed stable.
+
+If you want to implement any other crypto library, see the [crypts](crypts) directory and RADME file
+
+### Directories stored in a cloud service
+
+secdir will mount to the current working directory, even if the `home` parameter is set to mount elsewhere, making this unsuitable for directly working directly in a cloud-synchronized directory.
+
+The workaround consists of preventing mounting in one explicity-named non-safe location; this of course is not scalable, and I'm working to fix this, stay tuned.
+
+In the mean time, this is the workaround:
+
+* create a directory in a non-sync'd location
+
+	`mkdir $HOME/Documents/Safe`
+
+* softlink the `secdir.enc` directory
+
+	`ln -s $HOME/DropBox/SecureStorage/secdir.enc $HOME/Documents/Safe/secdir.enc`
+
+* edit the config, set `home=` to the directory where we must **not** mount
+
+	`home=$HOME/DropBox/SecureStorage`
+
+* operate directly there
+
+.
+
+	cd $HOME/Documents/Safe
+	secdir list
+	secdir mount myfiles
+	secdir unmount myfiles
+
+
 ## Usage
+
 
 	secdir init
 	secdir {mount|open} ACCOUNT
@@ -19,7 +56,7 @@ Requires EncFS or CryFS and Linux (bash and GNU tools). Extensible to other dire
 
 Uses a `secdir.enc` directory in the current working directory to store the encrypted files.
 
-The secure directory is mounted in the current working directory, or the "home=" directory you configure in the config file.
+The secure directory is mounted in the current working directory, or the `home=` directory you configure in the config file.
 
 You need to be in the parent directory of the `secdir.enc` directory to open the secure directories it contains.
 
@@ -59,6 +96,7 @@ A configuration file is stored in `secdir.enc/config`. It is an INI-style key-va
 	* However a [secuirty audit](https://defuse.ca/audits/encfs.htm) revealed it to be potentially weak when the secured store is itself public and can be monitored for changes
 * A module to take advantage of `cryfs` is available, but you will need to [install cryfs](https://www.cryfs.org/tutorial) first
 	* I'm currently working on a way to integrate cryfs straight into secdir. Stay tuned.
+	* Other systems being considered are ecryptfs
 * You can extend this with any security module you wish -- see the [crypts page on GitHub](https://github.com/taikedz/handy-scripts/tree/master/projects/secure-dir/crypts).
 
 `Mount/load_in_cwd`
@@ -70,4 +108,5 @@ A configuration file is stored in `secdir.enc/config`. It is an INI-style key-va
 
 * This must be a directory
 * By default secure directories are mounted here instead of in the current working directory
+	* WARNING - found in 1.2, this is not working. See the Workaround above.
 
