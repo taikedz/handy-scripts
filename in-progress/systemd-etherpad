@@ -1,0 +1,10 @@
+[Unit]
+Description=etherpad service
+After=network.target
+
+[Service]
+Type=simple
+User=etherpad
+ExecStart=/home/etherpad/etherpad/bin/run.sh
+Restart=on-abort
+
