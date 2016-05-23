@@ -1,0 +1,80 @@
+#!/bin/bash
+
+if [[ "$#" -lt 2 ]]; then
+cat <<EOHELP
+Run
+
+	$0 MDFILE HTMLFILE
+	$0 TARGET DESTINATION
+
+HTMLFILE is the name of the HTML file to create under /var/www/html
+
+DESTINATION is a path under /var/www/html ; if the first argument is not a MDFILE then files are simply copied to the destination.
+
+
+Looks for any "*.css" files in the local directory and dumps them to the HTML header.
+
+You can include any other .md files by using:
+
+	%{target-file.md}
+
+These will be pulled into the file before the markdown processor is called.
+
+After the markdown processor has been called, any %{*.html} declarations will cause the raw HTML data to be pulled in
+
+Inclusions must be on their own line.
+
+EOHELP
+exit
+fi
+
+for x in markdown perl; do
+	which $x > /dev/null || { echo "Please install $x" ; exit 127 ; }
+done
+
+
+function replaceinc {
+cat << EOPERL|perl 
+use strict;
+use warnings;
+
+open(my \$SF,"<", "$1");
+while ( my \$invar=<\$SF> ) {
+        if (\$invar =~ $2 ) {
+                open(my \$FH, "<", "\$1");
+                while ( my \$inline = <\$FH> ) {
+                        print "\$inline";
+                }
+        } else {
+                print "\$invar";
+        }
+}
+
+EOPERL
+}
+
+function stylemd {
+cat <<EOHTML
+<html>
+<head>
+<style>
+$(cat *.css)
+</style>
+</head>
+<body>
+
+$(markdown $1)
+
+</body></html>
+EOHTML
+}
+
+if [[ "$1" =~ .md$ ]]; then
+	mkdir -p /var/www/html/"$(dirname "$2")"
+	replaceinc "$1" '/%{(.+?\.md)}/' > /tmp/markin1.tmp
+	stylemd "/tmp/markin1.tmp" > /tmp/markin2.tmp
+	replaceinc /tmp/markin2.tmp '/%{(.+?\.html?)}/'> /var/www/html/"$2"
+else
+	cp -r "$1" /var/www/html/"$2"
+fi
+
