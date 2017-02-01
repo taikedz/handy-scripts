@@ -5,3 +5,5 @@ set formatoptions=tcqr
 colorscheme desert
 set hlsearch
 
+" from http://vim.wikia.com/wiki/Converting_tabs_to_spaces
+autocmd FileType python set tabstop=4|set shiftwidth=4|set expandtab
