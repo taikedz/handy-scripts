@@ -1,0 +1,48 @@
+#!/bin/bash
+
+### mdpreview Usage:help
+# Preview a markdown file
+###/doc
+
+#% include bashout readargs kvreader autohelp
+
+set -u
+
+MDEXEC=$(which markdown)
+TMPDIR=/tmp
+
+
+if [[ ! -f "$MDEXEC" ]] || [[ -z "$MDEXEC" ]]; then
+	faile "No markdown processor"
+fi
+
+DEST=$(readarg '-d')
+if [[ -n "$DEST" ]]; then
+	DEST="$TMPDIR"
+fi
+
+if [[ ! -d "$DEST" ]]; then
+	faile "Invalid destination [$DEST]"
+fi
+
+function makeafile {
+	if [[ "$DEST" = /tmp ]]; then
+		echo "$(mktemp -d /tmp)"
+	fi
+}
+
+ALLFILES=
+for x in "$@"; do
+	tfile=$(mktemp -p ./ .previewXXXX.html)
+	ALLFILES="$ALLFILES $tfile"
+	if [[ "$HOME/.markdown.css" ]]; then
+		echo '<style>' > "$tfile"
+		cat "$HOME/.markdown.css"  >> "$tfile"
+		echo '</style>' >> "$tfile"
+	fi
+	markdown "$x" >> "$tfile"
+	sensible-browser $tfile 2>/dev/null >/dev/null
+done
+
+sleep 2
+rm $ALLFILES
