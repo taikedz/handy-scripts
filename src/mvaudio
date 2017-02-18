@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -u
+
+### Move Audio Input Usage:help
+#
+# Run without arguments to list sinks and running applications
+#
+# Run as
+#
+# 	mvaudio TGTINPUT TGTSINK
+#
+# to move the target input to the target sink
+#
+###/doc
+
+#%include autohelp bashout
+
+if [[ -z "$*" ]]; then
+	infoe Available Inputs
+	pacmd list-sink-inputs|grep -P 'index:|client:|application.process.binary'
+
+	infoe Available Sinks
+	pacmd list-sinks|grep -P 'index:|name:'
+else
+	TGTINPUT="$1"; shift
+	TGTSINK="$1"; shift
+
+	pacmd move-sink-input "$TGTINPUT" "$TGTSINK"
+fi
