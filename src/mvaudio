@@ -12,6 +12,13 @@ set -u
 #
 # to move the target input to the target sink
 #
+# Run as
+#
+# 	mvaudio TGTSINK
+#
+# to set the default output channel, and move all audio to
+# the specified channel.
+#
 ###/doc
 
 #%include autohelp bashout
@@ -24,7 +31,18 @@ if [[ -z "$*" ]]; then
 	pacmd list-sinks|grep -P 'index:|name:'
 else
 	TGTINPUT="$1"; shift
-	TGTSINK="$1"; shift
 
-	pacmd move-sink-input "$TGTINPUT" "$TGTSINK"
+	if [[ -n "$*" ]]; then
+		TGTSINK="$1"; shift
+		pacmd move-sink-input "$TGTINPUT" "$TGTSINK"
+	else
+		TGTSINK="$TGTINPUT"
+		pacmd set-default-sink "$TGTINPUT"
+
+		inputs=$(pacmd list-sink-inputs|grep 'index:'|sed -r 's/\s*index:\s*//'|xargs echo)
+		for TGTINPUTx in $inputs
+		do
+			pacmd move-sink-input "$TGTINPUTx" "$TGTSINK"
+		done
+	fi
 fi
