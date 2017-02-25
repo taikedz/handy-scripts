@@ -1,0 +1,93 @@
+#!/bin/bash
+
+### brightness Usage:help
+#
+# Display or switch the brightness level of the main screen.
+#
+# USAGE
+# =====
+#
+#	brightness [INDEX] [--debug]
+#
+# INDEX : a float or int value from 0.0 (screen off) to 10.0 (full brightness).
+# --debug : print debug/verbose information
+#
+# Examples:
+#
+# 	brightness 8
+# 	brightness 0.5
+#
+# ENVIRONMENT VARIABLES
+# =====================
+#
+# This script was developed on a Lenovo Flex 14 with the following defaults:
+#
+#	MAXBRIGHTPATH=/sys/class/backlight/intel_backlight/max_brightness
+# 	BRIGHTPATH=/sys/class/backlight/intel_backlight/brightness
+#
+# Override the environment vairables as required.
+#
+# * MAXBRIGHTPATH is the path to the file holding the maximum raw brightness value.
+# * BRIGHTPATH is the path to the brightness setting.
+#
+###/doc
+
+#%include bashout autohelp
+
+if [[ "$UID" -ne 0 ]]; then
+	sudo "$(which $0)" "$@"
+	exit
+fi
+
+# =============================================¬
+# This script developed for the Lenovo Flex 14 ; paths may be different for your device
+if [[ -z "$MAXBRIGHTPATH" ]]; then
+	MAXBRIGHTPATH=/sys/class/backlight/intel_backlight/max_brightness
+	MAXBRIGHT=$(cat $MAXBRIGHTPATH)
+fi
+
+
+if [[ -z "$BRIGHTPATH" ]]; then
+	BRIGHTPATH=/sys/class/backlight/intel_backlight/brightness
+fi
+# _____________________________________________/
+
+function noargs {
+	curbright=$(cat "$BRIGHTPATH")
+	cbidx=$(python -c "import math ; prec = 10.0 ; print str(math.ceil( (10*prec * $curbright) / $MAXBRIGHT)/prec )")
+
+	infoe "Current brightness index: $cbidx (raw value: $curbright)"
+	exit
+}
+
+if [[ -z "$*" ]]; then
+	noargs
+fi
+
+# Process all arguments as INDEXes
+# In case the user sets their screen too dark and
+# needs to press <up> and enter a new value and
+# forget to delete previous index properly.
+while [[ -n "$*" ]]; do
+	mybright=$1 ; shift
+	if [[ "$mybright" =~ --debug ]]; then
+		mybright=$1 ; shift
+	fi
+
+	debuge "Brightness is set in $BRIGHTPATH"
+	debuge "Max brightness is determined in $MAXBRIGHTPATH"
+
+	if [[ -z "$mybright" ]]; then
+		noargs
+	fi
+
+
+	if [[ ! "$mybright" =~ $(echo '^[0-9]+(\.[0-9]+)?$') ]] || python -c "$mybright > 10 or exit(1)" ; then
+		faile "Provide a numerical value from 0 to 10 only"
+	fi
+	mybright=$(python -c "print int(($mybright/10.0)*$MAXBRIGHT)")
+
+
+	debuge "Setting brightness $mybright"
+	echo $mybright > $BRIGHTPATH
+done
