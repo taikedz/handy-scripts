@@ -4,7 +4,7 @@
 # Preview a markdown file
 ###/doc
 
-#% include bashout readargs kvreader autohelp
+#%include bashout readargs kvreader autohelp
 
 set -u
 
