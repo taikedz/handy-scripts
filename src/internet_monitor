@@ -30,7 +30,7 @@ if [[ -z "${IMPINGNUM+x}" ]]; then
 fi
 
 if [[ -z "${STATEDIR+x}" ]]; then
-	STATEDIR=scratch/wirelessmonitoring
+	STATEDIR=$HOME/scratch/wirelessmonitoring
 fi
 
 debuge "Saving to $STATEDIR"
@@ -47,6 +47,8 @@ DNSTATE="down _______/"
 
 STATE="$UPSTATE"
 STATEFILE=wstatus.txt
+
+infoe "STATEFILE @ $STATEDIR/$STATEFILE"
 
 # A function to register the current state
 # If the current state is the same as the last, then
