@@ -1,0 +1,79 @@
+#!/bin/bash
+
+### network-speakmonitor Usage:help
+#
+# Make a verbal auditory report when Internet access changes
+#
+# ENVIRONMENT VARIABLES
+# =====================
+#
+# IMINTERVAL -- set this to an int of seconds delay between network status tests
+# IMPINGNUM -- number of pings per test
+# STATEDIR -- directory in whih to save the wstatus.txt log file
+#
+###/doc
+
+#%include autohelp bashout
+
+if [[ -z "$(which espeak)" ]]; then
+	faile "Install espeak"
+fi
+
+set -eu
+
+if [[ -z "${IMINTERVAL+x}" ]]; then
+	IMINTERVAL=30
+fi
+
+if [[ -z "${IMPINGNUM+x}" ]]; then
+	IMPINGNUM=2
+fi
+
+if [[ -z "${STATEDIR+x}" ]]; then
+	STATEDIR=scratch/wirelessmonitoring
+fi
+
+debuge "Saving to $STATEDIR"
+debuge "Test interval: ${IMINTERVAL}s"
+debuge "Pings per test: $IMPINGNUM"
+
+# ------
+
+mkdir "$STATEDIR" -p
+cd "$STATEDIR"
+
+UPSTATE="up ---------¬"
+DNSTATE="down _______/"
+
+STATE="$UPSTATE"
+STATEFILE=wstatus.txt
+
+# A function to register the current state
+# If the current state is the same as the last, then
+#  no particular action is taken.
+function register
+{
+	TARGET=$1; shift
+	debuge "Registering state $TARGET"
+
+	if [[ $(tail -n 1 "$STATEFILE") =~ "$TARGET" ]] && [[ -z "$*" ]]; then
+		return
+	fi
+
+	STATREPORT="$(date "+%F %T") $TARGET"
+	echo "$STATREPORT" |tee -a "$STATEFILE"
+	espeak "Internet status: $(echo "$TARGET"|awk '{print $1}')"
+}
+
+register starting
+
+while true
+do
+	ping 8.8.8.8 -c "$IMPINGNUM" 2>&1 > /dev/null && {
+		STATE="$UPSTATE"
+	} || {
+		STATE="$DNSTATE"
+	}
+	register "$STATE"
+	sleep $IMINTERVAL
+done
