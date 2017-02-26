@@ -7,9 +7,9 @@
 # ENVIRONMENT VARIABLES
 # =====================
 #
-# IMINTERVAL -- set this to an int of seconds delay between network status tests
-# IMPINGNUM -- number of pings per test
-# STATEDIR -- directory in whih to save the wstatus.txt log file
+# IMINTERVAL -- int of seconds delay between network status tests
+# IMPINGNUM  -- number of pings per test
+# STATEDIR   -- directory in which to save the wstatus.txt log file
 #
 ###/doc
 
