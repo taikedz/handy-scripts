@@ -1,0 +1,118 @@
+#!/bin/bash
+
+### renewcert Usage:help
+# 
+# Setup/renew a Let's Encrypt certificate
+#
+# Installs or updates the Let's Encrypt client from github, and runs it
+# whilst logging the output of operations to a file, then restarts the
+# associated service.
+#
+# USAGE
+# =====
+#
+# 	renewcert [-s] DOMAIN
+#
+# Renew the cert for the specififed domain, for example
+#
+#     renewcert example.com
+#
+# The '-s' option silences the output ; useful for automation.
+#
+# ENVIRONMENT VARIABLES
+# =====================
+#
+# The script uses a number of environment variables which you can
+# change as suits you.
+#
+# LEDIR - the letsencrypt directory, by default this is "$HOME/letsencrypt"
+#
+# CERTLOG - the file to write logging information to. By default this is 
+# 	/var/log/renewcert/certrenewal-$(date +"%F-%T").log
+# 	Logging will occur even when in silent mode
+#
+# WEBSERVICE - the name of the system HTTP service to restart once the
+# 	certificate renewal is complete. By defaut this is "apache2"
+#
+# 	Meaningful alternative values: nginx
+#
+# 	Any other value will be treated as apache2/httpd in letsencrypt;
+# 	the value itself will be used as the service's name.
+#
+###/doc
+
+#%include autohelp bashout
+
+set -eu
+
+# =================================
+# Setup env vars
+
+if [[ -z "${WEBSERVICE+x}" ]]; then
+	WEBSERVICE="apache2"
+fi
+
+if [[ -z "${LEDIR+x}" ]]; then
+	LEDIR="$HOME/letsencrypt"
+fi
+
+if [[ -z "${CERTLOG+x}" ]]; then
+	CERTLOG=/var/log/renewcert/certrenewal-$(date +"%F-%T").log
+fi
+
+mkdir -p "$(dirname "$CERTLOG")"
+
+# ==================================
+# Domain detection / args reading
+
+DOMAIN="$1" ; shift
+
+if [[ "$DOMAIN" = -s ]]; then
+	"$0" "$@" 2>&1 >/dev/null
+	exit
+
+elif [[ "$DOMAIN" = --debug ]]; then
+	if [[ -z "${1+x}" ]]; then
+		faile "Please speciy a domain name to renew for."
+	fi
+
+	DOMAIN="$1" ; shift
+fi
+
+
+debuge "Web service:        $WEBSERVICE"
+debuge "Let's Encrypt dir:  $LEDIR"
+debuge "Cert renewal log:   $CERTLOG"
+debuge "Domain to renew:    $DOMAIN"
+
+# ===================================
+# Install/update tooling
+
+JUSTPULLED=no
+if [[ ! -d "$LEDIR" ]]; then
+	git clone https://github.com/letsencrypt/letsencrypt "$LEDIR" 2>&1 | tee -a "$CERTLOG"
+	JUSTPULLED=yes
+fi
+
+cd "$LEDIR"
+if [[ "$JUSTPULLED" != yes ]] && [[ -d .git ]]; then
+	git pull 2>&1 | tee -a "$CERTLOG"
+	JUSTPULLED=yes
+fi
+
+# ====================================
+# Run the certificate update and restart apache
+
+LEFLAG=--apache
+if [[ "$WEBSERVICE" = nginx ]]; then
+	LEFLAG=--nginx
+fi
+
+./letsencrypt-auto certonly "$LEFLAG" --renew-by-default -d "$DOMAIN" 2>&1 | tee -a "$CERTLOG"
+
+if [[ -f /bin/systemctl ]] || [[ -f /usr/bin/systemctl ]]; then
+	systemctl restart "$WEBSERVICE" 2>&1 | tee -a "$CERTLOG"
+
+else
+	service "$WEBSERVICE" restart 2>&1 | tee -a "$CERTLOG"
+fi
