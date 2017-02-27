@@ -1,0 +1,40 @@
+#!/bin/bash
+
+### lsg Usage:help
+#
+# List items in the current directory, filter by a pattern, and optionally execute
+#
+# USAGE
+#
+# 	lsg PATTERN [COMMAND ARGS ...]
+#
+# PATTERN is the grep perl pattern to filter through
+#
+# COMMAND will be run on each resulting line
+#
+# EXAMPLE
+#
+# 	lsg tgz ls -lh
+#
+# will list the files in the current directory, and run `ls -lh` on each one.
+#
+###/doc
+
+#%include bashout autohelp
+
+EXECUTION=echo
+
+if [[ -z "$*" ]]; then
+	ls --color=always -lh
+
+	warne 'No pattern specified. Run `lsg --help` for more information.'
+	exit
+fi
+
+PATTERN=$1; shift
+
+if [[ -n "$*" ]]; then
+	EXECUTION="$@"
+fi
+
+ls | grep -P "$PATTERN" | while read; do $EXECUTION "$REPLY"; done
