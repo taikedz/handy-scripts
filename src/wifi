@@ -29,7 +29,7 @@
 #%include bashout autohelp
 
 if [[ -z "$(which nmcli)" ]]; then
-	faile nmcli not found
+	faile 'Required program `nmcli` not found.'
 fi
 
 if [[ -z "$*" ]]; then
@@ -38,6 +38,10 @@ if [[ -z "$*" ]]; then
 fi
 
 WIFICMD="$1" ; shift
+
+function savepwd {
+	: # Save "$AP:$PW"
+}
 
 case "$WIFICMD" in
 	restart)
@@ -60,6 +64,7 @@ case "$WIFICMD" in
 		infoe Done.
 		;;
 	connect)
+		nmcli device wifi rescan
 		WIFI_AP="$1"; shift
 		WIFI_PW="$1"; shift
 
@@ -75,6 +80,7 @@ case "$WIFICMD" in
 		fi
 		;;
 	list)
+		nmcli device wifi rescan
 		nmcli device wifi list
 		;;
 	*)
