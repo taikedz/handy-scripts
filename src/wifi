@@ -1,0 +1,83 @@
+#!/bin/bash
+
+### wifi Usage:help
+#
+# Some simple wifi controls wrapping around nmcli
+#
+# USAGE
+# =====
+#
+# 	nmcli [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] ]
+#
+# list
+# 	Lists available access points
+#
+# start
+# 	Activates the wifi device
+#
+# stop
+# 	Stop the wifi device
+#
+# restart
+# 	Restart the wifi device
+#
+# connect
+# 	Connect to the given access point, optionally providing a password
+#
+###/doc
+
+#%include bashout autohelp
+
+if [[ -z "$(which nmcli)" ]]; then
+	faile nmcli not found
+fi
+
+if [[ -z "$*" ]]; then
+	printhelp
+	exit
+fi
+
+WIFICMD="$1" ; shift
+
+case "$WIFICMD" in
+	restart)
+		debuge Deactivating wifi
+		nmcli radio wifi off
+
+		debuge Re-activating wifi
+		nmcli radio wifi on
+
+		infoe Done.
+		;;
+	stop)
+		debuge Deactivating wifi
+		nmcli radio wifi off
+		infoe Done.
+		;;
+	start)
+		debuge Re-activating wifi
+		nmcli radio wifi on
+		infoe Done.
+		;;
+	connect)
+		WIFI_AP="$1"; shift
+		WIFI_PW="$1"; shift
+
+		if [[ -z  "$WIFI_AP" ]]; then
+			printhelp
+			exit
+		fi
+
+		if [[ -n "$WIFI_PW" ]]; then
+			nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW"
+		else
+			nmcli device wifi connect "$WIFI_AP"
+		fi
+		;;
+	list)
+		nmcli device wifi list
+		;;
+	*)
+		faile "Invalid command $WIFICMD"
+		;;
+esac
