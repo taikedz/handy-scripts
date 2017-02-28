@@ -7,7 +7,7 @@
 # USAGE
 # =====
 #
-# 	nmcli [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] ]
+# 	nmcli [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
 #
 # list
 # 	Lists available access points
@@ -21,8 +21,13 @@
 # restart
 # 	Restart the wifi device
 #
-# connect
+# connect ACCESSPOINT [PASSWORD]
 # 	Connect to the given access point, optionally providing a password
+# 	If the password is provided, it is saved for future use.
+# 	If the password is not provided, but a saved password exists, that saved password is used.
+#
+# forget ACCESSPOINT
+# 	Forget the access point password
 #
 ###/doc
 
@@ -39,8 +44,29 @@ fi
 
 WIFICMD="$1" ; shift
 
+if [[ -z "${WIFISAVE+x}" ]]; then
+	WIFISAVE="$HOME/.config/wifi.txt"
+fi
+
+if [[ ! -f "$WIFISAVE" ]]; then
+	mkdir -p "$(dirname "$WIFISAVE")"
+	touch "$WIFISAVE"
+fi
+
 function savepwd {
-	: # Save "$AP:$PW"
+	if [[ -z "$(getpwd "$1")" ]]; then
+		echo "$1$2" >> "$WIFISAVE"
+	else
+		sed -r "s/^$1.+$/$1$2/" -i "$WIFISAVE"
+	fi
+}
+
+function getpwd {
+	grep -e "^$1" "$WIFISAVE"|cut -d'' -f2
+}
+
+function deletepwd {
+	sed -r "/^$1.+$/d" -i "$WIFISAVE"
 }
 
 case "$WIFICMD" in
@@ -74,10 +100,19 @@ case "$WIFICMD" in
 		fi
 
 		if [[ -n "$WIFI_PW" ]]; then
+			savepwd "$WIFI_AP" "$WIFI_PW"
 			nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW"
 		else
-			nmcli device wifi connect "$WIFI_AP"
+			WIFI_PW="$(getpwd "$WIFI_AP")"
+			if [[ -n "$WIFI_PW" ]]; then
+				nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW"
+			else
+				nmcli device wifi connect "$WIFI_AP"
+			fi
 		fi
+		;;
+	forget)
+		deletepwd "$1"; shift
 		;;
 	list)
 		nmcli device wifi rescan
