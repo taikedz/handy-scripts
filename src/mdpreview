@@ -8,11 +8,11 @@
 
 set -u
 
-MDEXEC=$(which markdown)
+MDEXEC=$(which markdown 2>/dev/null || which markdown_py 2>/dev/null)
 TMPDIR=/tmp
 
 
-if [[ ! -f "$MDEXEC" ]] || [[ -z "$MDEXEC" ]]; then
+if [[ -z "$MDEXEC" ]] || [[ ! -f "$MDEXEC" ]]; then
 	faile "No markdown processor"
 fi
 
