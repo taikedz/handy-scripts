@@ -1,0 +1,97 @@
+#!/bin/bash
+
+### sendme Usage:help
+# 
+# Friendly terminal email sending tool.
+# 
+# Supports GPG-sgning of message.
+# 
+#     sendme [FILES]
+# 
+# Specify files on the command line to be attached to the mailer program.
+# 
+# You can define the "FROM" and "RCPT" shell variabels in ~/.config/sendme - example
+# 
+#     ${CGRN}cat $HOME/.config/sendme
+# ${CYEL}
+# 	RCPT=me@example.com
+# 	FROM=noreply@bogus.foo
+# ${CDEF}
+# You can still change these on an ad-hoc basis when running the command.
+# 
+# FUTURE
+# 
+# Future versions will support:
+# * using the editor defined in EDITOR to edit files
+# * specifying a template to use
+##/doc
+
+#%include bashout
+
+GCMD=
+if which gpg2 > /dev/null 2>&1; then
+	GCMD=gpg2
+
+elif which gpg > /dev/null 2>&1; then
+	GCMD=gpg
+
+else
+	warne "No gpg2/gpg command found. Suggestion: install gnupg2"
+fi
+
+if which mailx > /dev/null 2>&1; then
+	faile 96 "No mailx command found."
+fi
+
+if [[ -z "$EDITOR" ]]; then
+	if [[ -f /usr/bin/nano ]]; then
+		warne "\$EDITOR variable not set. Using nano"
+		export EDITOR=/usr/bin/nano
+	else
+		faile 96 "\$EDITOR variable not set ; nano not available"
+	fi
+fi
+
+FILES=
+FROM=
+RCPT=
+ATCH=$( [[ $(man mailx | grep 'mailutils' -c) -gt 0 ]] && echo "-A" ; [[ $(man mailx | grep 'Heirloom' -c) -gt 0 ]] && echo "-a" ; )
+[[ -z "$ATCH" ]] && faile 96 "Could not determine mailx flavour."
+
+set -euo pipefail
+
+MSGFILE="/tmp/sendme-message-$(date +'%F.%T')"
+ASCFILE="$MSGFILE.asc"
+
+. "$HOME"/.config/sendme
+
+[[ ! -z "$@" ]] && { echo -e "\n\n\n++++++\nAttachment MD5 sums:\n" > "$MSGFILE" ; }
+
+for xfile in "$@"; do
+	[[ ! -f "$xfile" ]] && faile 2 "$xfile does not exist."
+
+	FILES="$FILES $ATCH $xfile"
+	md5sum "$xfile" >> "$MSGFILE" # Linux only. FIXME need to adapt for cygwin and OS.X
+done
+
+[[ -z "$FILES" ]] && warne "No files specified"
+
+read -p "${CBLU}To: ${CDEF}" -ei "$RCPT" RCPT # opportunity to change destination
+read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender address
+
+[[ -z "$RCPT" ]] && faile 1 "FAIL: No recipient RCPT specified."
+
+RES="automatic email - see attached"
+
+read -p "${CBLU}Subject:${CDEF} " RES
+
+if [[ -n "$RES" ]]; then
+	"$EDITOR" "$MSGFILE"
+	read -p "Sign with GPG? y/N> " SIG
+	[[ "$SIG" = y ]] && {
+		"$GCMD" --output="$ASCFILE" --clearsign "$MSGFILE"
+		MSGFILE="$ASCFILE"
+	}
+	mail -s "$RES" -r "$FROM" $FILES $RCPT < "$MSGFILE"
+fi
+
