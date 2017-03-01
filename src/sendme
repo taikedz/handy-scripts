@@ -29,17 +29,17 @@
 #%include bashout
 
 GCMD=
-if which gpg2 > /dev/null 2>&1; then
+if ! which gpg2 > /dev/null 2>&1 ; then
 	GCMD=gpg2
 
-elif which gpg > /dev/null 2>&1; then
+elif ! which gpg > /dev/null 2>&1; then
 	GCMD=gpg
 
 else
 	warne "No gpg2/gpg command found. Suggestion: install gnupg2"
 fi
 
-if which mailx > /dev/null 2>&1; then
+if ! which mailx > /dev/null 2>&1; then
 	faile 96 "No mailx command found."
 fi
 
