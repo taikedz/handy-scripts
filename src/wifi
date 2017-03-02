@@ -7,7 +7,7 @@
 # USAGE
 # =====
 #
-# 	nmcli [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
+# 	nmcli [ list [old] | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
 #
 # list
 # 	Lists available access points
@@ -115,8 +115,16 @@ case "$WIFICMD" in
 		deletepwd "$1"; shift
 		;;
 	list)
-		nmcli device wifi rescan
-		nmcli device wifi list
+		if [[ -n "$*" ]]; then
+			if [[ -f "$WIFISAVE" ]]; then
+				sed -r 's/(.*?).*$/\1/' "$WIFISAVE"
+			else
+				faile "No wifi save file"
+			fi
+		else
+			nmcli device wifi rescan
+			nmcli device wifi list
+		fi
 		;;
 	*)
 		faile "Invalid command $WIFICMD"
