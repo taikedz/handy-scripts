@@ -9,6 +9,7 @@
 set -u
 
 MDEXEC=$(which markdown 2>/dev/null || which markdown_py 2>/dev/null)
+BREXEC=$(which sensible-browser 2>/dev/null || which firefox 2>/dev/null || which chromium-browser 2>/dev/null || which elinks 2>/dev/null)
 TMPDIR=/tmp
 
 
@@ -16,8 +17,8 @@ if [[ -z "$MDEXEC" ]] || [[ ! -f "$MDEXEC" ]]; then
 	faile "No markdown processor"
 fi
 
-DEST=$(readarg '-d')
-if [[ -n "$DEST" ]]; then
+DEST=$(argread '-d')
+if [[ -z "$DEST" ]]; then
 	DEST="$TMPDIR"
 fi
 
@@ -40,9 +41,13 @@ for x in "$@"; do
 		cat "$HOME/.markdown.css"  >> "$tfile"
 		echo '</style>' >> "$tfile"
 	fi
-	markdown "$x" >> "$tfile"
-	sensible-browser $tfile 2>/dev/null >/dev/null
+	"$MDEXEC" "$x" >> "$tfile"
+	"$BREXEC" $tfile 2>/dev/null >/dev/null
 done
 
-sleep 2
-rm $ALLFILES
+if [[ -z "$BREXEC" ]]; then
+	infoe "$ALLFILES"
+else
+	sleep 2
+	rm $ALLFILES
+fi
