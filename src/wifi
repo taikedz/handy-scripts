@@ -40,7 +40,7 @@ if [[ -z "$(which nmcli)" ]]; then
 fi
 
 if [[ -z "$*" ]]; then
-	printhelp
+	nmcli connection show --active | grep wireless
 	exit
 fi
 
