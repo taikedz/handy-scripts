@@ -87,11 +87,13 @@ read -p "${CBLU}Subject:${CDEF} " RES
 
 if [[ -n "$RES" ]]; then
 	"$EDITOR" "$MSGFILE"
-	read -p "Sign with GPG? y/N> " SIG
-	[[ "$SIG" = y ]] && {
-		"$GCMD" --output="$ASCFILE" --clearsign "$MSGFILE"
-		MSGFILE="$ASCFILE"
-	}
+	if [[ -n "$GCMD" ]]; then
+		read -p "Sign with GPG? y/N> " SIG
+		[[ "$SIG" = y ]] && {
+			"$GCMD" --output="$ASCFILE" --clearsign "$MSGFILE"
+			MSGFILE="$ASCFILE"
+		}
+	fi
 	mail -s "$RES" -r "$FROM" $FILES $RCPT < "$MSGFILE"
 fi
 
