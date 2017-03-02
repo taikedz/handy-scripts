@@ -27,7 +27,7 @@
 # 	If the password is not provided, but a saved password exists, that saved password is used.
 #
 # forget ACCESSPOINT
-# 	Forget the access point password
+# 	Forget the access point and password
 #
 ###/doc
 
@@ -52,6 +52,10 @@ if [[ ! -f "$WIFISAVE" ]]; then
 	mkdir -p "$(dirname "$WIFISAVE")"
 	touch "$WIFISAVE"
 fi
+
+# Very basic security.
+# TODO - include file encryption *option*
+chmod 600 "$WIFISAVE"
 
 function savepwd {
 	if [[ -z "$(getpwd "$1")" ]]; then
@@ -99,16 +103,20 @@ case "$WIFICMD" in
 			exit
 		fi
 
+		# Attempt save whether there's a password or not
+		savepwd "$WIFI_AP" "$WIFI_PW"
+
+		# No password *explicitly* specified
+		# See if it is in the save file
+		if [[ -z "$WIFI_PW" ]]; then
+			WIFI_PW="$(getpwd "$WIFI_AP")"
+		fi
+
 		if [[ -n "$WIFI_PW" ]]; then
-			savepwd "$WIFI_AP" "$WIFI_PW"
 			nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW"
 		else
-			WIFI_PW="$(getpwd "$WIFI_AP")"
-			if [[ -n "$WIFI_PW" ]]; then
-				nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW"
-			else
-				nmcli device wifi connect "$WIFI_AP"
-			fi
+			# *Definitely* no password
+			nmcli device wifi connect "$WIFI_AP"
 		fi
 		;;
 	forget)
