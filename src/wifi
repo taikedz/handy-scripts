@@ -33,6 +33,8 @@
 
 #%include bashout autohelp
 
+SEP=''
+
 if [[ -z "$(which nmcli)" ]]; then
 	faile 'Required program `nmcli` not found.'
 fi
@@ -59,18 +61,18 @@ chmod 600 "$WIFISAVE"
 
 function savepwd {
 	if [[ -z "$(getpwd "$1")" ]]; then
-		echo "$1$2" >> "$WIFISAVE"
+		echo "$1$SEP$2" >> "$WIFISAVE"
 	else
-		sed -r "s/^$1.+$/$1$2/" -i "$WIFISAVE"
+		sed -r "s/^$1$SEP.+$/$1$SEP$2/" -i "$WIFISAVE"
 	fi
 }
 
 function getpwd {
-	grep -e "^$1" "$WIFISAVE"|cut -d'' -f2
+	grep -e "^$1$SEP" "$WIFISAVE"|cut -d"$SEP" -f2
 }
 
 function deletepwd {
-	sed -r "/^$1.+$/d" -i "$WIFISAVE"
+	sed -r "/^$1$SEP.+$/d" -i "$WIFISAVE"
 }
 
 case "$WIFICMD" in
@@ -125,7 +127,7 @@ case "$WIFICMD" in
 	list)
 		if [[ -n "$*" ]]; then
 			if [[ -f "$WIFISAVE" ]]; then
-				sed -r 's/(.*?).*$/\1/' "$WIFISAVE"
+				sed -r 's/(.*?)'"$SEP"'.*$/\1/' "$WIFISAVE"
 			else
 				faile "No wifi save file"
 			fi
