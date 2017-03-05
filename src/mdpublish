@@ -1,0 +1,133 @@
+#!/bin/bash
+
+### mdpublish Usage:help
+# 
+# Publish Markdown files as HTML to $MDPUBDIR
+#
+# Set the MDPUBDIR environment variable to specify where to output files to.
+#
+# The resulting pages are static, cacheable files.
+#
+# ===== USAGE
+# 
+# 	$0 MDFILE HTMLFILE
+# 	$0 TARGET DESTINATION
+# 
+# HTMLFILE is the name of the HTML file to create under $MDPUBDIR
+# 
+# DESTINATION is a path under $MDPUBDIR ; if the first argument is not a MDFILE then files are simply copied to the destination.
+# 
+# 
+# mdpublish looks for any "*.css" files in the local directory and dumps them to the HTML header.
+# 
+# You can include any other .md files by including a directive in your markdown file:
+# 
+# 	%{target-file.md}
+# 
+# These will be pulled into the file before the markdown processor is called.
+# 
+# After the markdown processor has been called, any %{*.html} declarations will cause the raw HTML data to be pulled in
+# 
+# Inclusions must be on their own line.
+#
+# ===== EXAMPLES
+#
+# Examples of calling
+#
+# 	# Publish to /var/www/html/md-file.html
+# 	 mpdpublish md-file.md
+#
+# 	# Set a different target directory:
+# 	# Publish to ./htmlout.d/md-file.html
+# 	 export MDPUBDIR=./htmlout.d
+# 	 mdpublish md-file.md
+#
+#	# Publish image file to target
+#	# These two lines are equivalent
+#	 mdpublish images/screenshot.png images/screenshot.png
+#	 mdpublish images/screenshot.png{,}
+#
+# Example markdown file
+#
+# 	# Some title
+#
+# 	We shall include markdown from another file
+#
+# 	%{external-markdownfile.md}
+#
+# 	And then just include a raw footer.
+#
+# 	%{footer.html}
+# 
+###/doc
+
+if [[ "$#" -lt 2 ]]; then
+	faile "Insufficient arguments"
+fi
+
+for x in markdown perl; do
+	which $x > /dev/null || faile "Please install $x"
+done
+
+
+function replaceinc {
+cat << EOPERL|perl 
+use strict;
+use warnings;
+
+open(my \$SF,"<", "$1");
+while ( my \$invar=<\$SF> ) {
+        if (\$invar =~ $2 ) {
+                open(my \$FH, "<", "\$1");
+                while ( my \$inline = <\$FH> ) {
+                        print "\$inline";
+                }
+        } else {
+                print "\$invar";
+        }
+}
+
+EOPERL
+}
+
+function stylemd {
+cat <<EOHTML
+<html>
+<head>
+<style>
+$(cat *.css)
+</style>
+</head>
+<body>
+
+$(markdown $1)
+
+</body></html>
+EOHTML
+}
+
+# ============ Main
+
+if [[ -z "$MDPUBDIR" ]]; then
+	MDPUBDIR=/var/www/html
+fi
+
+sourcefile="$1"
+targetfile="$2"
+targetdir=$(dirname "$2")
+
+mkdir -p "$MDPUBDIR/$targetdir"
+
+if [[ "$sourcefile" =~ .md$ ]]; then
+	replaceinc "$sourcefile" '/%{(.+?\.md)}/' > "/tmp/markin1.tmp"
+	# TODO - make CSS inclusion explicit
+	# Suggest - extract CSS inclusion lines
+	# use stylemd instead to insert new inclusion lines
+	# replaceinc on *.css files
+	stylemd "/tmp/markin1.tmp" > "/tmp/markin2.tmp"
+	replaceinc "/tmp/markin2.tmp" '/%{(.+?\.html?)}/' > "$MDPUBDIR/$targetfile"
+
+else
+	cp -r "$sourcefile" "$MDPUBDIR/$targetfile"
+fi
+

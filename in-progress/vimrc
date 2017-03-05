@@ -1,7 +1,19 @@
 syntax on
+
 set autoindent
 set formatoptions=tcqr
 
-colorscheme desert
+" Lin / col number
+set ruler
+
+" Set a status bar ...?
+set laststatus=2
 set hlsearch
 
+colorscheme desert
+
+" Confirm quit when multiple buffers are open
+set confirm
+
+" from http://vim.wikia.com/wiki/Converting_tabs_to_spaces
+autocmd FileType python set tabstop=4|set shiftwidth=4|set expandtab

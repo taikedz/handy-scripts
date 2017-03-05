@@ -1,0 +1,57 @@
+#!/bin/bash
+
+### dl Usage:help
+# Run a download on the command line
+#
+# Running the command again allows you to add a new file to the chain
+# so you do not have to wait for the previous one to finish, nor run
+# the downloads concurrently.
+###/doc
+
+set -u
+
+#%include bashout autohelp
+
+if [[ -z "$*" ]]; then
+	faile "Specify a download file"
+fi
+
+listfile="$1" ; shift
+
+if [[ -z "$*" ]]; then
+
+	if [[ ! -f "$listfile" ]]; then
+		faile "$listfile is not a file"
+	fi
+
+	cp "$listfile" "$listfile.save"
+
+	infoe "You can add new URLs to the list by running"
+	infoe "    $0 $listfile \$URL ..."
+else
+	while [[ -n "$*" ]]; do
+		echo "$1" >> "$listfile" || faile "Could not write to $listfile"
+		echo "$1" >> "$listfile.save" || faile "Could not write to $listfile.save"
+		shift
+	done
+	exit
+fi
+
+
+while [[ $(head "$listfile"|wc -l) -gt 0 ]]; do
+	url=$(head "$listfile" -n 1)
+	infoe "Getting $url"
+	if ! wget "$url"; then
+		# save url for further processing
+		warne Failed
+		echo "$url" >> "$listfile.failed"
+	fi
+	# decapitate
+	sed "2,$(wc -l < "$listfile") p" -n $listfile > "$listfile.tmp" || faile "Cannot write temp"
+	cat "$listfile.tmp" > "$listfile" || faile "Cannot truncate list"
+	rm "$listfile.tmp" || warne "Could not remove temp"
+	infoe "debug sleep" && sleep 5
+done
+
+cp "$listfile.save" "$listfile" && rm "$listfile.save"
+infoe "All contents of "$listfile" have been processed."

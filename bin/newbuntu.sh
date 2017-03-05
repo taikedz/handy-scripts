@@ -120,6 +120,7 @@ debug "Key adding"
 mkdir -p ~"$newuser"/.ssh
 cp -i -r ~/.ssh/authorized_keys ~"$newuser"/.ssh/
 chown -R $newuser:$newuser ~"$newuser"/.ssh
+chmod 600 ~"$newuser"/.ssh
 chmod 700 ~"$newuser"/.ssh/authorized_keys
 
 # We have custom user, now remove SSH root login
@@ -162,4 +163,4 @@ vefirewall --apply # this will be run in interactive mode
 # =================
 # Finally, do upgrade - potentially longest task, hence last
 
-apt-get upgrade --assume-yes
+#apt-get upgrade --assume-yes

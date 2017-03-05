@@ -1,0 +1,142 @@
+#!/bin/bash
+
+### wifi Usage:help
+#
+# Some simple wifi controls wrapping around nmcli
+#
+# USAGE
+# =====
+#
+# 	nmcli [ list [old] | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
+#
+# list
+# 	Lists available access points
+#
+# start
+# 	Activates the wifi device
+#
+# stop
+# 	Stop the wifi device
+#
+# restart
+# 	Restart the wifi device
+#
+# connect ACCESSPOINT [PASSWORD]
+# 	Connect to the given access point, optionally providing a password
+# 	If the password is provided, it is saved for future use.
+# 	If the password is not provided, but a saved password exists, that saved password is used.
+#
+# forget ACCESSPOINT
+# 	Forget the access point and password
+#
+###/doc
+
+#%include bashout autohelp
+
+SEP=''
+
+if [[ -z "$(which nmcli)" ]]; then
+	faile 'Required program `nmcli` not found.'
+fi
+
+if [[ -z "$*" ]]; then
+	nmcli connection show --active | grep wireless
+	exit
+fi
+
+WIFICMD="$1" ; shift
+
+if [[ -z "${WIFISAVE+x}" ]]; then
+	WIFISAVE="$HOME/.config/wifi.txt"
+fi
+
+if [[ ! -f "$WIFISAVE" ]]; then
+	mkdir -p "$(dirname "$WIFISAVE")"
+	touch "$WIFISAVE"
+fi
+
+# Very basic security.
+# TODO - include file encryption *option*
+chmod 600 "$WIFISAVE"
+
+function savepwd {
+	if [[ -z "$(getpwd "$1")" ]]; then
+		echo "$1$SEP$2" >> "$WIFISAVE"
+	else
+		sed -r "s/^$1$SEP.+$/$1$SEP$2/" -i "$WIFISAVE"
+	fi
+}
+
+function getpwd {
+	grep -e "^$1$SEP" "$WIFISAVE"|cut -d"$SEP" -f2
+}
+
+function deletepwd {
+	sed -r "/^$1$SEP.+$/d" -i "$WIFISAVE"
+}
+
+case "$WIFICMD" in
+	restart)
+		debuge Deactivating wifi
+		nmcli radio wifi off
+
+		debuge Re-activating wifi
+		nmcli radio wifi on
+
+		infoe Done.
+		;;
+	stop)
+		debuge Deactivating wifi
+		nmcli radio wifi off
+		infoe Done.
+		;;
+	start)
+		debuge Re-activating wifi
+		nmcli radio wifi on
+		infoe Done.
+		;;
+	connect)
+		nmcli device wifi rescan
+		WIFI_AP="$1"; shift
+		WIFI_PW="$1"; shift
+
+		if [[ -z  "$WIFI_AP" ]]; then
+			printhelp
+			exit
+		fi
+
+		# Attempt save whether there's a password or not
+		savepwd "$WIFI_AP" "$WIFI_PW"
+
+		# No password *explicitly* specified
+		# See if it is in the save file
+		if [[ -z "$WIFI_PW" ]]; then
+			WIFI_PW="$(getpwd "$WIFI_AP")"
+		fi
+
+		if [[ -n "$WIFI_PW" ]]; then
+			nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW"
+		else
+			# *Definitely* no password
+			nmcli device wifi connect "$WIFI_AP"
+		fi
+		;;
+	forget)
+		deletepwd "$1"; shift
+		;;
+	list)
+		if [[ -n "$*" ]]; then
+			if [[ -f "$WIFISAVE" ]]; then
+				sed -r 's/(.*?)'"$SEP"'.*$/\1/' "$WIFISAVE"
+			else
+				faile "No wifi save file"
+			fi
+		else
+			nmcli device wifi rescan
+			nmcli device wifi list
+		fi
+		;;
+	*)
+		faile "Invalid command $WIFICMD"
+		;;
+esac
