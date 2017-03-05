@@ -7,7 +7,7 @@
 # USAGE
 # =====
 #
-# 	nmcli [ list [old] | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
+# 	nmcli [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
 #
 # list
 # 	Lists available access points
@@ -46,33 +46,28 @@ fi
 
 WIFICMD="$1" ; shift
 
-if [[ -z "${WIFISAVE+x}" ]]; then
-	WIFISAVE="$HOME/.config/wifi.txt"
-fi
+function newconn {
+	WIFI_AP="$1"; shift
+	WIFI_PW="$1"; shift
 
-if [[ ! -f "$WIFISAVE" ]]; then
-	mkdir -p "$(dirname "$WIFISAVE")"
-	touch "$WIFISAVE"
-fi
+	infoe "Trying to establish new connection ..."
 
-# Very basic security.
-# TODO - include file encryption *option*
-chmod 600 "$WIFISAVE"
-
-function savepwd {
-	if [[ -z "$(getpwd "$1")" ]]; then
-		echo "$1$SEP$2" >> "$WIFISAVE"
+	if [[ -n "$WIFI_PW" ]]; then
+		nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW" ; RES=$?
 	else
-		sed -r "s/^$1$SEP.+$/$1$SEP$2/" -i "$WIFISAVE"
+		nmcli device wifi connect "$WIFI_AP" ; RES="$?"
 	fi
+
+	return "$RES"
 }
 
-function getpwd {
-	grep -e "^$1$SEP" "$WIFISAVE"|cut -d"$SEP" -f2
-}
+function oldconn {
+	WIFI_AP="$1"; shift
+	infoe "Trying old connections ..."
 
-function deletepwd {
-	sed -r "/^$1$SEP.+$/d" -i "$WIFISAVE"
+	nmcli connection up "$WIFI_AP" ; RES=$?
+
+	return "$RES"
 }
 
 case "$WIFICMD" in
@@ -105,35 +100,24 @@ case "$WIFICMD" in
 			exit
 		fi
 
-		# Attempt save whether there's a password or not
-		savepwd "$WIFI_AP" "$WIFI_PW"
-
-		# No password *explicitly* specified
-		# See if it is in the save file
-		if [[ -z "$WIFI_PW" ]]; then
-			WIFI_PW="$(getpwd "$WIFI_AP")"
-		fi
-
-		if [[ -n "$WIFI_PW" ]]; then
-			nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW"
-		else
-			# *Definitely* no password
-			nmcli device wifi connect "$WIFI_AP"
-		fi
+		oldconn "$WIFI_AP" || newconn "$WIFI_AP" "$WIFI_PW"
 		;;
 	forget)
-		deletepwd "$1"; shift
+		WIFI_AP="$1"; shift
+		nmcli connection delete "$WIFI_AP" && {
+			infoe Done.
+		}
 		;;
 	list)
-		if [[ -n "$*" ]]; then
-			if [[ -f "$WIFISAVE" ]]; then
-				sed -r 's/(.*?)'"$SEP"'.*$/\1/' "$WIFISAVE"
-			else
-				faile "No wifi save file"
-			fi
+		nmcli device wifi rescan
+		nmcli device wifi list
+		;;
+	old)
+		WIFI_AP="$1" ; shift
+		if [[ -z "$WIFI_AP" ]]; then
+			nmcli connection show|grep wireless
 		else
-			nmcli device wifi rescan
-			nmcli device wifi list
+			nmcli connection show "$WIFI_AP"|grep wireless
 		fi
 		;;
 	*)
