@@ -42,7 +42,9 @@ for x in "$@"; do
 		echo '</style>' >> "$tfile"
 	fi
 	"$MDEXEC" "$x" >> "$tfile"
-	"$BREXEC" $tfile 2>/dev/null >/dev/null
+	if [[ -n "$BREXEC" ]]; then
+		"$BREXEC" $tfile 2>/dev/null >/dev/null
+	fi
 done
 
 if [[ -z "$BREXEC" ]]; then
