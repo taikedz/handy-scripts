@@ -27,6 +27,9 @@
 # CSSFILES - by default is set to /etc/mdpreview/styles.css:$HOME/styles.css:./styles.css
 #
 #  Can be overridden by setting the environment variable.
+#
+#
+# DEST - the destination for generated HTML preview files. By default, this is /tmp
 ###/doc
 
 #%include bashout readargs kvreader autohelp
@@ -51,20 +54,13 @@ if [[ -z "$MDEXEC" ]] || [[ ! -f "$MDEXEC" ]]; then
 	faile "No markdown processor"
 fi
 
-DEST=$(argread '-d')
-if [[ -z "$DEST" ]]; then
-	DEST="$TMPDIR"
+if [[ -z "${DEST+x}" ]]; then
+	DEST="./"
 fi
 
 if [[ ! -d "$DEST" ]]; then
-	faile "Invalid destination [$DEST]"
+	faile "Invalid destination folder [$DEST]"
 fi
-
-function makeafile {
-	if [[ "$DEST" = /tmp ]]; then
-		echo "$(mktemp -d /tmp)"
-	fi
-}
 
 ALLFILES=
 for x in "$@"; do
