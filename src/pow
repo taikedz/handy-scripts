@@ -11,4 +11,8 @@
 # No options.
 ###/doc
 
+#%include autohelp bashout
+
+debuge "Getting Battery information for \`upower -i $(upower -e | grep 'BAT')\`"
+
 upower -i $(upower -e | grep 'BAT') | grep -E "state|to\ full|percentage|time to"
