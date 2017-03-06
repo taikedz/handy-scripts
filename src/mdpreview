@@ -8,7 +8,7 @@
 
 set -u
 
-MDEXEC=$(which markdown 2>/dev/null || which markdown_py 2>/dev/null)
+MDEXEC=$(which markdown_py 2>/dev/null || which markdown 2>/dev/null)
 BREXEC=$(which sensible-browser 2>/dev/null || which firefox 2>/dev/null || which chromium-browser 2>/dev/null || which elinks 2>/dev/null)
 TMPDIR=/tmp
 
