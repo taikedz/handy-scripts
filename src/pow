@@ -1,0 +1,14 @@
+!/bin/bash
+
+### pow Usage:help
+# Simply display power stats
+#
+# Usage
+# =====
+#
+# 	pow
+#
+# No options.
+###/doc
+
+upower -i $(upower -e | grep 'BAT') | grep -E "state|to\ full|percentage|time to"
