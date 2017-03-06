@@ -40,7 +40,8 @@ if [[ -z "$(which nmcli)" ]]; then
 fi
 
 if [[ -z "$*" ]]; then
-	nmcli connection show --active | grep wireless
+	infoe "Raw wifi status\n"
+	infoe "$(nmcli connection show --active | grep wireless)\n"
 	exit
 fi
 

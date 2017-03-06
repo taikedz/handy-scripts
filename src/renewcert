@@ -43,6 +43,11 @@
 
 #%include autohelp bashout
 
+if [[ -z "$*" ]]; then
+	printhelp
+	exit
+fi
+
 set -eu
 
 # =================================
@@ -73,7 +78,7 @@ if [[ "$DOMAIN" = -s ]]; then
 
 elif [[ "$DOMAIN" = --debug ]]; then
 	if [[ -z "${1+x}" ]]; then
-		faile "Please speciy a domain name to renew for."
+		faile "Please specify a domain name to renew for."
 	fi
 
 	DOMAIN="$1" ; shift

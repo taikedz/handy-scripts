@@ -32,18 +32,17 @@
 # DEST - the destination for generated HTML preview files. By default, this is /tmp
 ###/doc
 
-#%include bashout readargs kvreader autohelp
+#%include bashout readargs kvreader autohelp getbin
 
 set -u
 
 if [[ -z "${MDEXEC+x}" ]]; then
-	MDEXEC=$(which markdown_py 2>/dev/null || which markdown 2>/dev/null)
+	MDEXEC=$(getbin markdown_py markdown )
 fi
 
 if [[ -z "${BREXEC+x}" ]]; then
-	BREXEC=$(which sensible-browser 2>/dev/null || which firefox 2>/dev/null || which chromium-browser 2>/dev/null || which elinks 2>/dev/null)
+	BREXEC=$(getbin sensible-browser firefox chromium-browser elinks)
 fi
-TMPDIR=/tmp
 
 
 if [[ -z "${CSSFILES+x}" ]]; then
