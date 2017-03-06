@@ -24,7 +24,7 @@
 #
 #   If no suitable browser is found or supplied, then the preview files are listed instead of being subsequently removed.
 #
-# CSSFILES - by default is set to /etc/mdpreview/styles.css:$HOME/styles.css:./styles.css
+# CSSFILES - by default is set to /etc/mdpreview/styles.css:$HOME/.config/mdpreview/styles.css:./styles.css
 #
 #  Can be overridden by setting the environment variable.
 #
