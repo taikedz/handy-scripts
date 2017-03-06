@@ -2,6 +2,31 @@
 
 ### mdpreview Usage:help
 # Preview a markdown file
+#
+# USAGE
+# =====
+#
+# 	mdpreview FILEA.md FILEB.md ...
+#
+# Supply styles in ./styles.css , or see the CSSFILES environment variable definition below.
+#
+# ENVIRONMENT VARIABLES
+# =====================
+#
+# MDEXEC - path to executable markdown processor. By default searches for `markdown_py` of `markdown`
+#
+#  If no markdown processor is supplied or is located, then mdpreview will fail.
+#
+#
+#
+# BREXEC - searches for a valid browser; by default tries to locate in order
+#   sensible-browser, firefox, chromium-browser, elinks
+#
+#   If no suitable browser is found or supplied, then the preview files are listed instead of being subsequently removed.
+#
+# CSSFILES - by default is set to /etc/mdpreview/styles.css:$HOME/styles.css:./styles.css
+#
+#  Can be overridden by setting the environment variable.
 ###/doc
 
 #%include bashout readargs kvreader autohelp
