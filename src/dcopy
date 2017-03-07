@@ -1,0 +1,46 @@
+#!/bin/bash
+
+### dcopy Usage:help
+#
+# A tool for copying disk images to disks (a little more) safely.
+#
+# USAGE
+# =====
+#
+# 	dcopy FILE
+#
+# You will be prompted to select a disk - type the choice number, or a string matching
+# a part of the selection
+#
+# 	Choose a disk:
+# 	1: /dev/sda
+# 	2: /dev/sdb
+#
+# To select /dev/sdb you can type "2" or "sdb" as you wish.
+#
+# You will be further prompted before you write.
+#
+###/doc
+
+#%include autohelp
+#%include bashout askuser
+
+if [[ -z "$*" ]]; then
+	printhelp
+	exit
+fi
+
+diskline=$(uchoose "Choose a disk" "$(df -h|grep -P '^/')"|awk '{print $1}')
+
+if [[ -z "$diskline" ]]; then
+	faile "Invalid selection"
+fi
+
+infoe "You chose : $diskline"
+
+if uconfirm "Write [$1] to this disk?" ; then
+	infoe Writing
+	# dd if="$1" of="$diskline" bs=1024
+else
+	warne Aborting
+fi
