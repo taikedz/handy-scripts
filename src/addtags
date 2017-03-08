@@ -1,0 +1,13 @@
+#!/bin/bash
+
+function addtags {
+	if [[ ! -f "$1" ]]; then
+		faile "No such file [$1]"
+	else
+		sed -r -e 's/>\s*\$\{a\|(.+?)\}\$\s*/ \1 >/' \
+		       -e 's/\$\{js\|(.+?)\}\$/<script src="\1"><\/script> /' \
+		       -e 's/\$\{css\|(.+?)\}\$/<style src="\1"><\/style> /' "$1"
+		       # TODO define a file inclusion function in bash-builder common
+		       # TODO define a better args parsing tool based on lines
+	fi
+}
