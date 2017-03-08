@@ -1,0 +1,23 @@
+#!/bin/bash
+
+function findstyles {
+	infoe "Styles for inclusion"
+	echo "$CSSFILES"|sed 's/:/\n/g'|while read STYLEFILE; do
+		if [[ -f "$STYLEFILE" ]]; then
+			echo "$STYLEFILE"
+		fi
+	done
+}
+
+function addstyles {
+	local tfile="$1"
+
+	echo '<style>' > "$tfile"
+	echo "$CSSFILES"|sed 's/:/\n/g'|while read STYLEFILE; do
+		if [[ -f "$STYLEFILE" ]]; then
+			cat "$STYLEFILE"  >> "$tfile"
+		fi
+	done
+	echo '</style>' >> "$tfile"
+}
+

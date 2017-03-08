@@ -1,0 +1,30 @@
+#!/bin/bash
+
+### Inclusion Directives Usage:help
+#
+# You can add extra inclusion directives as follows:
+#
+# 	${a|attribute1=value attr2=value2}$
+#
+# 	${raw|some raw data on one line}$
+#
+# 	${js|path/to/js/file}$
+#
+# 	${css|path/to/style/file}$
+#
+# 	${i|path/to/html/file}$
+#
+###/doc
+
+function processincludes {
+	if [[ ! -f "$1" ]]; then
+		faile "No such file [$1]"
+	else
+		debuge "Processing inclusions on $1"
+		sed -r -e 's/>\s*\$\{a\|(.+?)\}\$\s*/ \1 >/' \
+		       -e 's/\$\{raw\|(.+?)\}\$/\1/' \
+		       -e 's/\$\{js\|(.+?)\}\$/<script src="\1"><\/script> /' \
+		       -e 's/\$\{css\|(.+?)\}\$/<style src="\1"><\/style> /' \
+		       "$1" -i
+	fi
+}

@@ -6,49 +6,56 @@
 # USAGE
 # =====
 #
-# 	mdpreview FILEA.md FILEB.md ...
+# 	mdpreview FILEA.md FILEB.md ... [ --styles ]
 #
 # Supply styles in ./styles.css , or see the CSSFILES environment variable definition below.
+#
+# Use the "--styles" option to display what style files will actually be used, without generating any content.
 #
 # ENVIRONMENT VARIABLES
 # =====================
 #
 # MDEXEC - path to executable markdown processor. By default searches for `markdown_py` of `markdown`
-#
-#  If no markdown processor is supplied or is located, then mdpreview will fail.
-#
-#
+#   Can be overridden by setting the environment variable.
+#   If no markdown processor is supplied or is located, then mdpreview will fail.
 #
 # BREXEC - searches for a valid browser; by default tries to locate in order
 #   sensible-browser, firefox, chromium-browser, elinks
-#
+#   Can be overridden by setting the environment variable.
 #   If no suitable browser is found or supplied, then the preview files are listed instead of being subsequently removed.
+#   You can set
+#
+#       BREXEC=
+#
+#   to force no-previewing (useful with DEST)
 #
 # CSSFILES - by default is set to /etc/mdpreview/styles.css:$HOME/.config/mdpreview/styles.css:./styles.css
+#   Can be overridden by setting the environment variable.
 #
-#  Can be overridden by setting the environment variable.
 #
-#
-# DEST - the destination for generated HTML preview files. By default, this is /tmp
+# DEST - optional ; if not set, temp files are generated, and are removed after being previewed.
+#   If set, files are output to this directory, opened for preview, but not removed.
 ###/doc
 
-#%include bashout readargs kvreader autohelp
+#%include getbin bashout readargs kvreader autohelp
+#%include src/addhf src/addincludes src/addstyles
 
 set -u
 
 if [[ -z "${MDEXEC+x}" ]]; then
-	MDEXEC=$(which markdown_py 2>/dev/null || which markdown 2>/dev/null)
+	MDEXEC=$(getbin markdown_py markdown)
 fi
+debuge "MDEXEC=$MDEXEC"
 
 if [[ -z "${BREXEC+x}" ]]; then
-	BREXEC=$(which sensible-browser 2>/dev/null || which firefox 2>/dev/null || which chromium-browser 2>/dev/null || which elinks 2>/dev/null)
+	BREXEC=$(getbin sensible-browser firefox chromium-browser elinks)
 fi
-TMPDIR=/tmp
-
+debuge "BREXEC=$BREXEC"
 
 if [[ -z "${CSSFILES+x}" ]]; then
 	CSSFILES="/etc/mdpreview/styles.css:$HOME/.config/mdpreview/styles.css:./styles.css"
 fi
+debuge "CSSFILES=$CSSFILES"
 
 if [[ -z "$MDEXEC" ]] || [[ ! -f "$MDEXEC" ]]; then
 	faile "No markdown processor"
@@ -57,34 +64,52 @@ fi
 if [[ -z "${DEST+x}" ]]; then
 	DEST="./"
 fi
+debuge "DEST=$DEST"
 
 if [[ ! -d "$DEST" ]]; then
 	faile "Invalid destination folder [$DEST]"
 fi
 
-ALLFILES=
-for x in "$@"; do
-	tfile=$(mktemp -p ./ .previewXXXX.html)
-	ALLFILES="$ALLFILES $tfile"
-	
-	echo '<style>' > "$tfile"
-	echo "$CSSFILES"|sed 's/:/\n/g'|while read STYLEFILE; do
-		if [[ -f "$STYLEFILE" ]]; then
-			cat "$STYLEFILE"  >> "$tfile"
-		fi
-	done
-	echo '</style>' >> "$tfile"
+if [[ "$*" =~ --styles ]]; then
+	findstyles
+	exit
+fi
 
-	"$MDEXEC" "$x" >> "$tfile"
+ALLFILES=
+for mdfile in "$@"; do
+	if [[ "$mdfile" =~ $(echo "--debug|--styles") ]]; then
+		continue
+	fi
+	# ----
+	
+	if [[ -z "$DEST" ]]; then
+		tfile=$(mktemp "./.previewXXXX.html")
+	else
+		tfile="$DEST/$(basename "$mdfile").html"
+	fi
+	ALLFILES="$ALLFILES $tfile"
+
+	addheaders "$tfile"
+	addstyles "$tfile"
+	addbodyheaders "$tfile"
+
+	debuge "Run $MDEXEC $mdfile >> $tfile"
+	"$MDEXEC" "$mdfile" >> "$tfile"
+
+	addbodyfooters "$tfile"
+	addfooters "$tfile"
+	
+	processincludes "$tfile"
 
 	if [[ -n "$BREXEC" ]]; then
 		"$BREXEC" $tfile 2>/dev/null >/dev/null &
 	fi
 done
 
-if [[ -z "$BREXEC" ]]; then
-	infoe "$ALLFILES"
+if [[ -z "$BREXEC" ]] || [[ -n "$DEST" ]]; then
+	infoe "Wrote $ALLFILES"
 else
 	sleep 2
+	debuge "Removing $ALLFILES"
 	rm $ALLFILES
 fi
