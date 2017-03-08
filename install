@@ -1,0 +1,18 @@
+#!/bin/bash
+
+BINSDIR="$HOME/.local/bin"
+
+if [[ ! -f $(which bbuild3) ]]; then
+	echo "You need bash-builder to install these scripts. Download from https://github.com/taikedz/bash-builder"
+	exit 1
+end
+
+if [[ "$UID" != 0 ]]; then
+	mkdir "$BINSDIR"
+else
+	BINSDIR="/usr/local/bin/"
+fi
+
+for x in src/*; do
+	outdir="$BINSDIR" bbuild3 "$x"
+done

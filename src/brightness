@@ -17,38 +17,56 @@
 # 	brightness 8
 # 	brightness 0.5
 #
-# ENVIRONMENT VARIABLES
-# =====================
+# SETTINGS
+# ========
+#
+# Configuration of the max brightness and actual brightness control paths are in
+# the /etc/brightness.conf file
 #
 # This script was developed on a Lenovo Flex 14 with the following defaults:
 #
-#	MAXBRIGHTPATH=/sys/class/backlight/intel_backlight/max_brightness
-# 	BRIGHTPATH=/sys/class/backlight/intel_backlight/brightness
+#	MAX /sys/class/backlight/intel_backlight/max_brightness
+# 	ACTUAL /sys/class/backlight/intel_backlight/brightness
 #
-# Override the environment vairables as required.
+# Override the settings as required.
 #
-# * MAXBRIGHTPATH is the path to the file holding the maximum raw brightness value.
-# * BRIGHTPATH is the path to the brightness setting.
+# * MAX is the path to the file holding the maximum raw brightness value.
+# * ACTUAL is the path to the brightness setting.
 #
 ###/doc
 
 #%include bashout autohelp
+
+
+BRIGHTCONFIG=/etc/brightness.conf
 
 if [[ "$UID" -ne 0 ]]; then
 	sudo "$(which $0)" "$@"
 	exit
 fi
 
-# =============================================¬
-# This script developed for the Lenovo Flex 14 ; paths may be different for your device
-if [[ -z "$MAXBRIGHTPATH" ]]; then
-	MAXBRIGHTPATH=/sys/class/backlight/intel_backlight/max_brightness
-	MAXBRIGHT=$(cat $MAXBRIGHTPATH)
+if [[ -f "$BRIGHTCONFIG" ]]; then
+	debuge "Getting settings from $BRIGHTCONFIG"
+	export BRIGHTPATH=$(egrep '^ACTUAL' "$BRIGHTCONFIG"|awk '{print $2}')
+	export MAXBRIGHTPATH=$(egrep '^MAX' "$BRIGHTCONFIG"|awk '{print $2}')
+
+	chmod 644 "$BRIGHTPATH"
+	chmod 644 "$MAXBRIGHTPATH"
+else
+	debuge "Creating initial brightness config"
+	cat <<EOF > "$BRIGHTCONFIG"
+ACTUAL /sys/class/backlight/intel_backlight/brightness
+MAX /sys/class/backlight/intel_backlight/max_brightness
+EOF
 fi
 
+# =============================================¬
+# This script developed with defaults for the Lenovo Flex 14 ; paths may be different for your device
 
-if [[ -z "$BRIGHTPATH" ]]; then
-	BRIGHTPATH=/sys/class/backlight/intel_backlight/brightness
+MAXBRIGHT=$(cat $MAXBRIGHTPATH)
+
+if [[ -z "$MAXBRIGHT" ]]; then
+	faile "You need to configure MAX and ACTUAL for your system in $BRIGHTCONFIG (try running \`ls /sys/class/backlight/\` ...)"
 fi
 # _____________________________________________/
 
