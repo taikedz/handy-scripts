@@ -22,22 +22,21 @@
 # FUTURE
 # 
 # Future versions will support:
-# * using the editor defined in EDITOR to edit files
 # * specifying a template to use
-##/doc
+###/doc
 
-#%include bashout
+#%include getbin autohelp bashout askuser
 
-GCMD=
-if ! which gpg2 > /dev/null 2>&1 ; then
-	GCMD=gpg2
-
-elif ! which gpg > /dev/null 2>&1; then
-	GCMD=gpg
-
-else
+GCMD=$(getbin gpg2 gpg)
+if [[ -z "${GCMD+x}" ]]; then
 	warne "No gpg2/gpg command found. Suggestion: install gnupg2"
+elif [[ $(gpg2 --list-keys | wc -l) -lt 3 ]]; then # FIXME check this heuristic
+	warne "No GPG keys currently installed"
+	GCMD=
 fi
+
+# FIXME prioritize with a stronger hash
+HASHCMD=$(getbin sha512sum sha256sum md5sum md5)
 
 if ! which mailx > /dev/null 2>&1; then
 	faile 96 "No mailx command found."
@@ -65,19 +64,19 @@ ASCFILE="$MSGFILE.asc"
 
 . "$HOME"/.config/sendme
 
-[[ ! -z "$@" ]] && { echo -e "\n\n\n++++++\nAttachment MD5 sums:\n" > "$MSGFILE" ; }
+[[ ! -z "$@" ]] && { echo -e "\n\n\n++++++\nAttachment [$HASHCMD] sums:\n" > "$MSGFILE" ; }
 
 for xfile in "$@"; do
 	[[ ! -f "$xfile" ]] && faile 2 "$xfile does not exist."
 
 	FILES="$FILES $ATCH $xfile"
-	md5sum "$xfile" >> "$MSGFILE" # Linux only. FIXME need to adapt for cygwin and OS.X
+	"$HASHCMD" "$xfile" >> "$MSGFILE"
 done
 
 [[ -z "$FILES" ]] && warne "No files specified"
 
-read -p "${CBLU}To: ${CDEF}" -ei "$RCPT" RCPT # opportunity to change destination
-read -p "${CBLU}From: ${CDEF}" -ei "$FROM" FROM # opportunity to change sender address
+read -p "${CBLU}To: ${CDEF}" -ei "$RCPT " RCPT # opportunity to change destination
+read -p "${CBLU}From: ${CDEF}" -ei "$FROM " FROM # opportunity to change sender address
 
 [[ -z "$RCPT" ]] && faile 1 "FAIL: No recipient RCPT specified."
 
@@ -88,7 +87,7 @@ read -p "${CBLU}Subject:${CDEF} " RES
 if [[ -n "$RES" ]]; then
 	"$EDITOR" "$MSGFILE"
 	if [[ -n "$GCMD" ]]; then
-		read -p "Sign with GPG? y/N> " SIG
+		SIG=$(uask "Sign with GPG?")
 		[[ "$SIG" = y ]] && {
 			"$GCMD" --output="$ASCFILE" --clearsign "$MSGFILE"
 			MSGFILE="$ASCFILE"
