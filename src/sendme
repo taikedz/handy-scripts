@@ -12,26 +12,30 @@
 # 
 # You can define the "FROM" and "RCPT" shell variabels in ~/.config/sendme - example
 # 
-#     ${CGRN}cat $HOME/.config/sendme
-# ${CYEL}
+#     cat $HOME/.config/sendme
+#
 # 	RCPT=me@example.com
 # 	FROM=noreply@bogus.foo
-# ${CDEF}
+# 
 # You can still change these on an ad-hoc basis when running the command.
 # 
 # FUTURE
 # 
-# Future versions will support:
+# Future versions intend to support:
 # * specifying a template to use
 ###/doc
 
 #%include getbin autohelp bashout askuser
 
-GCMD=$(getbin gpg2 gpg)
+GCMD="$(getbin gpg2 gpg)"
 if [[ -z "${GCMD+x}" ]]; then
 	warne "No gpg2/gpg command found. Suggestion: install gnupg2"
-elif [[ $(gpg2 --list-keys | wc -l) -lt 3 ]]; then # FIXME check this heuristic
-	warne "No GPG keys currently installed"
+elif [[ -z "$("$GCMD" --list-keys|egrep '^pub'|grep -v "expired")" ]]; then
+	warne "No GPG active keys currently installed ['$GCMD --list-keys']"
+	warne "Run '$GCMD --gen-key' to generate keys."
+	warne "---"
+
+	# Treat as if no GPG support (do not prompt, etc)
 	GCMD=
 fi
 
