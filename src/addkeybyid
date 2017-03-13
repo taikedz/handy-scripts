@@ -1,0 +1,5 @@
+#!/bin/bash
+
+mykey="$1"
+
+sudo apt-key adv --keyserver http://keyserver.ubuntu.com:80/ --recv-keys $mykey
