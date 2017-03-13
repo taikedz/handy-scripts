@@ -21,19 +21,19 @@
 # restart
 # 	Restart the wifi device
 #
-# connect ACCESSPOINT [PASSWORD]
+# connect [ ACCESSPOINT [ PASSWORD ] ]
 # 	Connect to the given access point, optionally providing a password
 # 	If the password is provided, it is saved for future use.
 # 	If the password is not provided, but a saved password exists, that saved password is used.
+#
+# 	If neither ACCESSPOINT nor PASSWORD are provided, you will be given a choice of any of the available networks you have previosuly connected to.
 #
 # forget ACCESSPOINT
 # 	Forget the access point and password
 #
 ###/doc
 
-#%include bashout autohelp
-
-SEP=''
+#%include bashout autohelp askuser
 
 if [[ -z "$(which nmcli)" ]]; then
 	faile 'Required program `nmcli` not found.'
@@ -45,6 +45,11 @@ if [[ -z "$*" ]]; then
 fi
 
 WIFICMD="$1" ; shift
+
+function getaccesspoint {
+	local knownnetworks=$(nmcli connection show|sed -r 's/  +/;/g'|cut -d";" -f1|sed -r -e 's/ [0-9]+$//' -e 's/$/;/'|egrep -v '^NAME$'|sort|uniq|xargs echo|sed 's/; /|/g')
+	uchoose "Connect to which network?" "$(nmcli device wifi list | sed -r 's/  +/;/g' |tail -n +2| cut -d';' -f2|egrep "$knownnetworks")"
+}
 
 function newconn {
 	WIFI_AP="$1"; shift
@@ -96,9 +101,9 @@ case "$WIFICMD" in
 		WIFI_PW="$1"; shift
 
 		if [[ -z  "$WIFI_AP" ]]; then
-			printhelp
-			exit
+			WIFI_AP=$(getaccesspoint)
 		fi
+		infoe "Connecting to $WIFI_AP"
 
 		oldconn "$WIFI_AP" || newconn "$WIFI_AP" "$WIFI_PW"
 		;;
