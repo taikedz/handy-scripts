@@ -1,7 +1,6 @@
 #!/bin/bash
 
-### mdpreview Usage:help
-# Preview a markdown file
+### Preview a markdown file Usage:help
 #
 # USAGE
 # =====
@@ -99,7 +98,7 @@ for mdfile in "$@"; do
 	addbodyfooters "$tfile"
 	addfooters "$tfile"
 	
-	processincludes "$tfile"
+	processinserts "$tfile"
 
 	if [[ -n "$BREXEC" ]]; then
 		"$BREXEC" $tfile 2>/dev/null >/dev/null &

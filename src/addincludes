@@ -4,19 +4,30 @@
 #
 # You can add extra inclusion directives as follows:
 #
-# 	${a|attribute1=value attr2=value2}$
+# When inserted at the start of a line or title, assigns attributes to the element.
 #
-# 	${raw|some raw data on one line}$
+# 	### ${a|style="color: blue;" id="builds}$ How to perform builds
+#
+# Insert raw data - some arkdown processors will see opening tags as a sign to temporarily stop processing.
+# This allows inserting raw tags without being affected by this.
+#
+# 	${raw|<div>}$
+#
+# Insert a javascript file ad a "script" element
 #
 # 	${js|path/to/js/file}$
 #
+# Insert a CSS file as a "<stye>" element
+#
 # 	${css|path/to/style/file}$
 #
-# 	${i|path/to/html/file}$
+# Insert the raw contents of a file [still to be implemented]
+#
+# 	${i|path/to/extarnal/file.html}$
 #
 ###/doc
 
-function processincludes {
+function processinserts {
 	if [[ ! -f "$1" ]]; then
 		faile "No such file [$1]"
 	else
