@@ -37,7 +37,7 @@
 #   If set, files are output to this directory, opened for preview, but not removed.
 ###/doc
 
-#%include getbin bashout readargs kvreader autohelp
+#%include getbin bashout kvreader autohelp
 #%include src/addhf src/addincludes src/addstyles
 
 set -u
