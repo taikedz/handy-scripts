@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Mini tool to adda Windows program to cygwin's executable path
+# Find, or add, program file.
+
 # ===============¬
 # Define the directories to traverse for programs
 
