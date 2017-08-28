@@ -8,24 +8,25 @@ vcount=$(echo $versions | sed -r -e 's/ /\n/g' | wc -l)
 	exit
 }
 
-matcher='^[0-9]+$'
-[[ $1 =~ $matcher ]] || {
-	echo "$1 is not a number"
+keepcount="$1"; shift
+
+numpat='^[0-9]+$'
+[[ $keepcount =~ $numpat ]] || {
+	echo "$keepcount is not a number"
 	exit 2
 }
 
-echo "# Keeping the most recent $1 kernel(s)"
-echo "# pipe to sudo bash to execute the following deletions:"
+echo "#[31;1m Keeping the most recent $keepcount kernel(s)[0m"
+echo "#[33;1m pipe to sudo bash to execute the following deletions:[0m"
 
-versions=$(echo $versions | sed -r -e 's/ /\n/g' | head -n "-$1" )
+keepversions=$(echo $versions | sed -r -e 's/ /\n/g' | head -n "-$keepcount" )
 
 #echo -e "#Versions:\n$versions\n====="
+echo ''
 
-dryrun=
-for ver in $versions; do
-	dryrun="$dryrun "$(ls /boot/*$ver* )
+for ver in $keepversions; do
+	echo /boot/*$ver* | sed -r -e 's/ +/\nrm /g' -e 's/^/rm /'
 done
-echo -n 'rm '
-echo $dryrun | sed -r -e 's/ +/\nrm /g'
-exit
+
+echo -e "\napt-get autoclean -y && apt-get autoremove -y \n"
 
