@@ -41,7 +41,7 @@
 #
 ###/doc
 
-#%include autohelp bashout
+#%include autohelp.sh bashout.sh
 
 set -eu
 

@@ -1,7 +1,7 @@
 handy-scripts
 =============
 
-Some handy scripts I tend to need all around
+${a|style="text-alignment: center;"}$ Some handy scripts I tend to need all around
 
 * `af` and `tgpi`
 	* package manager wrappers
