@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -ue
+
+#timebase={minutes | seconds}
+
+function getremainder {
+	# Must not quote inside the math evaluations
+	echo $(( $1 % $2 ))
+}
+
+function reduce {
+	echo $(( $1 - $( getremainder $1 $2 ) ))
+}
+
+function getbase {
+	echo $(( $( reduce $1 $2 ) / $2 ))
+}
+
+hours=$(getbase $1 )
+
+
