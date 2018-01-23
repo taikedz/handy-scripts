@@ -1,11 +1,6 @@
 #! /bin/bash
 
-if [[ "x$UID" != 'x0' ]]; then
-	echo "You are not root."
-	exit 1
-fi
-
-bindir="/usr/local/bin"
+bindir="$HOME/.local/bin"
 ytdlurl="https://yt-dl.org/downloads/latest/youtube-dl"
 ytdlbin="$bindir/youtube-dl"
 ytsongexe="$bindir/ytsong"

@@ -1,9 +1,0 @@
-#!/bin/bash
-
-function addheaders { :; }
-
-function addfooters { :; }
-
-function addbodyheaders { :; }
-
-function addbodyfooters { :; }
