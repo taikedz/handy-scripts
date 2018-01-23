@@ -1,32 +1,46 @@
 #!/bin/bash
 
-versions=$(ls /boot | grep -P "generic|vmlinuz" | sed -r -e 's/^([^-]+)-([^-]+-[^-]+).+$/\2/g' | sort | uniq)
-vcount=$(echo $versions | sed -r -e 's/ /\n/g' | wc -l)
+# Versions are LABEL-VERSION-ISSUANCE-VARIANT
+#  we are interesetd in the VERSION-ISSUANCE pair
+
+versions="$(ls /boot| grep -P "generic|vmlinuz" | sed -r -e 's/^[^-]+-([^-]+-[^-]+).+$/\1/g' | sort -V | uniq)"
+
+vcount=$(echo "$versions" | wc -l)
 
 [[ $# -gt 0 ]] || {
 	echo -e "You must specify the number of most recent images to keep.\n\nThere are currently $vcount kernel versions in /boot."
-	exit
+	exit 1
 }
 
 keepcount="$1"; shift
 
 numpat='^[0-9]+$'
 [[ $keepcount =~ $numpat ]] || {
-	echo "$keepcount is not a number"
+	echo "[$keepcount] is not a number"
 	exit 2
 }
 
-echo "#[31;1m Keeping the most recent $keepcount kernel(s)[0m"
-echo "#[33;1m pipe to sudo bash to execute the following deletions:[0m"
+echo -e "#\033[32;1m Keeping the newest $keepcount kernel(s)\033[0m"
+echo -e "#\033[33;1m pipe to sudo bash to execute the following deletions:\033[0m"
 
-keepversions=$(echo $versions | sed -r -e 's/ /\n/g' | head -n "-$keepcount" )
+# List versions, omit the last few (MINUS keepcount) which we are keeping
+delversions=($(echo "$versions" | head -n "-$keepcount" ))
 
-#echo -e "#Versions:\n$versions\n====="
+# The obverse
+keepversions=($(echo "$versions" | tail -n "$keepcount" ))
+
 echo ''
 
-for ver in $keepversions; do
-	echo /boot/*$ver* | sed -r -e 's/ +/\nrm /g' -e 's/^/rm /'
+echo "# Keeping:"
+for keepver in "${keepversions[@]}"; do
+	echo "# $keepver"
 done
 
-echo -e "\napt-get autoclean -y && apt-get autoremove -y \n"
+echo ''
+
+for ver in "${delversions[@]}"; do
+	ls /boot/*"$ver"* | sed -r -e 's/^/rm /g'
+done
+
+echo -e "\napt-get autoclean -y && apt-get autoremove -y\n"
 
