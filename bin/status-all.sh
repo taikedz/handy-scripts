@@ -54,6 +54,10 @@ main() {
 			bash "$0" "$target" || error "$target"
 		done
 
+		echo "${c_yel}Processed"
+		for x in "${parts[@]:1}"; do echo "  $x"; done
+		echo "$c_nul"
+
 	fi
 }
 
