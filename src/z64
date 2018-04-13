@@ -1,0 +1,25 @@
+#!/bin/bash
+
+### Create or load a base64-encoded compressed stream Usage:help
+#
+# z64 [ FILES ... ]
+#
+# If FILES are specified, creates a base64 encoded compressed tar stream
+#
+# If FILES are not specified, expects a base64 compressed tar stream to be provided on stdin
+#
+###/doc
+
+#%include autohelp.sh
+
+main() {
+    autohelp:check "$@"
+
+    if [[ -z "$*" ]]; then
+        base64 -di | tar xz
+    else
+        tar xz "$@" | base64
+    fi
+}
+
+main "$@"

@@ -3,5 +3,6 @@
 test/
 *test.sh
 release-cand/
+build-outd
 *scratch/
 *-test.sh
