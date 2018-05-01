@@ -18,7 +18,7 @@ main() {
     if [[ -z "$*" ]]; then
         base64 -di | tar xz
     else
-        tar xz "$@" | base64
+        tar cz "$@" | base64
     fi
 }
 
