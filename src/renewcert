@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# FIXME
+# LEFLAG='' X_LEFLAG="--authenticator webroot --webroot-path /var/www/html" bin/renewcert SITE
+# FIXME
+#   if site not speicified, fail informatively
+
 ### renewcert Usage:help
 # 
 # Setup/renew a Let's Encrypt certificate
@@ -41,7 +46,7 @@
 #
 ###/doc
 
-#%include autohelp bashout
+#%include autohelp.sh out.sh
 
 if [[ -z "$*" ]]; then
 	printhelp
@@ -77,18 +82,18 @@ if [[ "$DOMAIN" = -s ]]; then
 	exit
 
 elif [[ "$DOMAIN" = --debug ]]; then
-	if [[ -z "${1+x}" ]]; then
-		faile "Please specify a domain name to renew for."
+	if [[ -z "${1:-}" ]]; then
+		fail "Please specify a domain name to renew for."
 	fi
 
 	DOMAIN="$1" ; shift
 fi
 
 
-debuge "Web service:        $WEBSERVICE"
-debuge "Let's Encrypt dir:  $LEDIR"
-debuge "Cert renewal log:   $CERTLOG"
-debuge "Domain to renew:    $DOMAIN"
+out:debug "Web service:        $WEBSERVICE"
+out:debug "Let's Encrypt dir:  $LEDIR"
+out:debug "Cert renewal log:   $CERTLOG"
+out:debug "Domain to renew:    $DOMAIN"
 
 # ===================================
 # Install/update tooling

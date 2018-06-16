@@ -1,5 +1,62 @@
 #!/bin/bash
 
+## letsen.sh Usage:help
+# 
+# 	Shell-based Let's Encrypt Automator
+# 
+# The "Let's Encrypt" project aims to provide browser-recognized SSL
+# certificates to any website free of charge, with the Let's Encrypt
+# group acting as the browser-recognized Certificate Authority.
+# 
+# This script is designed to automate Let's Encrypt certificate renewal.
+# 
+# Place it on your server - for example in /usr/local/bin/ - and add
+# a root cron to call it at the desired frequency (recommended: once a day).
+#
+# Usage:
+# 
+# 	letsen.sh {--certificate=CERTIFICATE|--config=CONFIGFILE}
+# 
+# Options: ---------------------
+# 
+# By default, the operation is to renew the certificate
+# specified either on the command line or in the custom
+# configuration file.
+# 
+#   CERTIFICATE
+# 
+# Specify a certificate to renew, as path to certificate
+# 
+#   CONFIGFILE
+# 
+# Specify a configuration file. Configuration file over-
+# rides the certificate specified on command line.
+#
+# Config file: -----------------
+# 
+# The default config file can be found at /etc/letsen/letsen.cfg
+# 
+# You can define any number of configuration files,
+# but only the default one will be used unless other-
+# wise specified.
+# 
+# The default configuration is always loaded.
+# 
+# Any other configuration file overwirtes only the
+# relevant variables. Only one secondary configuration
+# file can be used per run.
+# 
+#
+# (C) 2015 Tai Kedzierski
+# GNU General Public License version 3
+# https://www.gnu.org/licenses/gpl-3.0.html
+# 
+# This script is loosely based on the efforts by Damia Soler
+# (https://blog.damia.net); written with the intent to be easily configur-
+# able, and usable in multi-host setups.
+# 
+###/doc 
+
 ## -------- optional - add signal trap
 ## 'trap' COMMAND signal
 
@@ -7,104 +64,10 @@
 
 set -u
 
-## -------- Define colours
-
-CDEF="[0m"
-CRED="[0;31m" # Regular
-CGRN="[0;32m"
-CYEL="[0;33m"
-CBLU="[0;34m"
-CRDB="[1;31m" # Bold (if supported)
-CGNB="[1;32m"
-CYLB="[1;33m"
-CBUB="[1;34m"
-
-# Mode options
-
-MODEDEBUG=
+#%include bashout autohelp
 
 # Config file
 CONFIGFILE=/etc/letsen/letsen.cfg
-
-## -------- Define help routine
-
-function printhelp { # MODIFY AS APPROPRIATE, including copyright and license
-cat <<EOHELP
-
-	${CBUB}Let's Encrypt Automator${CDEF}
-
-${CBUB}copyright:   $CDEF (C) 2015 Tai Kedzierski
-${CBUB}license:     $CYEL GNU General Public License version 3
-${CBUB}license url: $CBLU https://www.gnu.org/licenses/gpl-3.0.html${CDEF}
-
-The "Let's Encrypt" project aims to provide browser-recognized SSL
-certificates to any website free of charge, with the Let's Encrypt
-group acting as the browser-recognized Certificate Authority.
-
-This script is designed to automate Let's Encrypt certificate renewal.
-
-Place it on your server - for example in /usr/local/bin/ - and add
-a root cron to call it at the desired frequency (recommended: once a day).
-
-This script is loosely based on the efforts by Damia Soler
-(https://blog.damia.net); written with the intent to be easily configur-
-able, and usable in multi-host setups.
-
-${CBUB}Usage:${CDEF}
-
-	${CBLU}$0 ${CYEL}{--certificate=CERTIFICATE|--config=CONFIGFILE}${CDEF}
-
-${CBUB}Config file:${CDEF}
-
-The default config file can be found at $CONFIGFILE
-
-You can define any number of configuration files,
-but only the default one will be used unless other-
-wise specified.
-
-The default configuration is always loaded.
-
-Any other configuration file overwirtes only the
-relevant variables. Only one secondary configuration
-file can be used per run.
-
-${CBUB}Options:${CDEF}
-
-By default, the operation is to renew the certificate
-specified either on the command line or in the custom
-configuration file.
-
-  ${CYEL}CERTIFICATE${CDEF}
-
-Specify a certificate to renew, as path to certificate
-
-  ${CYEL}CONFIGFILE${CDEF}
-
-Specify a configuration file. Configuration file over-
-rides the certificate specified on command line.
-
-EOHELP
-}
-
-helppat='--help|-h'
-[[ "$@" =~ $helppat ]] && {
-	printhelp
-	exit
-}
-
-function faile {
-echo "${CRED}$@$CDEF" 1>&2
-}
-
-function debuge {
-[[ "$MODEDEBUG" == yes ]] && echo "${CBLU}$@$CDEF" 1>&2
-}
-
-function warne {
-echo "${CYEL}$@$CDEF" 1>&2
-}
-
-# ---
 
 function testvar {
 	shift # first token is var name
@@ -176,7 +139,7 @@ while [[ -n "$@" ]]; do
 			shift
 			;;
 		*)
-			echo "Unkown option ${CRDB}$arg${CDEF}"
+			faile "Unkown option $arg"
 			;;
 	esac
 done
