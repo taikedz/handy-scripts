@@ -10,12 +10,12 @@ set ruler
 set laststatus=2
 set hlsearch
 
-colorscheme desert
+colorscheme koehler
 
 " Confirm quit when multiple buffers are open
 set confirm
 
 " from http://vim.wikia.com/wiki/Converting_tabs_to_spaces
+autocmd FileType sh set tabstop=4|set shiftwidth=4|set expandtab
 autocmd FileType python set tabstop=4|set shiftwidth=4|set expandtab
-autocmd FileType sj set tabstop=4|set shiftwidth=4|set expandtab
 autocmd FileType yaml set tabstop=2|set shiftwidth=2|set expandtab
