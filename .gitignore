@@ -5,3 +5,4 @@ test/
 release-cand/
 *scratch/
 *-test.sh
+build-outd/
