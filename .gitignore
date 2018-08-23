@@ -6,3 +6,4 @@ release-cand/
 build-outd
 *scratch/
 *-test.sh
+build-outd/

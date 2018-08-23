@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ### Create or load a base64-encoded compressed stream Usage:help
 #
