@@ -1,7 +1,0 @@
-#!/bin/bash
-
-gitdir=$1 ; shift
-gitpar=$(dirname "$gitdir")
-gitname="$(basename "$gitdir")"
-
-tar -C "$gitpar" -czf "$gitname.tgz" "$gitname" --exclude=".git*" "$@"

@@ -20,3 +20,7 @@ set tabstop=4
 set shiftwidth=4
 set expandtab
 autocmd FileType yaml set tabstop=2|set shiftwidth=2|set expandtab
+
+" Turn off bracketed paste
+" https://vimhelp.appspot.com/term.txt.html#xterm-bracketed-paste
+set t_BE=
