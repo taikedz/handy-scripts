@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Some updates might disable the ability to resize using alt+rich-click
+# This re-enables it
+
+gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
+gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'
