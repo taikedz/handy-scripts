@@ -22,7 +22,7 @@ rmk:dpkg() {
 			echo dpkg --force-all --remove "$REPLY"
 		done
 	
-	apt-get autoclean && apt-get autoremove
+	echo "apt-get autoclean && apt-get autoremove"
 }
 
 main() {
