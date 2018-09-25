@@ -32,58 +32,71 @@
 # DEST - the destination for generated HTML preview files. By default, this is /tmp
 ###/doc
 
-#%include bashout readargs kvreader autohelp getbin
+#%include out.sh autohelp.sh bincheck.sh
 
-set -u
+set -euo pipefail
 
-if [[ -z "${MDEXEC+x}" ]]; then
-	MDEXEC=$(getbin markdown_py markdown )
-fi
+autohelp:check "$@"
 
-if [[ -z "${BREXEC+x}" ]]; then
-	BREXEC=$(getbin sensible-browser firefox chromium-browser elinks)
-fi
+configure() {
+    : "${MDEXEC=$(bincheck:get markdown_py markdown )}"
+    : "${BREXEC=$(bincheck:get sensible-browser firefox chromium-browser elinks)}"
+    : "${CSSFILES="/etc/mdpreview/styles.css:$HOME/.config/mdpreview/styles.css:./styles.css"}"
+    : "${DEST="./"}"
+}
 
+preflight_check() {
+    [[ -d "$DEST" ]] || out:fail "Invalid destination folder [$DEST]"
 
-if [[ -z "${CSSFILES+x}" ]]; then
-	CSSFILES="/etc/mdpreview/styles.css:$HOME/.config/mdpreview/styles.css:./styles.css"
-fi
+    if [[ -z "$MDEXEC" ]] || [[ ! -f "$MDEXEC" ]]; then
+        out:fail "No markdown processor"
+    fi
+}
 
-if [[ -z "$MDEXEC" ]] || [[ ! -f "$MDEXEC" ]]; then
-	faile "No markdown processor"
-fi
+collate_styles() {
+    COLLATEDSTYLES="$(mktemp .collated_styles.XXXX)"
+    echo '<style>' > "$COLLATEDSTYLES"
+    echo "$CSSFILES"|sed 's/:/\n/g'|while read STYLEFILE; do
+        if [[ -f "$STYLEFILE" ]]; then
+            cat "$STYLEFILE"  >> "$COLLATEDSTYLES"
+        fi
+    done
+    echo '</style>' >> "$COLLATEDSTYLES"
+}
 
-if [[ -z "${DEST+x}" ]]; then
-	DEST="./"
-fi
+process_files() {
+    local tfile allfiles
 
-if [[ ! -d "$DEST" ]]; then
-	faile "Invalid destination folder [$DEST]"
-fi
+    allfiles=(:)
+    for mdfile in "$@"; do
+        tfile="$(mktemp -p ./ .previewXXXX.html)"
+        allfiles+=("$tfile")
 
-ALLFILES=
-for x in "$@"; do
-	tfile=$(mktemp -p ./ .previewXXXX.html)
-	ALLFILES="$ALLFILES $tfile"
-	
-	echo '<style>' > "$tfile"
-	echo "$CSSFILES"|sed 's/:/\n/g'|while read STYLEFILE; do
-		if [[ -f "$STYLEFILE" ]]; then
-			cat "$STYLEFILE"  >> "$tfile"
-		fi
-	done
-	echo '</style>' >> "$tfile"
+        cat "$COLLATEDSTYLES" > "$tfile"
 
-	"$MDEXEC" "$x" >> "$tfile"
+        "$MDEXEC" "$mdfile" >> "$tfile"
 
-	if [[ -n "$BREXEC" ]]; then
-		"$BREXEC" $tfile 2>/dev/null >/dev/null &
-	fi
-done
+        if [[ -n "${BREXEC:-}" ]]; then
+            "$BREXEC" "$tfile" 2>/dev/null >/dev/null &
+        fi
+    done
 
-if [[ -z "$BREXEC" ]]; then
-	infoe "$ALLFILES"
-else
-	sleep 2
-	rm $ALLFILES
-fi
+    rm "$COLLATEDSTYLES"
+
+    if [[ -z "${BREXEC:-}" ]]; then
+        out:info "${allfiles[*]}"
+    else
+        sleep 2 # leave time for browsers to finish loading
+        rm "${allfiles[@]:1}"
+    fi
+}
+
+main() {
+    configure
+    preflight_check
+    collate_styles
+
+    process_files "$@"
+}
+
+main "$@"
