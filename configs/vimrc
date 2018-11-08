@@ -1,5 +1,16 @@
 syntax on
 
+" Read 'vim: ' commands in the first and last 5 lines of a file
+" http://vim.wikia.com/wiki/Modeline_magic
+set modeline
+set modelines=5
+
+" --- Not yet working:
+" Enable filetype-based indentation
+" http://vim.wikia.com/wiki/Indenting_source_code
+" set indentexpr
+" filetype indent on
+
 set autoindent
 set formatoptions=tcqr
 
