@@ -11,18 +11,55 @@
 # To apply the removals run
 #	./rmkernel.sh 2 | sudo bash
 
-rmk:dpkg() {
+rmk:list-installed-kernel-info-pairs() {
 	dpkg --list 'linux-image*'|
 		grep ii|
 		awk '{print $3 "\t" $2}'|
 		sed -r 's/~\S+//'|
-		sort -V|
-		cut -f2|
+		sort -V
+}
+
+rmk:list-installed-kernel-packages() {
+	rmk:list-installed-kernel-info-pairs|
+		cut -f2
+}
+
+rmk:list-installed-kernel-versions() {
+	rmk:list-installed-kernel-info-pairs|
+		cut -f1
+}
+
+rmk:clean-dpkg() {
+	# Perform a purge of package-less kernels
+	rmk:clean-boot
+
+	echo ""
+	echo "# Keeping the most recent $1 kernel(s)"
+
+	rmk:list-installed-kernel-packages|
 		head -n -"$1"| while read; do
 			echo dpkg --force-all --remove "$REPLY"
 		done
 	
+    echo ""
 	echo "apt-get autoclean && apt-get autoremove"
+
+	echo "echo 'Fixing missing packages ...'"
+	echo "apt-get -f install"
+}
+
+rmk:shorten-version() {
+	# Remove the final number ("patch" (??) version)
+	
+	sed -r 's/.[0-9]+$//g'
+}
+
+rmk:clean-boot() {
+	local current_versions="$(rmk:list-installed-kernel-versions|rmk:shorten-version|xargs echo|sed 's/ /|/g')"
+
+	echo "#  The following do not have a corresponding installed package:"
+	
+	ls /boot/config* /boot/initrd* /boot/retpoline* /boot/vmlinuz* /boot/abi* 2>/dev/null | grep -vP "$current_versions" | sed -r 's/^/rm /'
 }
 
 main() {
@@ -31,16 +68,19 @@ main() {
 		exit
 	}
 
-	matcher='^[0-9]+$'
-	[[ $1 =~ $matcher ]] || {
+	echo "# Pipe the following output to \`sudo bash\` to execute the deletions:"
+	echo ""
+
+	if [[ "$1" =~ ^[0-9]+$ ]]; then
+		rmk:clean-dpkg "$1"
+
+	elif [[ "$1" = clean-boot ]]; then
+		rmk:clean-boot
+
+	else
 		echo "$1 is not a number"
 		exit 2
-	}
-
-	echo "# Keeping the most recent $1 kernel(s)"
-	echo "# pipe to sudo bash to execute the following deletions:"
-
-	rmk:dpkg "$1"
+	fi
 }
 
 main "$@"
