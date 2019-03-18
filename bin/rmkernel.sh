@@ -11,6 +11,20 @@
 #
 # To apply the removals run
 #    ./rmkernel.sh 2 | sudo bash
+#
+#
+#
+#
+# ** Danger **
+#
+# If the /boot partition really filled up completely, you might want to manually remove
+# some files from /boot using
+#
+#   ./rmkernel.sh clean-boot
+#
+# (pipe to `bash` to apply)
+#
+# This is a force-removal though, and may break your system.
 
 rmk:list-installed-kernel-info-pairs() {
     dpkg --list 'linux-image*'|
@@ -32,7 +46,7 @@ rmk:list-installed-kernel-versions() {
 
 rmk:clean-dpkg() {
     # Perform a purge of package-less kernels
-    rmk:clean-boot
+    #rmk:clean-boot
 
     echo ""
     echo "# Keeping the most recent $1 kernel(s)"
