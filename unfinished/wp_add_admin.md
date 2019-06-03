@@ -32,10 +32,12 @@ If `wp_sitemeta` exists, update the network admins
 
 The serialization reads as follows:
 
-* a:2 (an array of length 2)
-* i:0;s:5:"user1"; (at index int 0, value string of length 5 "user1"; note the final semi-colon)
-* i:1;s:9:"new_admin"; (at index int 1, value string of length 9 "new_admin"; note the final semi-colon)
+* `a:2` (an array of length 2)
+* `i:0;s:5:"user1";` (at index int 0, value string of length 5 "user1"; note the final semi-colon)
+* `i:1;s:9:"new_admin";` (at index int 1, value string of length 9 "new_admin"; note the final semi-colon)
 
 With this in mind, adapt the below snippet.
 
-	update wp_sitemeta set meta_value='a:2:{i:0;s:5:"user1";i:1;s:9:"new_admin";}' where meta_key="site_admins";
+```sql
+update wp_sitemeta set meta_value='a:2:{i:0;s:5:"user1";i:1;s:9:"new_admin";}' where meta_key="site_admins";
+```

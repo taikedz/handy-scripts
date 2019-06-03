@@ -1,6 +1,4 @@
-#!/bin/bash
-
-set -u
+#!/usr/bin/env bash
 
 ### Move Audio Input Usage:help
 #
@@ -8,41 +6,44 @@ set -u
 #
 # Run as
 #
-# 	mvaudio TGTINPUT TGTSINK
+#     mvaudio TGTINPUT TGTSINK
 #
-# to move the target input to the target sink
+# to move the target input to the target sink.
+#
+#
 #
 # Run as
 #
-# 	mvaudio TGTSINK
+#     mvaudio TGTSINK
 #
 # to set the default output channel, and move all audio to
 # the specified channel.
 #
 ###/doc
 
-#%include autohelp bashout
+#%include std/safe.sh
+#%include std/autohelp.sh
+#%include std/bashout.sh
 
 if [[ -z "$*" ]]; then
-	infoe Available Inputs
-	pacmd list-sink-inputs|grep -P 'index:|client:|application.process.binary'
+    out:info "Available Inputs"
+    pacmd list-sink-inputs|grep -P 'index:|client:|application.process.binary'
 
-	infoe Available Sinks
-	pacmd list-sinks|grep -P 'index:|name:'
+    out:info "Available Sinks"
+    pacmd list-sinks|grep -P 'index:|name:'
 else
-	TGTINPUT="$1"; shift
+    TGTINPUT="$1"; shift
 
-	if [[ -n "$*" ]]; then
-		TGTSINK="$1"; shift
-		pacmd move-sink-input "$TGTINPUT" "$TGTSINK"
-	else
-		TGTSINK="$TGTINPUT"
-		pacmd set-default-sink "$TGTINPUT"
+    if [[ -n "$*" ]]; then
+        TGTSINK="$1"; shift
+        pacmd move-sink-input "$TGTINPUT" "$TGTSINK"
+    else
+        TGTSINK="$TGTINPUT"
+        pacmd set-default-sink "$TGTINPUT"
 
-		inputs=$(pacmd list-sink-inputs|grep 'index:'|sed -r 's/\s*index:\s*//'|xargs echo)
-		for TGTINPUTx in $inputs
-		do
-			pacmd move-sink-input "$TGTINPUTx" "$TGTSINK"
-		done
-	fi
+        IFS=$'\n' inputs=($(pacmd list-sink-inputs|grep 'index:'|sed -r 's/\s*index:\s*//') )
+        for TGTINPUTx in "${inputs[@]}"; do
+            pacmd move-sink-input "$TGTINPUTx" "$TGTSINK"
+        done
+    fi
 fi

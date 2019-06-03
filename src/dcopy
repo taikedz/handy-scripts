@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bbrun
 
 ### dcopy Usage:help
 #
@@ -22,25 +22,28 @@
 #
 ###/doc
 
-#%include autohelp
-#%include bashout askuser
+#%include std/autohelp.sh
+#%include std/out.sh
+#%include std/askuser.sh
 
-if [[ -z "$*" ]]; then
-	printhelp
-	exit
-fi
+main() {
+    local diskline
 
-diskline=$(uchoose "Choose a disk" "$(df -h|grep -P '^/')"|awk '{print $1}')
+    autohelp:check-or-null "$@"
 
-if [[ -z "$diskline" ]]; then
-	faile "Invalid selection"
-fi
+    diskline="$(askuser:choose "Choose a disk" "$(df -h|grep -P '^/')"|awk '{print $1}')"
 
-infoe "You chose : $diskline"
+    if [[ -b "$diskline" ]]; then
+        out:fail "Invalid selection '$diskline'"
+    fi
 
-if uconfirm "Write [$1] to this disk?" ; then
-	infoe Writing
-	# dd if="$1" of="$diskline" bs=1024
-else
-	warne Aborting
-fi
+    out:info "You chose : $diskline"
+
+    if askuser:confirm "Write [$1] to [$diskline]?" ; then
+        : #dd if="$1" of="$diskline" bs=1024
+    else
+        out:warn "Aborting"
+    fi
+}
+
+main "$@"

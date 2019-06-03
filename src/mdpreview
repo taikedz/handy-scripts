@@ -32,15 +32,14 @@
 # DEST - the destination for generated HTML preview files. By default, this is /tmp
 ###/doc
 
-#%include out.sh autohelp.sh bincheck.sh
-
-set -euo pipefail
-
-autohelp:check "$@"
+#%include std/safe.sh
+#%include std/out.sh
+#%include std/autohelp.sh
+#%include std/bincheck.sh
 
 configure() {
     : "${MDEXEC=$(bincheck:get markdown_py markdown )}"
-    : "${BREXEC=$(bincheck:get sensible-browser firefox chromium-browser elinks)}"
+    : "${BREXEC=$(bincheck:get sensible-browser firefox chromium-browser elinks less)}"
     : "${CSSFILES="/etc/mdpreview/styles.css:$HOME/.config/mdpreview/styles.css:./styles.css"}"
     : "${DEST="./"}"
 }
@@ -92,6 +91,8 @@ process_files() {
 }
 
 main() {
+    autohelp:check-or-null "$@"
+
     configure
     preflight_check
     collate_styles

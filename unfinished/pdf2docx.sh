@@ -3,7 +3,7 @@
 ####
 # All you need is LibreOffice !
 
-/usr/bin/libreoffice --headless --convert-to docx $@
+/usr/bin/libreoffice --headless --convert-to docx "$@"
 
 # done.
 

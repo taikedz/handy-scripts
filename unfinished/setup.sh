@@ -3,7 +3,7 @@
 if [[ $UID = 0 ]]; then
 	if [[ $(uname -a | grep -i ubuntu -c) -gt 0 ]]; then
 		apt-get update && apt-get upgrade
-		apt-get install htop zenity gksu
+		apt-get install htop tmux
 	fi
 fi
 

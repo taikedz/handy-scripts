@@ -1,4 +1,0 @@
-
-# bashrc snippet that prints current git project at prompt
-
-PS1='$([[ -d .git ]] && echo "($(basename $PWD).git/$(git branch|egrep "^\*"|cut "-d " -f2)) ")'"$PS1"

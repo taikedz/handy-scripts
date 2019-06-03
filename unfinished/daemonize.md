@@ -1,3 +1,5 @@
+Header for SysV Init scripts to allow them to define system daemons
+
 First add the INIT INFO section to the top of the script
 
 Adjust the requirements at will.
