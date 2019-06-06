@@ -1,3 +1,6 @@
+" // HANDYCONFIG
+" ^--- do not delete
+
 syntax on
 
 " Read 'vim: ' commands in the first and last 5 lines of a file
