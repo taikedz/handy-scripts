@@ -35,7 +35,8 @@
 #
 ###/doc
 
-#%include bashout autohelp
+#%include std/out.sh
+#%include std/autohelp.sh
 
 
 BRIGHTCONFIG=/etc/brightness.conf
@@ -46,14 +47,14 @@ if [[ "$UID" -ne 0 ]]; then
 fi
 
 if [[ -f "$BRIGHTCONFIG" ]]; then
-	debuge "Getting settings from $BRIGHTCONFIG"
+	debug:print "Getting settings from $BRIGHTCONFIG"
 	export BRIGHTPATH=$(egrep '^ACTUAL' "$BRIGHTCONFIG"|awk '{print $2}')
 	export MAXBRIGHTPATH=$(egrep '^MAX' "$BRIGHTCONFIG"|awk '{print $2}')
 
 	chmod 644 "$BRIGHTPATH"
 	chmod 644 "$MAXBRIGHTPATH"
 else
-	debuge "Creating initial brightness config"
+	debug:print "Creating initial brightness config"
 	cat <<EOF > "$BRIGHTCONFIG"
 ACTUAL /sys/class/backlight/intel_backlight/brightness
 MAX /sys/class/backlight/intel_backlight/max_brightness
@@ -66,7 +67,7 @@ fi
 MAXBRIGHT=$(cat $MAXBRIGHTPATH)
 
 if [[ -z "$MAXBRIGHT" ]]; then
-	faile "You need to configure MAX and ACTUAL for your system in $BRIGHTCONFIG (try running \`ls /sys/class/backlight/\` ...)"
+	out:fail "You need to configure MAX and ACTUAL for your system in $BRIGHTCONFIG (try running \`ls /sys/class/backlight/\` ...)"
 fi
 # _____________________________________________/
 
@@ -74,7 +75,7 @@ function noargs {
 	curbright=$(cat "$BRIGHTPATH")
 	cbidx=$(python -c "import math ; prec = 10.0 ; print str(math.ceil( (10*prec * $curbright) / $MAXBRIGHT)/prec )")
 
-	infoe "Current brightness index: $cbidx (raw value: $curbright)"
+	out:info "Current brightness index: $cbidx (raw value: $curbright)"
 	exit
 }
 
@@ -92,8 +93,8 @@ while [[ -n "$*" ]]; do
 		mybright=$1 ; shift
 	fi
 
-	debuge "Brightness is set in $BRIGHTPATH"
-	debuge "Max brightness is determined in $MAXBRIGHTPATH"
+	debug:print "Brightness is set in $BRIGHTPATH"
+	debug:print "Max brightness is determined in $MAXBRIGHTPATH"
 
 	if [[ -z "$mybright" ]]; then
 		noargs
@@ -101,11 +102,11 @@ while [[ -n "$*" ]]; do
 
 
 	if [[ ! "$mybright" =~ $(echo '^[0-9]+(\.[0-9]+)?$') ]] || python -c "$mybright > 10 or exit(1)" ; then
-		faile "Provide a numerical value from 0 to 10 only"
+		out:fail "Provide a numerical value from 0 to 10 only"
 	fi
 	mybright=$(python -c "print int(($mybright/10.0)*$MAXBRIGHT)")
 
 
-	debuge "Setting brightness $mybright"
+	debug:print "Setting brightness $mybright"
 	echo $mybright > $BRIGHTPATH
 done

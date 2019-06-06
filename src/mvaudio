@@ -23,7 +23,7 @@
 
 #%include std/safe.sh
 #%include std/autohelp.sh
-#%include std/bashout.sh
+#%include std/out.sh
 
 if [[ -z "$*" ]]; then
     out:info "Available Inputs"

@@ -1,102 +1,25 @@
 #!/usr/bin/env bash
 
-### sendme Usage:help
-# 
-# Friendly terminal email sending tool.
-# 
-# Supports GPG-sgning of message.
-# 
-#     sendme [FILES]
-# 
-# Specify files on the command line to be attached to the mailer program.
-# 
-# You can define the "FROM" and "RCPT" shell variabels in ~/.config/sendme - example
-# 
-#     cat $HOME/.config/sendme
-#
-# 	RCPT=me@example.com
-# 	FROM=noreply@bogus.foo
-# 
-# You can still change these on an ad-hoc basis when running the command.
-# 
-# FUTURE
-# 
-# Future versions intend to support:
-# * specifying a template to use
-###/doc
+set -euo pipefail
 
-##bash-libs: bincheck.sh @ 1d3814ad (2.1.13)
-
-### bincheck:get COMMANDS ... Usage:bbuild
+### Date Reset Usage:help
 #
-# Return the first existing binary
+#   datereset [-s TIMESERVER]
 #
-# Useful for finding an appropriate binary when you know
-# different systems may supply binaries under different names.
+# If your clock is out of sync with the actual time, run this.
 #
-# Returns the full path from `which` for the first executable
-# encountered.
+# Configuration:
 #
-# Example:
+# /etc/datereset.conf or $HOME/.config/datereset.conf
 #
-# 	bincheck:get markdown_py markdown ./mymarkdown
+# * `server=TIMESERVER` the time server to use, e.g. ntp.ubuntu.com
 #
-# Tries in turn to get a `markdown_py`, then a `markdown`, and then a local `./mymarkdown`
+#
+#
+# Options specified on the command line override options from arguments
 #
 ###/doc
 
-bincheck:get() {
-    local BINEXE=
-    for binname in "$@"; do
-        # Some implementations of `which` print error messages
-        # Not useful here.
-        BINEXE=$(which "$binname" 2>/dev/null)
-
-        if [[ -n "$BINEXE" ]]; then
-            echo "$BINEXE"
-            return 0
-        fi
-    done
-    return 1
-}
-
-### bincheck:has NAMES ... Usage:bbuild
-#
-# Determine if at least one of the binaries listed is present and installed on the system
-#
-###/doc
-
-bincheck:has() {
-    [[ -n "$(bincheck:get "$@")" ]]
-}
-
-### bincheck:path NAME Usage:bbuild
-#
-# Determine the actual path to the command
-#
-# Relative paths are not expanded.
-#
-###/doc
-
-bincheck:path() {
-    local binname="$1"; shift || :
-
-    [[ "$binname" =~ / ]] && { 
-        # A relative path cannot be resolved, just check existence
-        [[ -e "$binname" ]] && echo "$binname" || return 1
-
-    } || binname="$(which "$binname" 2>/dev/null)"
-
-    # `which` failed
-    [[ -n "$binname" ]] || return 1
-
-    [[ -h "$binname" ]] && {
-
-        local pointedname="$(ls -l "$binname"|grep -oP "$binname.+"|sed "s|$binname -> ||")"
-        bincheck:path "$pointedname" ; return "$?"
-    
-    } || echo "$binname"
-}
 
 ##bash-libs: syntax-extensions.sh @ 1d3814ad (2.1.13)
 
@@ -503,6 +426,38 @@ function out:fail {
 function out:error {
     echo "${CBRED}ERROR: ${CRED}$*$CDEF" 1>&2
 }
+
+##bash-libs: isroot.sh @ 1d3814ad (2.1.13)
+
+### isroot Usage:bbuild
+# Test for root access
+#
+# If using cygwin, user is always root.
+###/doc
+
+function isroot {
+    [[ "$UID" = 0 ]] || isroot:cygwin
+}
+
+### isroot:cygwin Usage:bbuild
+# Returns whether running under cygwin.
+#
+# Typically a user under cygwin is root, except when they're not
+#
+# This utility exists as a reminder to check for cygwin.
+###/doc
+
+function isroot:cygwin {
+    uname -o | grep -i cygwin -q
+}
+
+### isroot:require MESSAGE Usage:bbuild
+# Require root. If script is not running as root,
+# print message and exit
+###/doc
+function isroot:require {
+    isroot || out:fail "$*"
+}
 ##bash-libs: patterns.sh @ 1d3814ad (2.1.13)
 
 ### Useful patterns Usage:bbuild
@@ -527,6 +482,291 @@ export PAT_num='^[0-9]+$'
 export PAT_cvar='^[a-zA-Z_][a-zA-Z0-9_]*$'
 export PAT_filename='^[a-zA-Z0-9_. -]+$'
 export PAT_email="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-z]+"
+
+##bash-libs: config.sh @ 1d3814ad (2.1.13)
+
+### config.sh Usage:bbuild
+# Read configuration from various locations.
+#
+# Declare multiple config file locations in increasing order of authority, and read values from all, keeping only the most authoritative value.
+#
+###/doc
+
+### config:declare CONFIG FILES ... Usage:bbuild
+#
+# Declare a set of config files, more general file first, then read values from each file in turn.
+#
+# Example config contents and variable declaration
+#
+#   # Example configuration file contents
+#
+#   echo -e "first=1\\nsecond=2\\nthird=3" > /etc/test.conf
+#   echo -e "second=two\\nthird=" > ./test.conf
+#
+#   # Declare the order to read values from
+#   # Later files have more authority over earlier files.
+#
+#   config:declare CONFS /etc/test.conf ./test.conf
+#
+###/doc
+
+
+##bash-libs: debug.sh @ 1d3814ad (2.1.13)
+
+### Debug lib Usage:bbuild
+#
+# Debugging tools and functions.
+#
+# You need to activate debug mode using debug:activate command at the start of your script
+#  (or from whatever point you wish it to activate)
+#
+###/doc
+
+### Environment Variables Usage:bbuild
+#
+# DEBUG_mode : set to 'true' to enable debugging output
+#
+###/doc
+
+: ${DEBUG_mode=false}
+
+### debug:mode [output | /output | verbose | /verbose] ... Usage:bbuild
+#
+# Activate debug output (`output`), or activate command tracing (`verbose`)
+#
+# Deactivate with the corresponding `/output` and `/verbose` options
+#
+###/doc
+
+function debug:mode() {
+    local mode_switch
+    for mode_switch in "$@"; do
+        case "$mode_switch" in
+        output)
+            DEBUG_mode=true ;;
+        /output)
+            DEBUG_mode=false ;;
+        verbose)
+            set -x ;;
+        /verbose)
+            set +x ;;
+        esac
+    done
+}
+
+### debug:print MESSAGE Usage:bbuild
+# print a blue debug message to stderr
+# only prints if DEBUG_mode is set to "true"
+###/doc
+function debug:print {
+    [[ "$DEBUG_mode" = true ]] || return 0
+    echo "${CBBLU}DEBUG: $CBLU$*$CDEF" 1>&2
+}
+
+### debug:dump [MARKER] Usage:bbuild
+#
+# Pipe the data coming through stdin to stdout (as if it weren't there at all)
+#
+# If debug mode is on, *also* write the same data to stderr, each line preceded by MARKER
+#
+# Insert this function into pipes to see their output when in debugging mode
+#
+#   sed -r 's/linux|unix/*NIX/gi' myfile.txt | debug:dump | lprint
+#
+# Or use this to mask a command's output unless in debug mode
+#
+#   which binary 2>&1 | debug:dump
+#
+###/doc
+function debug:dump {
+    if [[ "$DEBUG_mode" = true ]]; then
+        local MARKER="${1:-DEBUG: }"; shift || :
+
+        cat - | sed -r "s/^/$MARKER/" | tee -a /dev/stderr | sed -r "s/^$MARKER//"
+    else
+        cat -
+    fi
+}
+
+### debug:break MESSAGE Usage:bbuild
+#
+# Add break points to a script
+#
+# Requires `DEBUG_mode` set to true
+#
+# When the script runs, the message is printed with a prompt, and execution pauses.
+#
+# Press return to continue execution.
+#
+# Type a variable name, with leading `$`, to dump it, e.g. `$myvar`
+#
+# Type a variable name, with leading `$`, followed by an assignment to change its value, e.g. `$myvar=new value`
+#  the new value will be seen by the script.
+#
+# Type 'env' to dump the current environment variables.
+#
+# Type `exit`, `quit` or `stop` to stop the program. If the breakpoint is in a subshell,
+#  execution from after the subshell will be resumed.
+#
+###/doc
+
+function debug:break {
+    [[ "$DEBUG_mode" = true ]] || return 0
+    local reply
+
+    while true; do
+        read -p "${CRED}BREAKPOINT: $* >$CDEF " reply
+        if [[ "$reply" =~ quit|exit|stop ]]; then
+            echo "${CBRED}ABORT${CDEF}" >&2
+            exit 127
+
+        elif [[ "$reply" = env ]]; then
+            env |sed 's//^[/g' |debug:dump "--- "
+
+        elif [[ "$reply" =~ ^\$ ]]; then
+            debug:_break_dump "${reply:1}" || :
+
+        elif [[ -z "$reply" ]]; then
+            return 0
+        else
+            debug:print "'quit','exit' or 'stop' to abort; '\$varname' to see a variable's contents; '\$varname=new value' to assign a new value for run time; <Enter> to continue"
+        fi
+    done
+}
+
+debug:_break_dump() {
+    local inspectable="$1"
+    local varname="$1"
+    local varval
+
+    if [[ "$inspectable" =~ = ]]; then
+        varname="${inspectable%%=*}"
+        varval="${inspectable#*=}"
+    fi
+
+    [[ "$varname" =~ $PAT_cvar ]] || {
+        debug:print "${CRED}Invalid var name '$varname'"
+        return 1
+    }
+
+    declare -n inspect="$varname"
+
+    if [[ "$inspectable" =~ = ]]; then
+        inspect="$varval"
+    else
+        echo "$inspect"
+    fi
+}
+DEBUG_mode=true
+
+config:declare() {
+    . <(args:use:local *p_configname -- "$@") ; 
+    p_configname=("$@")
+}
+
+config:_read_value() {
+    . <(args:use:local key file -- "$@") ; 
+    [[ "$key" =~ $PAT_cvar ]] || out:fail "Invalid config key '$key' -- must match '$PAT_cvar'"
+    grep -P "^\\s*$key" "$file"|sed -r "s/^\\s*$key=//"| tail -n1
+}
+
+config:_has_key() {
+    . <(args:use:local key file -- "$@") ; 
+    config:_read_value "$key" "$file" >/dev/null
+}
+
+config:_foreach_read() {
+    . <(args:use:local configname key -- "$@") ; 
+    local cfile value res
+    declare -n p_configname="$configname"
+    res=1
+
+    [[ -n "${p_configname[*]:-}" ]] || out:fail "Config undefined [$configname]"
+
+    for cfile in "${p_configname[@]}"; do
+        if [[ -e "$cfile" ]]; then
+            if config:_has_key "$key" "$cfile"; then
+                res=0
+                value="$(config:_read_value "$key" "$cfile")" || res="$?"
+            fi
+        fi
+    done
+
+    echo "${value:-}"
+    return "$res"
+}
+
+### config:read CONFIG KEY [DEFAULT] Usage:bbuild
+#
+# If an earlier file specifies a value, and a later file doesn't, the earlier file's value is used
+#
+# If a later file specifies an empty value, it overrides an earlier file's non-empty definition.
+#
+# Example, with the config files above
+#
+#   config:read CONFS first
+#   # --> 1
+#
+#   config:read CONFS second
+#   # --> "two"
+#
+#   config:read CONFS third
+#   # --> (empty string)
+#
+#   config:read CONFS undefined_key
+#   # ------> ERROR
+#
+#   config:read CONFS undefined_key "some value"
+#   # --> "some value"
+#
+###/doc
+
+config:read() {
+    . <(args:use:local namespace key ?default -- "$@") ; 
+    local value res
+    res=0
+
+    value="$(config:_foreach_read "$namespace" "$key")" || res="$?"
+
+    if [[ "$res" != 0 ]] && [[ -z "$default" ]]; then
+        return 1
+    elif [[ -z "$value" ]]; then
+        echo "$default"
+    else
+        echo "$value"
+    fi
+}
+
+### config:load CONFIG Usage:bbuild
+#
+# Use `config:load CONFIG` to load all values into a global namespace
+#
+# Example usage
+#
+#   config:declare CONFS file1 file2 file3
+#
+#   config:load CONFS
+#   echo "$CONFS_second"
+#
+###/doc
+
+config:load() {
+    . <(args:use:local namespace -- "$@") ; 
+    local cfile value key keys
+    declare -n p_configname="$namespace"
+
+    for cfile in "${p_configname[@]}"; do
+        if [[ -e "$cfile" ]]; then
+            keys=($(grep -oP '^[a-zA-Z0-9_]+(?==)' "$cfile"))
+            for key in "${keys[@]}"; do
+                if config:_has_key "$key" "$cfile"; then
+                    value="$(config:_read_value "$key" "$cfile")" || continue
+                    . <(echo "${namespace}_${key}=\"$(echo "$value"|sed 's/"/\"/g')\"")
+                fi
+            done
+        fi
+    done
+}
 
 ### Formatting library Usage:bbuild
 #
@@ -772,202 +1012,404 @@ autohelp:check:section() {
     done
 }
 
-##bash-libs: askuser.sh @ 1d3814ad (2.1.13)
+##bash-libs: strings.sh @ 1d3814ad (2.1.13)
 
-### askuser Usage:bbuild
-# Present the user with questions on stderr
-###/doc
-
-yespat='^(yes|YES|y|Y)$'
-numpat='^[0-9]+$'
-rangepat='[0-9]+,[0-9]+'
-listpat='^[0-9 ]+$'
-blankpat='^ *$'
-
-### askuser:confirm Usage:bbuild
-# Ask the user to confirm a closed question. Defaults to no
+### Strings library Usage:bbuild
 #
-# returns 0 on successfully match 'y' or 'yes'
-# returns 1 otherwise
+# More advanced string manipulation functions.
+#
 ###/doc
-function askuser:confirm {
-    read -p "$* [y/N] > " 1>&2
-    if [[ "$REPLY" =~ $yespat ]]; then
-        return 0
+
+### strings:join JOINER STRINGS ... Usage:bbuild
+#
+# Join multiple strings, separated by the JOINER string
+#
+# Write the joined string to stdout
+#
+###/doc
+
+strings:join() {
+    # joiner can be any string
+    local joiner="$1"; shift || :
+
+    # so we use an array to collect the token parts
+    local destring=(:)
+
+    for token in "$@"; do
+        destring[${#destring[@]}]="$joiner"
+        destring[${#destring[@]}]="$token"
+    done
+
+    local finalstring=""
+    # first remove holder token and initial join token
+    #   before iterating
+    for item in "${destring[@]:2}"; do
+        finalstring="${finalstring}${item}"
+    done
+    echo "$finalstring"
+}
+
+### strings:split *RETURN_ARRAY SPLITTER STRING Usage:bbuild
+#
+# Split a STRING along each instance of SPLITTER
+#
+# Write the result to the variable in RETURN_ARRAY (pass as name reference)
+#
+# e.g.
+#
+#   local my_array
+#
+#   strings:split my_array ":" "a:b c:d"
+#
+#   echo "${my_array[1]}" # --> "b c"
+#
+###/doc
+
+strings:split() {
+    . <(args:use:local *p_returnarray splitter string_to_split -- "$@") ; 
+    local items=(:)
+
+    while [[ -n "$string_to_split" ]]; do
+        if [[ ! "$string_to_split" =~ "${splitter}" ]]; then
+            items[${#items[@]}]="$string_to_split"
+            break
+        fi
+
+        local token="$(echo "$string_to_split"|sed -r "s${splitter}.*$")"
+        items+=("$token")
+        string_to_split="$(echo "$string_to_split"|sed "s^${token}${splitter}")"
+    done
+
+    p_returnarray=("${items[@]:1}")
+}
+
+##bash-libs: args.sh @ 1d3814ad (2.1.13)
+
+### args Usage:bbuild
+#
+# An arguments handling utility.
+#
+# `args:has` can be used to determine if an exact token exists in the array of arguments
+#
+# `args:get` can be used to extract individual arguments from an array of arguments; it assumes any flag is to be followed by the actual sought token.
+# It follows the convention that short flags are followed by value token ("-s value", "-l value")
+#   but that long flags incorporate their value after an equals sign ("--short=value", "--long=value")
+#
+# `args:parse` provides a fuller argument parsing utility, detecting some basic types, and optionally alerting to when a an argument was not expected.
+# It assumes that both short and long flags are followed separately by their value token ("-s value", "--long value")
+#
+###/doc
+
+readonly ARGS_ERR_NaN=100
+readonly ARGS_ERR_unknown_flag=101
+readonly ARGS_ERR_missing_value=102
+readonly ARGS_ERR_unknown_token=103
+
+### args:get TOKEN ARGS ... Usage:bbuild
+#
+# Given a TOKEN, find the argument value
+#
+# Typically called with the parent's arguments
+#
+# 	args:get --key "$@"
+# 	args:get -k "$@"
+#
+# If TOKEN is an int, returns the argument at that index (starts at 1, negative numbers count from end backwards)
+#
+# If TOKEN starts with two dashes ("--"), expect the value to be supplied after an equal sign
+#
+# 	--token=desired_value
+#
+# If TOKEN starts with a single dash, and is a letter or a number, expect the value to be the following token
+#
+# 	-t desired_value
+#
+# Returns 1 if could not find anything appropriate.
+#
+###/doc
+
+args:get() {
+    local seek="$1"; shift || :
+
+    if [[ "$seek" =~ $PAT_num ]]; then
+        local arguments=("$@")
+
+        # Get the index starting at 1
+        local n=$((seek-1))
+        # but do not affect wrap-arounds
+        [[ "$n" -ge 0 ]] || n=$((n+1))
+
+        echo "${arguments[$n]}"
+
+    elif [[ "$seek" =~ ^--.+ ]]; then
+        args:_get_long "$seek" "$@"
+
+    elif [[ "$seek" =~ ^-[a-zA-Z0-9]$ ]]; then
+        args:_get_short "$seek" "$@"
+
     else
         return 1
     fi
 }
 
-### askuser:ask Usage:bbuild
-# Ask the user to provide some text
-#
-# Echoes out the entered text
-###/doc
-function askuser:ask {
-    read -p "$* : " 1>&2
-    echo "$REPLY"
-}
+args:_get_short() {
+    local token="$1"; shift || :
+    while [[ -n "$*" ]]; do
+        local item="$1"; shift || :
 
-### askuser:password Usage:bbuild
-# Ask the user to enter a password (does not echo what is typed)
-#
-# Echoes out the entered text
-###/doc
-function askuser:password {
-    read -s -p "$* : " 1>&2
-    echo >&2
-    echo "$REPLY"
-}
-
-### askuser:choose_multi Usage:bbuild
-# Allows the user to choose from multiple choices
-#
-# askuser:chose_multi MESG CHOICESTRING
-#
-#
-# MESG is a single string token that will be displayed as prompt
-#
-# CHOICESTRING is a comma-separated, or newline separated, or "\\n"-separated token string
-#
-# Equivalent strings include:
-#
-# * `"a\\nb\\nc"` - quoted and explicit newline escapes
-# * `"a,b,c"` - quoted and separated with commas
-# * `a , b , c` - not quoted, separated by commas
-# * `a`, `b` and `c` on their own lines
-#
-# User input:
-#
-# User can choose by selecting
-#
-# * a single item by number
-# * a range of numbers (4,7 for range 4 to 7)
-# * or a string that matches the pattern
-#
-# All option lines that match will be returned, one per line
-#
-# If the user selects nothing, then function returns 1 and an empty stdout
-###/doc
-function askuser:choose_multi {
-    local mesg=$1; shift || :
-    local choices=$(echo "$*"|sed -r 's/ *, */\n/g')
-
-    out:info "$mesg:" 
-    local choicelist="$(echo -e "$choices"|grep -E '^' -n| sed 's/:/: /')"
-    echo "$choicelist" 1>&2
-    
-    local sel=$(askuser:ask "Choice")
-    if [[ "$sel" =~ $blankpat ]]; then
-        return 1
-
-    elif [[ "$sel" =~ $numpat ]] || [[ "$sel" =~ $rangepat ]]; then
-        echo -e "$choices" | sed -n "$sel p"
-    
-    elif [[ "$sel" =~ $listpat ]]; then
-        echo "$choicelist" | grep -E "^${sel// /|}:" | sed -r 's/^[0-9]+: //'
-
-    else
-        echo -e "$choices"  |grep -E "$(echo "$sel"|tr " " '|')"
-    fi
-    return 0
-}
-
-### askuser:choose Usage:bbuild
-# Ask the user to choose an item
-#
-# Like askuser:choose_multi, but will loop if the user selects more than one item
-#
-# If the user provides no entry, returns 1
-#
-# If the user chooses one item, that item is echoed to stdout
-###/doc
-function askuser:choose {
-    local mesg=$1; shift || :
-    while true; do
-        local thechoice="$(askuser:choose_multi "$mesg" "$*")"
-        local lines=$(echo -n "$thechoice" | grep '$' -c)
-        if [[ $lines = 1 ]]; then
-            echo "$thechoice"
+        if [[ "$item" = "$token" ]]; then
+            echo "$1"
             return 0
-        elif [[ $lines = 0 ]]; then
-            return 1
-        else
-            out:warn "Too many results"
         fi
     done
+    return 1
 }
 
-GCMD="$(bincheck:get gpg2 gpg)"
-if [[ -z "${GCMD+x}" ]]; then
-	out:warn "No gpg2/gpg command found. Suggestion: install gnupg2"
-elif [[ -z "$("$GCMD" --list-keys|egrep '^pub'|grep -v "expired")" ]]; then
-	out:warn "No GPG active keys currently installed ['$GCMD --list-keys']"
-	out:warn "Run '$GCMD --gen-key' to generate keys."
-	out:warn "---"
+args:_get_long() {
+    local token="$1"; shift || :
+    local tokenpat="^$token=(.*)$"
 
-	# Treat as if no GPG support (do not prompt, etc)
-	GCMD=
-fi
+    for item in "$@"; do
+        if [[ "$item" =~ $tokenpat ]]; then
+            echo "${BASH_REMATCH[1]}"
+            return 0
+        fi
+    done
+    return 1
+}
 
-# FIXME prioritize with a stronger hash
-HASHCMD=$(bincheck:get sha512sum sha256sum md5sum md5)
+### args:has TOKEN ARGS ... Usage:bbuild
+#
+# Determines whether TOKEN is present on its own in ARGS
+#
+# Typically called with the parent's arguments
+#
+# 	args:has thing "$@"
+#
+# Returns 0 on success for example
+#
+# 	args:has thing "one" "thing" "or" "another"
+#
+# Returns 1 on failure for example
+#
+# 	args:has thing "one thing" "or another"
+#
+# "one thing" is not a valid match for "thing" as a token.
+#
+###/doc
 
-if ! bincheck:has mailx; then
-	out:fail 96 "No mailx command found."
-fi
+args:has() {
+    local token="$1"; shift || :
+    for item in "$@"; do
+        if [[ "$token" = "$item" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
 
-if [[ -z "$EDITOR" ]]; then
-	if bincheck:has nano; then
-		out:warn "\$EDITOR variable not set. Using nano"
-		export EDITOR="$(bincheck:get nano)"
-	else
-		out:fail 96 "\$EDITOR variable not set ; nano not available"
-	fi
-fi
+### args:quote ARGS ... Usage:bbuild
+#
+# Produce a single string with each argument. If the argument has whitespace, double-quotes are added. If the argument has double-quotes as part of its data, these are escaped.
+#
+###/doc
+args:quote() {
+    local argstring arg
+    argstring=""
 
-FILES=
-FROM=
-RCPT=
-ATCH=$( [[ $(man mailx | grep 'mailutils' -c) -gt 0 ]] && echo "-A" ; [[ $(man mailx | grep 'Heirloom' -c) -gt 0 ]] && echo "-a" ; )
-[[ -z "$ATCH" ]] && out:fail 96 "Could not determine mailx flavour."
+    for arg in "$@"; do
+        arg="$(echo -n "$arg" | sed -rz 's/"/\\"/g ; s/\n/\\n/g ; s/\r/\\r/g ; s/\t/\\t/g')"
 
-set -euo pipefail
+        if (echo "$arg" | grep -Pq '\s') || [[ -z "$arg" ]]; then
+            arg="\"${arg}\""
+        fi
 
-MSGFILE="/tmp/sendme-message-$(date +'%F.%T')"
-ASCFILE="$MSGFILE.asc"
+        argstring="$argstring $arg"
+    done
 
-. "$HOME"/.config/sendme
+    echo "${argstring:1}"
+}
 
-[[ ! -z "$@" ]] && { echo -e "\n\n\n++++++\nAttachment [$HASHCMD] sums:\n" > "$MSGFILE" ; }
+### args:parse *ARGSDEF *FLAGLESS ARGS ... Usage:bbuild
+#
+# Iterate over the supplied arguments, using an array of argument/variables definitions.
+#
+# ARGSDEF :
+#
+# This is an array of flag definitions. Each definition token comprises of three parts, separated by a colon ':':
+#
+# * type
+# * return name
+# * flags
+#
+# The return name is the literal name of a variable to return values to (by name reference)
+#
+# There are three defined types:
+#
+# * 'b' - the name reference is set to the string "true" if a relevant flag is found
+# * 's' - the name reference is set to the value of the string passed
+# * 'n' - the name reference is set to a numerical string if found
+#
+# Flags is a comma-separated list of flags that trigger a match.
+#
+# For 's' and 'n' parameters, it is always expected that the following token provide the value.
+# NOTE: this is different from args:get behaviour.
+#
+# FLAGLESS :
+#
+# The name of the variable into which to put the tokens that were found, but not attached to flags.
+# If the name "-" is passed, causes an error when a flagless token is found.
+#
+# For example:
+#
+#   #%include std/args.sh
+#
+#   docopy() {
+#       # Define locally to not cause args:parse to write global variables
+#       local args_def usebinary infile outfile bytes
+#
+#       args_def=(
+#           "b:usebinary:-b,--binary"
+#           "s:infile:-i,--input"
+#           "s:outfile:-o,--output"
+#           "n:bytes:-n"
+#       )
+#
+#       # Pass 'args_def' by name reference
+#       args:parse args_def - "$@"
+#
+#       echo "Copying from $infile to $outfile"
+#       if [[ "$usebinary" = true ]]; then
+#           echo "Using binary mode"
+#       fi
+#       if [[ -n "${bytes:-}" ]]; then
+#           echo "Limiting to $bytes bytes."
+#       fi
+#   }
+#
+#   # Prints text
+#   docopy --input infile.txt -o outfile.bin -b -n 5
+#
+#   # Fails (unknown flag '-x')
+#   docopy --input infile.txt -o outfile.bin -b -x
+#
+#
+###/doc
+args:parse() {
+    . <(args:use:local *a_argsdefs ?flagless_returnname -- "$@") ; 
+    local arg argdef type name flags flagless
 
-for xfile in "$@"; do
-	[[ ! -f "$xfile" ]] && out:fail 2 "$xfile does not exist."
+    if [[ "$flagless_returnname" != "-" ]]; then
+        flagless=(:)
+        declare -n p_flaglessreturn="$flagless_returnname"
+    fi
 
-	FILES="$FILES $ATCH $xfile"
-	"$HASHCMD" "$xfile" >> "$MSGFILE"
-done
+    while [[ -n "$*" ]]; do
+        arg="$1"; shift
 
-[[ -z "$FILES" ]] && out:warn "No files specified"
+        if [[ "$arg" =~ ^- ]]; then
+            if ! args:_get_argdef "$arg" "argdef" "a_argsdefs"; then
+                out:fail $ARGS_ERR_unknown_flag "Unknown flag '$arg'"
+            fi
 
-read -p "${CBLU}To: ${CDEF}" -ei "$RCPT " RCPT # opportunity to change destination
-read -p "${CBLU}From: ${CDEF}" -ei "$FROM " FROM # opportunity to change sender address
+            args:_unpack_argdef type name flags "$argdef"
 
-[[ -z "$RCPT" ]] && out:fail 1 "FAIL: No recipient RCPT specified."
+            declare -n p_pointedvar="$name"
 
-RES="automatic email - see attached"
+            if [[ "$type" = b ]]; then
+                p_pointedvar=true
+            else
+                p_pointedvar="${1:-}"; shift || out:fail $ARGS_ERR_missing_value "Argument parse error - expected value for '$name' (flag was '$arg')"
+            fi
 
-read -p "${CBLU}Subject:${CDEF} " RES
+            if [[ "$type" = n ]]; then
+                [[ "$p_pointedvar" =~ $PAT_num ]] || out:fail $ARGS_ERR_NaN "Argument parse error - expected number for '$name' but got '$p_pointedvar'"
+            fi
 
-if [[ -n "$RES" ]]; then
-	"$EDITOR" "$MSGFILE"
-	if [[ -n "$GCMD" ]]; then
-		SIG=$(askuser:ask "Sign with GPG?")
-		[[ "$SIG" = y ]] && {
-			"$GCMD" --output="$ASCFILE" --clearsign "$MSGFILE"
-			MSGFILE="$ASCFILE"
-		}
-	fi
-	mail -s "$RES" -r "$FROM" $FILES $RCPT < "$MSGFILE"
-fi
+        elif [[ "$flagless_returnname" != "-" ]]; then
+            flagless+=("$arg")
 
+        else
+            out:fail $ARGS_ERR_unknown_token "Unrecognized token: '$arg'"
+        fi
+    done
+
+    if [[ "$flagless_returnname" != "-" ]]; then
+        p_flaglessreturn="${flagless[@]:1}"
+    fi
+}
+
+args:_get_argdef() {
+    . <(args:use:local flag *p_argdef *p_a_argsdefs -- "$@") ; 
+    local argdef_string flags
+
+    for argdef_string in "${p_a_argsdefs[@]}"; do
+        flags="${argdef_string##*:}"
+        if [[ "$flags" =~ (^|,)$flag(,|$) ]]; then
+            p_argdef="$argdef_string"
+            return 0
+        fi
+    done
+    return 1
+}
+
+args:_unpack_argdef() {
+    . <(args:use:local *p_type *p_name *p_flags argdef_string -- "$@") ; 
+    local a_argdef
+    strings:split a_argdef : "$argdef_string"
+    
+    p_type="${a_argdef[0]}"
+    p_name="${a_argdef[1]}"
+    p_flags="${a_argdef[2]}"
+
+    if [[ ! "$p_type" =~ ^s|b|n$ ]]; then
+        out:fail "Invalid type '$p_type' for '$p_name'"
+    fi
+}
+
+ensure_root() {
+    if ! isroot; then
+        sudo "$0" "$@"
+        exit
+    fi
+}
+
+reset_time() {
+    systemctl stop ntp
+    ntpdate -s "$TIMESERVER"
+    systemctl start ntp
+}
+
+load_config() {
+    local cresetconf
+
+    if [[ -n "$TIMESERVER" ]]; then
+        return 0
+    fi
+
+    config:declare cresetconf "/etc/datereset.conf" "$HOME/.config/datereset.conf"
+    TIMESERVER="$(config:read cresetconf server)"
+
+    out:info "Using timeserver $TIMESERVER"
+}
+
+parsearguments() {
+    local argdef=(
+        s:TIMESERVER:-s,--server
+    )
+
+    args:parse argdef - "$@"
+}
+
+main() {
+    ensure_root "$@"
+
+    parse_arguments "$@"
+
+    load_config
+    reset_time
+
+    out:info "Done."
+}
+
+main "$@"

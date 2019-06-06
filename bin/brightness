@@ -1,102 +1,40 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-### sendme Usage:help
-# 
-# Friendly terminal email sending tool.
-# 
-# Supports GPG-sgning of message.
-# 
-#     sendme [FILES]
-# 
-# Specify files on the command line to be attached to the mailer program.
-# 
-# You can define the "FROM" and "RCPT" shell variabels in ~/.config/sendme - example
-# 
-#     cat $HOME/.config/sendme
+### brightness Usage:help
 #
-# 	RCPT=me@example.com
-# 	FROM=noreply@bogus.foo
-# 
-# You can still change these on an ad-hoc basis when running the command.
-# 
-# FUTURE
-# 
-# Future versions intend to support:
-# * specifying a template to use
-###/doc
-
-##bash-libs: bincheck.sh @ 1d3814ad (2.1.13)
-
-### bincheck:get COMMANDS ... Usage:bbuild
+# Display or switch the brightness level of the main screen.
 #
-# Return the first existing binary
+# USAGE
+# =====
 #
-# Useful for finding an appropriate binary when you know
-# different systems may supply binaries under different names.
+#	brightness [INDEX] [--debug]
 #
-# Returns the full path from `which` for the first executable
-# encountered.
+# INDEX : a float or int value from 0.0 (screen off) to 10.0 (full brightness).
+# --debug : print debug/verbose information
 #
-# Example:
+# Examples:
 #
-# 	bincheck:get markdown_py markdown ./mymarkdown
+# 	brightness 8
+# 	brightness 0.5
 #
-# Tries in turn to get a `markdown_py`, then a `markdown`, and then a local `./mymarkdown`
+# SETTINGS
+# ========
+#
+# Configuration of the max brightness and actual brightness control paths are in
+# the /etc/brightness.conf file
+#
+# This script was developed on a Lenovo Flex 14 with the following defaults:
+#
+#	MAX /sys/class/backlight/intel_backlight/max_brightness
+# 	ACTUAL /sys/class/backlight/intel_backlight/brightness
+#
+# Override the settings as required.
+#
+# * MAX is the path to the file holding the maximum raw brightness value.
+# * ACTUAL is the path to the brightness setting.
 #
 ###/doc
 
-bincheck:get() {
-    local BINEXE=
-    for binname in "$@"; do
-        # Some implementations of `which` print error messages
-        # Not useful here.
-        BINEXE=$(which "$binname" 2>/dev/null)
-
-        if [[ -n "$BINEXE" ]]; then
-            echo "$BINEXE"
-            return 0
-        fi
-    done
-    return 1
-}
-
-### bincheck:has NAMES ... Usage:bbuild
-#
-# Determine if at least one of the binaries listed is present and installed on the system
-#
-###/doc
-
-bincheck:has() {
-    [[ -n "$(bincheck:get "$@")" ]]
-}
-
-### bincheck:path NAME Usage:bbuild
-#
-# Determine the actual path to the command
-#
-# Relative paths are not expanded.
-#
-###/doc
-
-bincheck:path() {
-    local binname="$1"; shift || :
-
-    [[ "$binname" =~ / ]] && { 
-        # A relative path cannot be resolved, just check existence
-        [[ -e "$binname" ]] && echo "$binname" || return 1
-
-    } || binname="$(which "$binname" 2>/dev/null)"
-
-    # `which` failed
-    [[ -n "$binname" ]] || return 1
-
-    [[ -h "$binname" ]] && {
-
-        local pointedname="$(ls -l "$binname"|grep -oP "$binname.+"|sed "s|$binname -> ||")"
-        bincheck:path "$pointedname" ; return "$?"
-    
-    } || echo "$binname"
-}
 
 ##bash-libs: syntax-extensions.sh @ 1d3814ad (2.1.13)
 
@@ -772,202 +710,75 @@ autohelp:check:section() {
     done
 }
 
-##bash-libs: askuser.sh @ 1d3814ad (2.1.13)
 
-### askuser Usage:bbuild
-# Present the user with questions on stderr
-###/doc
+BRIGHTCONFIG=/etc/brightness.conf
 
-yespat='^(yes|YES|y|Y)$'
-numpat='^[0-9]+$'
-rangepat='[0-9]+,[0-9]+'
-listpat='^[0-9 ]+$'
-blankpat='^ *$'
-
-### askuser:confirm Usage:bbuild
-# Ask the user to confirm a closed question. Defaults to no
-#
-# returns 0 on successfully match 'y' or 'yes'
-# returns 1 otherwise
-###/doc
-function askuser:confirm {
-    read -p "$* [y/N] > " 1>&2
-    if [[ "$REPLY" =~ $yespat ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-### askuser:ask Usage:bbuild
-# Ask the user to provide some text
-#
-# Echoes out the entered text
-###/doc
-function askuser:ask {
-    read -p "$* : " 1>&2
-    echo "$REPLY"
-}
-
-### askuser:password Usage:bbuild
-# Ask the user to enter a password (does not echo what is typed)
-#
-# Echoes out the entered text
-###/doc
-function askuser:password {
-    read -s -p "$* : " 1>&2
-    echo >&2
-    echo "$REPLY"
-}
-
-### askuser:choose_multi Usage:bbuild
-# Allows the user to choose from multiple choices
-#
-# askuser:chose_multi MESG CHOICESTRING
-#
-#
-# MESG is a single string token that will be displayed as prompt
-#
-# CHOICESTRING is a comma-separated, or newline separated, or "\\n"-separated token string
-#
-# Equivalent strings include:
-#
-# * `"a\\nb\\nc"` - quoted and explicit newline escapes
-# * `"a,b,c"` - quoted and separated with commas
-# * `a , b , c` - not quoted, separated by commas
-# * `a`, `b` and `c` on their own lines
-#
-# User input:
-#
-# User can choose by selecting
-#
-# * a single item by number
-# * a range of numbers (4,7 for range 4 to 7)
-# * or a string that matches the pattern
-#
-# All option lines that match will be returned, one per line
-#
-# If the user selects nothing, then function returns 1 and an empty stdout
-###/doc
-function askuser:choose_multi {
-    local mesg=$1; shift || :
-    local choices=$(echo "$*"|sed -r 's/ *, */\n/g')
-
-    out:info "$mesg:" 
-    local choicelist="$(echo -e "$choices"|grep -E '^' -n| sed 's/:/: /')"
-    echo "$choicelist" 1>&2
-    
-    local sel=$(askuser:ask "Choice")
-    if [[ "$sel" =~ $blankpat ]]; then
-        return 1
-
-    elif [[ "$sel" =~ $numpat ]] || [[ "$sel" =~ $rangepat ]]; then
-        echo -e "$choices" | sed -n "$sel p"
-    
-    elif [[ "$sel" =~ $listpat ]]; then
-        echo "$choicelist" | grep -E "^${sel// /|}:" | sed -r 's/^[0-9]+: //'
-
-    else
-        echo -e "$choices"  |grep -E "$(echo "$sel"|tr " " '|')"
-    fi
-    return 0
-}
-
-### askuser:choose Usage:bbuild
-# Ask the user to choose an item
-#
-# Like askuser:choose_multi, but will loop if the user selects more than one item
-#
-# If the user provides no entry, returns 1
-#
-# If the user chooses one item, that item is echoed to stdout
-###/doc
-function askuser:choose {
-    local mesg=$1; shift || :
-    while true; do
-        local thechoice="$(askuser:choose_multi "$mesg" "$*")"
-        local lines=$(echo -n "$thechoice" | grep '$' -c)
-        if [[ $lines = 1 ]]; then
-            echo "$thechoice"
-            return 0
-        elif [[ $lines = 0 ]]; then
-            return 1
-        else
-            out:warn "Too many results"
-        fi
-    done
-}
-
-GCMD="$(bincheck:get gpg2 gpg)"
-if [[ -z "${GCMD+x}" ]]; then
-	out:warn "No gpg2/gpg command found. Suggestion: install gnupg2"
-elif [[ -z "$("$GCMD" --list-keys|egrep '^pub'|grep -v "expired")" ]]; then
-	out:warn "No GPG active keys currently installed ['$GCMD --list-keys']"
-	out:warn "Run '$GCMD --gen-key' to generate keys."
-	out:warn "---"
-
-	# Treat as if no GPG support (do not prompt, etc)
-	GCMD=
+if [[ "$UID" -ne 0 ]]; then
+	sudo "$(which $0)" "$@"
+	exit
 fi
 
-# FIXME prioritize with a stronger hash
-HASHCMD=$(bincheck:get sha512sum sha256sum md5sum md5)
+if [[ -f "$BRIGHTCONFIG" ]]; then
+	debug:print "Getting settings from $BRIGHTCONFIG"
+	export BRIGHTPATH=$(egrep '^ACTUAL' "$BRIGHTCONFIG"|awk '{print $2}')
+	export MAXBRIGHTPATH=$(egrep '^MAX' "$BRIGHTCONFIG"|awk '{print $2}')
 
-if ! bincheck:has mailx; then
-	out:fail 96 "No mailx command found."
+	chmod 644 "$BRIGHTPATH"
+	chmod 644 "$MAXBRIGHTPATH"
+else
+	debug:print "Creating initial brightness config"
+	cat <<EOF > "$BRIGHTCONFIG"
+ACTUAL /sys/class/backlight/intel_backlight/brightness
+MAX /sys/class/backlight/intel_backlight/max_brightness
+EOF
 fi
 
-if [[ -z "$EDITOR" ]]; then
-	if bincheck:has nano; then
-		out:warn "\$EDITOR variable not set. Using nano"
-		export EDITOR="$(bincheck:get nano)"
-	else
-		out:fail 96 "\$EDITOR variable not set ; nano not available"
+# =============================================¬
+# This script developed with defaults for the Lenovo Flex 14 ; paths may be different for your device
+
+MAXBRIGHT=$(cat $MAXBRIGHTPATH)
+
+if [[ -z "$MAXBRIGHT" ]]; then
+	out:fail "You need to configure MAX and ACTUAL for your system in $BRIGHTCONFIG (try running \`ls /sys/class/backlight/\` ...)"
+fi
+# _____________________________________________/
+
+function noargs {
+	curbright=$(cat "$BRIGHTPATH")
+	cbidx=$(python -c "import math ; prec = 10.0 ; print str(math.ceil( (10*prec * $curbright) / $MAXBRIGHT)/prec )")
+
+	out:info "Current brightness index: $cbidx (raw value: $curbright)"
+	exit
+}
+
+if [[ -z "$*" ]]; then
+	noargs
+fi
+
+# Process all arguments as INDEXes
+# In case the user sets their screen too dark and
+# needs to press <up> and enter a new value and
+# forget to delete previous index properly.
+while [[ -n "$*" ]]; do
+	mybright=$1 ; shift
+	if [[ "$mybright" =~ --debug ]]; then
+		mybright=$1 ; shift
 	fi
-fi
 
-FILES=
-FROM=
-RCPT=
-ATCH=$( [[ $(man mailx | grep 'mailutils' -c) -gt 0 ]] && echo "-A" ; [[ $(man mailx | grep 'Heirloom' -c) -gt 0 ]] && echo "-a" ; )
-[[ -z "$ATCH" ]] && out:fail 96 "Could not determine mailx flavour."
+	debug:print "Brightness is set in $BRIGHTPATH"
+	debug:print "Max brightness is determined in $MAXBRIGHTPATH"
 
-set -euo pipefail
+	if [[ -z "$mybright" ]]; then
+		noargs
+	fi
 
-MSGFILE="/tmp/sendme-message-$(date +'%F.%T')"
-ASCFILE="$MSGFILE.asc"
 
-. "$HOME"/.config/sendme
+	if [[ ! "$mybright" =~ $(echo '^[0-9]+(\.[0-9]+)?$') ]] || python -c "$mybright > 10 or exit(1)" ; then
+		out:fail "Provide a numerical value from 0 to 10 only"
+	fi
+	mybright=$(python -c "print int(($mybright/10.0)*$MAXBRIGHT)")
 
-[[ ! -z "$@" ]] && { echo -e "\n\n\n++++++\nAttachment [$HASHCMD] sums:\n" > "$MSGFILE" ; }
 
-for xfile in "$@"; do
-	[[ ! -f "$xfile" ]] && out:fail 2 "$xfile does not exist."
-
-	FILES="$FILES $ATCH $xfile"
-	"$HASHCMD" "$xfile" >> "$MSGFILE"
+	debug:print "Setting brightness $mybright"
+	echo $mybright > $BRIGHTPATH
 done
-
-[[ -z "$FILES" ]] && out:warn "No files specified"
-
-read -p "${CBLU}To: ${CDEF}" -ei "$RCPT " RCPT # opportunity to change destination
-read -p "${CBLU}From: ${CDEF}" -ei "$FROM " FROM # opportunity to change sender address
-
-[[ -z "$RCPT" ]] && out:fail 1 "FAIL: No recipient RCPT specified."
-
-RES="automatic email - see attached"
-
-read -p "${CBLU}Subject:${CDEF} " RES
-
-if [[ -n "$RES" ]]; then
-	"$EDITOR" "$MSGFILE"
-	if [[ -n "$GCMD" ]]; then
-		SIG=$(askuser:ask "Sign with GPG?")
-		[[ "$SIG" = y ]] && {
-			"$GCMD" --output="$ASCFILE" --clearsign "$MSGFILE"
-			MSGFILE="$ASCFILE"
-		}
-	fi
-	mail -s "$RES" -r "$FROM" $FILES $RCPT < "$MSGFILE"
-fi
-

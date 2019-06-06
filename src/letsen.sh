@@ -88,7 +88,7 @@ WEBROOT $WEBROOT
 FQDN $FQDN
 EOVARS
 		if [[ -z "$(testvar $(echo $x) )" ]]; then
-			faile "Undefined $x"
+			out:fail "Undefined $x"
 			exit 1
 		fi
 	done
@@ -139,7 +139,7 @@ while [[ -n "$@" ]]; do
 			shift
 			;;
 		*)
-			faile "Unkown option $arg"
+			out:fail "Unkown option $arg"
 			;;
 	esac
 done

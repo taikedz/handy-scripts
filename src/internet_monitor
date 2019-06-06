@@ -13,29 +13,33 @@
 #
 ###/doc
 
-#%include autohelp bashout
+#%include std/autohelp.sh
+#%include std/out.sh
+#%include std/debug.sh
+
+autohelp:check "$@"
 
 if [[ -z "$(which espeak)" ]]; then
-	faile "Install espeak"
+	out:fail "Install espeak"
 fi
 
 set -eu
 
-if [[ -z "${IMINTERVAL+x}" ]]; then
+if [[ -z "${IMINTERVAL:-}" ]]; then
 	IMINTERVAL=30
 fi
 
-if [[ -z "${IMPINGNUM+x}" ]]; then
+if [[ -z "${IMPINGNUM:-}" ]]; then
 	IMPINGNUM=2
 fi
 
-if [[ -z "${STATEDIR+x}" ]]; then
+if [[ -z "${STATEDIR:-}" ]]; then
 	STATEDIR=$HOME/scratch/wirelessmonitoring
 fi
 
-debuge "Saving to $STATEDIR"
-debuge "Test interval: ${IMINTERVAL}s"
-debuge "Pings per test: $IMPINGNUM"
+debug:print "Saving to $STATEDIR"
+debug:print "Test interval: ${IMINTERVAL}s"
+debug:print "Pings per test: $IMPINGNUM"
 
 # ------
 
@@ -48,7 +52,7 @@ DNSTATE="down _______/"
 STATE="$UPSTATE"
 STATEFILE=wstatus.txt
 
-infoe "STATEFILE @ $STATEDIR/$STATEFILE"
+out:info "STATEFILE @ $STATEDIR/$STATEFILE"
 
 # A function to register the current state
 # If the current state is the same as the last, then
@@ -56,7 +60,7 @@ infoe "STATEFILE @ $STATEDIR/$STATEFILE"
 function register
 {
 	TARGET=$1; shift
-	debuge "Registering state $TARGET"
+	debug:print "Registering state $TARGET"
 
 	if [[ $(tail -n 1 "$STATEFILE") =~ "$TARGET" ]] && [[ -z "$*" ]]; then
 		return

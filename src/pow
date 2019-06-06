@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ### pow Usage:help
 # Simply display power stats
@@ -11,8 +11,9 @@
 # No options.
 ###/doc
 
-#%include autohelp bashout
+#%include std/autohelp.sh
+#%include std/out.sh
 
-debuge "Getting Battery information for \`upower -i $(upower -e | grep 'BAT')\`"
+debug:print "Getting Battery information for \`upower -i $(upower -e | grep 'BAT')\`"
 
 upower -i $(upower -e | grep 'BAT') | grep -E "state|to\ full|percentage|time to"

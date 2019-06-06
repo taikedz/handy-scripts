@@ -20,14 +20,17 @@
 #
 ###/doc
 
-#%include bashout autohelp
+#%include std/out.sh
+#%include std/autohelp.sh
+
+autohelp:check "$@"
 
 EXECUTION=echo
 
 if [[ -z "$*" ]]; then
 	ls --color=always -lh
 
-	warne 'No pattern specified. Run `lsg --help` for more information.'
+	out:warn 'No pattern specified. Run `lsg --help` for more information.'
 	exit
 fi
 

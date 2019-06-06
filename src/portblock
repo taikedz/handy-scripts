@@ -1,15 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bbrun
+
+#%include std/out.sh
+#%include std/isroot.sh
 
 export blocked_ports=(80 21 8080)
-
-die() {
-    echo "$*"
-    exit 1
-}
-
-is_root() {
-    [[ "$UID" = 0 ]]
-}
 
 print_status() {
     local statuslines="$(ufw status)"
@@ -39,7 +33,7 @@ set_mode() {
     elif [[ "$1" = off ]]; then
         mode=(delete deny)
     else
-        die "Mode must be 'on' or 'off'"
+        out:fail "Mode must be 'on' or 'off'"
     fi
 
     if [[ -n "${mode[*]}" ]]; then
@@ -54,7 +48,7 @@ set_mode() {
     exit 0
 }
 
-if is_root ; then
+if isroot ; then
     if [[ -z "$*" ]]; then
         print_status
     else

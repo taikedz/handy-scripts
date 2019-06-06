@@ -31,17 +31,18 @@
 #
 ###/doc
 
-#%include bashout autohelp
+#%include std/out.sh
+#%include std/autohelp.sh
 
-SEP=''
+SEP=$'\033'
 
 if [[ -z "$(which nmcli)" ]]; then
-	faile 'Required program `nmcli` not found.'
+	out:fail 'Required program `nmcli` not found.'
 fi
 
 if [[ -z "$*" ]]; then
-	infoe "Raw wifi status\n"
-	infoe "$(nmcli connection show --active | grep wireless)\n"
+	out:info "Raw wifi status\n"
+	out:info "$(nmcli connection show --active | grep wireless)\n"
 	exit
 fi
 
@@ -51,7 +52,7 @@ function newconn {
 	WIFI_AP="$1"; shift
 	WIFI_PW="$1"; shift
 
-	infoe "Trying to establish new connection ..."
+	out:info "Trying to establish new connection ..."
 
 	if [[ -n "$WIFI_PW" ]]; then
 		nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW" ; RES=$?
@@ -64,7 +65,7 @@ function newconn {
 
 function oldconn {
 	WIFI_AP="$1"; shift
-	infoe "Trying old connections ..."
+	out:info "Trying old connections ..."
 
 	nmcli connection up "$WIFI_AP" ; RES=$?
 
@@ -73,23 +74,23 @@ function oldconn {
 
 case "$WIFICMD" in
 	restart)
-		debuge Deactivating wifi
+		debug:print Deactivating wifi
 		nmcli radio wifi off
 
-		debuge Re-activating wifi
+		debug:print Re-activating wifi
 		nmcli radio wifi on
 
-		infoe Done.
+		out:info Done.
 		;;
 	stop)
-		debuge Deactivating wifi
+		debug:print Deactivating wifi
 		nmcli radio wifi off
-		infoe Done.
+		out:info Done.
 		;;
 	start)
-		debuge Re-activating wifi
+		debug:print Re-activating wifi
 		nmcli radio wifi on
-		infoe Done.
+		out:info Done.
 		;;
 	connect)
 		nmcli device wifi rescan
@@ -106,7 +107,7 @@ case "$WIFICMD" in
 	forget)
 		WIFI_AP="$1"; shift
 		nmcli connection delete "$WIFI_AP" && {
-			infoe Done.
+			out:info Done.
 		}
 		;;
 	list)
@@ -122,6 +123,6 @@ case "$WIFICMD" in
 		fi
 		;;
 	*)
-		faile "Invalid command $WIFICMD"
+		out:fail "Invalid command $WIFICMD"
 		;;
 esac

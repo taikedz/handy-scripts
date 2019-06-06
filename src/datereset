@@ -2,9 +2,29 @@
 
 set -euo pipefail
 
+### Date Reset Usage:help
+#
+#   datereset [-s TIMESERVER]
+#
+# If your clock is out of sync with the actual time, run this.
+#
+# Configuration:
+#
+# /etc/datereset.conf or $HOME/.config/datereset.conf
+#
+# * `server=TIMESERVER` the time server to use, e.g. ntp.ubuntu.com
+#
+#
+#
+# Options specified on the command line override options from arguments
+#
+###/doc
+
 #%include std/out.sh
 #%include std/isroot.sh
 #%include std/config.sh
+#%include std/autohelp.sh
+#%include std/args.sh
 
 ensure_root() {
     if ! isroot; then
@@ -22,14 +42,28 @@ reset_time() {
 load_config() {
     local cresetconf
 
+    if [[ -n "$TIMESERVER" ]]; then
+        return 0
+    fi
+
     config:declare cresetconf "/etc/datereset.conf" "$HOME/.config/datereset.conf"
     TIMESERVER="$(config:read cresetconf server)"
 
     out:info "Using timeserver $TIMESERVER"
 }
 
+parsearguments() {
+    local argdef=(
+        s:TIMESERVER:-s,--server
+    )
+
+    args:parse argdef - "$@"
+}
+
 main() {
     ensure_root "$@"
+
+    parse_arguments "$@"
 
     load_config
     reset_time
