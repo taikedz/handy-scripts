@@ -64,7 +64,7 @@ if [ -f "$HOME/.virtualenvs" ]; then
 		local res="$(echo "$VIRTUAL_ENVIRONMENT_LIST"|grep "^$1:" -P)"
 
 		[[ -n "$res" ]] || {
-			echo "No such virutal environment $1" >&2
+			echo "No such virtual environment $1" >&2
 			return 1
 		}
 
@@ -82,3 +82,5 @@ if [ -f "$HOME/.virtualenvs" ]; then
 else
 	echo -e "\033[33;1mNot loading virtual environment shortcuts without a $HOME/.virtualenvs file\033[0m" >&2
 fi
+
+# vim: set filetype=sh:

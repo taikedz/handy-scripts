@@ -1,5 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 mykey="$1"
 
-sudo apt-key adv --keyserver http://keyserver.ubuntu.com:80/ --recv-keys $mykey
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80/ --recv-keys "$mykey"
