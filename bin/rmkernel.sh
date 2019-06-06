@@ -1,5 +1,6 @@
 #!/bin/bash
 
+### <HELP>
 # Script to remove extraneous kernels
 #
 # If kernel updates or autoclean/autoremove fail because there is no more space in /boot
@@ -13,9 +14,7 @@
 #    ./rmkernel.sh 2 | sudo bash
 #
 #
-#
-#
-# ** Danger **
+# ** Boot cleaning **
 #
 # If the /boot partition really filled up completely, you might want to manually remove
 # some files from /boot using
@@ -25,6 +24,16 @@
 # (pipe to `bash` to apply)
 #
 # This is a force-removal though, and may break your system.
+#
+#
+#
+# ** Fixes for missing image files **
+#
+# After running kernel removal, you may get errors like `Internal Error: Could not find image <path>`
+#
+# Simply `touch` each of those paths and run again `apt-get -f install` to fix-install.
+#
+### </HELP>
 
 rmk:list-installed-kernel-info-pairs() {
     dpkg --list 'linux-image*'|
@@ -81,20 +90,38 @@ rmk:clean-boot() {
     ls /boot/config* /boot/initrd* /boot/retpoline* /boot/vmlinuz* /boot/abi* 2>/dev/null | grep -vP "$current_versions" | sed -r 's/^/rm /'
 }
 
+util:isnum() {
+    [[ "$1" =~ ^[0-9]+$ ]]
+}
+
+util:printhelp() {
+    local helpstart helpend script
+    script="$0"
+
+    helpstart="$(grep -E '^### <HELP>' "$script" -n|cut -d: -f1)"
+    helpend="$(grep -E '^### </HELP>' "$script" -n|cut -d: -f1)"
+
+    (util:isnum "$helpstart" && util:isnum "$helpend") || {
+        echo "! Could not extract help section"
+    }
+
+    sed -n "$helpstart,$helpend p" "$script"
+}
+
 main() {
     [[ $# -gt 0 ]] || {
-        echo -e "You must specify the number of most recent images to keep."
+        util:printhelp
         exit
     }
 
     echo "# Pipe the following output to \`sudo bash\` to execute the deletions:"
     echo ""
 
-    if [[ "$1" =~ ^[0-9]+$ ]]; then
-        rmk:clean-dpkg "$1"
-
-    elif [[ "$1" = clean-boot ]]; then
+    if [[ "$1" = clean-boot ]]; then
         rmk:clean-boot
+
+    elif util:isnum "$1"; then
+        rmk:clean-dpkg "$1"
 
     else
         echo "$1 is not a number"
