@@ -2,15 +2,26 @@
 
 ### Create or load a base64-encoded compressed stream Usage:help
 #
-# z64 [ FILES ... ]
+# z64 [ OPTIONS ... ]
 #
-# If FILES are specified, creates a base64 encoded compressed tar stream
+# If OPTIONS are specified, these are passed to `tar cz ...` and base64-encodes the output.
 #
-# If FILES are not specified, expects a base64 compressed tar stream to be provided on stdin
+# If OPTIONS are not specified, expects a base64-encoded tar stream to be provided on stdin, for decoding and unpacking.
+#
+# E.g.
+#
+#    z64 -C /var/stuff file1 file2
+#
+# ... creates a base64-encoded tar stream from files in /var/stuff/file1 and /var/stuff/file2 which, when decoded, unpacks file1 and file2 in the local directory.
+#
+#
+#    z64
+#
+# ... expects base64 data that encodes a tar stream - the output of the above command for example. The tar decompressor only runs as `tar xz`
 #
 ###/doc
 
-#%include autohelp.sh
+#%include std/autohelp.sh
 
 main() {
     autohelp:check "$@"
