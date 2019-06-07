@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bbrun
 
 ### pow Usage:help
 # Simply display power stats
@@ -13,7 +13,27 @@
 
 #%include std/autohelp.sh
 #%include std/out.sh
+#%include std/debug.sh
+#%include std/args.sh
 
-debug:print "Getting Battery information for \`upower -i $(upower -e | grep 'BAT')\`"
+pow:parse() {
+    local argsd=(
+        b:DEBUG_mode:--debug
+    )
 
-upower -i $(upower -e | grep 'BAT') | grep -E "state|to\ full|percentage|time to"
+    args:parse argsd - "$@"
+}
+
+pow:main() {
+    local batname
+
+    pow:parse "$@"
+
+    batname="$(upower -e | grep 'BAT')"
+
+    debug:print "Getting Battery information for \`upower -i $batname\`"
+
+    upower -i "$batname" | grep -E "state|to\ full|percentage|time to"
+}
+
+pow:main "$@"
