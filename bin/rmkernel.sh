@@ -1,39 +1,30 @@
 #!/bin/bash
 
 ### <HELP>
-# Script to remove extraneous kernels
+# Script to remove extraneous kernels. Tested for Ubuntu 16.04 and 18.04
 #
 # If kernel updates or autoclean/autoremove fail because there is no more space in /boot
 #  then you can use this script to clean out old stuff and free up space to return to a normal state
 #
 # try
 #    ./rmkernel.sh 2
-# this will print the removal commands
+#
+# this will print the removal commands to remove all but the 2 newest kernels (by version number)
 #
 # To apply the removals run
 #    ./rmkernel.sh 2 | sudo bash
 #
 #
-# ** Boot cleaning **
-#
-# If the /boot partition really filled up completely, you might want to manually remove
-# some files from /boot using
-#
-#   ./rmkernel.sh clean-boot
-#
-# (pipe to `bash` to apply)
-#
-# This is a force-removal though, and may break your system.
-#
-#
-#
 # ** Fixes for missing image files **
 #
-# After running kernel removal, you may get errors like `Internal Error: Could not find image <path>`
+# After running kernel removals, you may get errors like `Internal Error: Could not find image <path>`
 #
-# Simply `touch` each of those paths and run again `apt-get -f install` to fix-install.
+# Simply `touch <path>` on each of those paths and run again `apt-get -f install` to fix-install.
+#  Then re-run `rmkernel.sh <N>`
 #
 ### </HELP>
+
+ERR_help_not_found=100
 
 rmk:list-installed-kernel-info-pairs() {
     dpkg --list 'linux-image*'|
@@ -53,10 +44,15 @@ rmk:list-installed-kernel-versions() {
         cut -f1
 }
 
-rmk:clean-dpkg() {
+rmk:full-clean() {
     # Perform a purge of package-less kernels
-    #rmk:clean-boot
+    rmk:purge-packageless-kernels
 
+    # Regular dpkg-based clean
+    rmk:clean-dpkg "$1"
+}
+
+rmk:clean-dpkg() {
     echo ""
     echo "# Keeping the most recent $1 kernel(s)"
 
@@ -79,7 +75,7 @@ rmk:shorten-version() {
     sed -r 's/.[0-9]+$//g'
 }
 
-rmk:clean-boot() {
+rmk:purge-packageless-kernels() {
     # Previous attempts at kernel forced removal may have caused some
     #  excess files to remain in /boot
     # This clears such files out.
@@ -103,6 +99,7 @@ util:printhelp() {
 
     (util:isnum "$helpstart" && util:isnum "$helpend") || {
         echo "! Could not extract help section"
+        exit $ERR_help_not_found
     }
 
     sed -n "$helpstart,$helpend p" "$script"
@@ -117,11 +114,8 @@ main() {
     echo "# Pipe the following output to \`sudo bash\` to execute the deletions:"
     echo ""
 
-    if [[ "$1" = clean-boot ]]; then
-        rmk:clean-boot
-
-    elif util:isnum "$1"; then
-        rmk:clean-dpkg "$1"
+    if util:isnum "$1"; then
+        rmk:full-clean "$1"
 
     else
         echo "$1 is not a number"
