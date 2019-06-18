@@ -1,33 +1,68 @@
-#!/bin/bash
+#!/usr/bin/env bbrun
 
-### encrypted passwd Usage:help
-# change password on an encrypted home
+### Rwrap home encryption passwd Usage:help
+# Change password on an encrypted home
 #
 # Usage
 #
 # 	cpasswd USER
 #
-# Change they password of this user
+# Change the password of this user
 ###/doc
 
-#% include bashout autohelp
+#%include std/safe.sh
+#%include std/out.sh
+#%include std/autohelp.sh
+#%include std/args.sh
 
-if [[ -n "$*" ]]; then
-	TUSER=$1
-elif [[ "$UID" -gt 0 ]]; then
-	TUSER=$(whoami)
-else
-	printhelp; exit 0
-fi
+parseargs() {
+    if [[ "$UID" -gt 0 ]]; then
+        TUSER="$(whoami)"
+    fi
 
-infoe "Changing system password for $TUSER"
-[[ $UID -gt 0 ]] && infoe "Type $TUSER's old password first"
+    local argdef=(
+        s:TUSER:-u,--user
+    )
 
-passwd "$TUSER"
+    args:parse argdef - "$@"
 
-warne "Changing encrypted directory password for $TUSER"
-warne "You MUST type the old password first"
+    [[ -n "$TUSER" ]] || out:fail "Please specify a user"
 
-cd ~"$TUSER"/ # FIXME ned to do a check at this point to see if the user dir really actually is encrypted
-# FIXME need to check if needs mounting `ecryptfs-mount-private`
-ecryptfs-rewrap-passphrase ~/.ecryptfs/wrapped-passphrase
+    THOME="$(get_user_home)"
+    [[ -n "$THOME" ]] || out:fail "Could not find home for $TUSER"
+}
+
+get_user_home() {
+    grep -E "^$TUSER:" /etc/passwd | cut -d: -f6
+}
+
+change_system_password() {
+    out:info "Changing system password for $TUSER"
+    [[ $UID = 0 ]] || out:info "Type $TUSER's old password first"
+
+    passwd "$TUSER"
+}
+
+rewrap_encryption() {
+    out:warn "Changing encrypted directory password for $TUSER"
+    out:warn "You MUST type the old password first"
+
+    (
+        cd "$THOME" # FIXME ned to do a check at this point to see if the user dir really actually is encrypted
+        # FIXME need to check if needs mounting `ecryptfs-mount-private`
+        ecryptfs-rewrap-passphrase ~/.ecryptfs/wrapped-passphrase
+    )
+}
+
+main() {
+    autohelp:check-or-null "$@"
+
+    parseargs "$@"
+
+    change_system_password
+
+    rewrap_encryption
+
+}
+
+main "$@"
