@@ -15,3 +15,5 @@ export PS1='\[\e[32;1m\]\u\[\e[33;1m\]@\[\e[35;1m\]\h\[\e[0m\]:\[\e[34m\]\w \[\e
 
 export EDITOR=/usr/bin/vim
 export VISUAL="$EDITOR"
+
+export PATH="$PATH:$HOME:/.local/bin"

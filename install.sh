@@ -18,21 +18,8 @@ scripts_to_add=(
     bin/z64
 )
 
-
-cd "$(dirname "$0")"
-
-mkdir -p ~/.local/bin
-
-if ! grep "PATH=" "$HOME/.bashrc" | grep '\.local/bin'; then
-    echo 'export PATH="$PATH:$HOME/.local/bin"' >> "$HOME/.bashrc"
-fi
-
-addscript() {
-    cp "$1" "$HOME/.local/bin/"
-}
-
 addconfig() {
-    if grep HANDYCONFIG "$2"; then
+    if grep -q HANDYCONFIG "$2"; then
         return 0
     fi
 
@@ -45,10 +32,40 @@ addconfig() {
     echo "Updated [$2]"
 }
 
-for script in "${scripts_to_add[@]}"; do
-    addscript "$script"
-done
+install_scripts() {
+    mkdir -p "$HOME/.local/bin"
 
-addconfig configs/vimrc "$HOME/.vimrc"
-addconfig configs/user.bashrc "$HOME/.bashrc"
-SUDO=true addconfig configs/root.bashrc /etc/bash.bashrc
+    for script in "${scripts_to_add[@]}"; do
+        cp "$script" "$HOME/.local/bin/"
+    done
+}
+
+install_configs() {
+    addconfig configs/vimrc "$HOME/.vimrc"
+    addconfig configs/user.bashrc "$HOME/.bashrc"
+    SUDO=true addconfig configs/root.bashrc /etc/bash.bashrc
+}
+
+main() {
+    cd "$(dirname "$0")"
+
+    case "$1" in
+    config|configs)
+        install_configs ;;
+
+    script|scripts)
+        install_scripts ;;
+
+    --help|-h)
+        echo "$0 [configs|scripts]"
+        exit
+        ;;
+
+    *)
+        install_configs
+        install_scripts
+        ;;
+    esac
+}
+
+main "$@"
