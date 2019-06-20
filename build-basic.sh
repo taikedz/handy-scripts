@@ -13,3 +13,4 @@ bbuild --out=bin src/saytimer
 bbuild --out=bin src/sendme
 bbuild --out=bin src/wifi
 bbuild --out=bin src/z64
+bbuild src/vpn.sh bin/vpn
