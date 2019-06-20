@@ -2,27 +2,42 @@
 
 ### Create or load a base64-encoded compressed stream Usage:help
 #
-# z64 [ OPTIONS ... ]
+# z64 [-t TAROPTIONS] FILES ...
 #
-# If OPTIONS are specified, these are passed to `tar cz ...` and base64-encodes the output.
+# If FILES are specified, runs `tar c` to compress. The output is then base64-encoded
 #
-# If OPTIONS are not specified, expects a base64-encoded tar stream to be provided on stdin, for decoding and unpacking.
+# If FILES are not specified, expects a base64-encoded tar stream to be provided on stdin, for decoding and unpacking via `tar x`
 #
-# E.g.
+# If TAROPTIONS is specified, these are passed to the `tar` utility. You must specify the compression flag if you specify `-t` options. Defaults to '-z'
 #
-#    z64 -C /var/stuff file1 file2
+# TAROPTIONS is a string that is split along spaces. Tokens within `-t` options that have spaces must be escaped with `\\`
 #
-# ... creates a base64-encoded tar stream from files in /var/stuff/file1 and /var/stuff/file2 which, when decoded, unpacks file1 and file2 in the local directory.
+# 
+#
+# EXAMPLES
+#
+# Simple example:
+#
+#   z64 my_folder/ > my_folder.base64
+#   z64 < my_folder.base64
+#
+# ... tar-compress "my_folder" and write to a base64 file ; decompress base64-encoded tar data
 #
 #
-#    z64
+# Examples with tar options:
 #
-# ... expects base64 data that encodes a tar stream - the output of the above command for example. The tar decompressor only runs as `tar xz`
+#    z64 -t "-j -C ./my\\ stuff" file1 file2
+#
+# ... creates a base64-encoded tar stream containing file1 and file2, after switching context into "./my stuff/" using Bzip2 compression.
+#
+#    z64 -t "-j"
+#
+# ... expects base64 data that encodes a tar stream - the output of the above command for example - using Bzip2.
 #
 ###/doc
 
 
-##bash-libs: syntax-extensions.sh @ 1d3814ad (2.1.13)
+##bash-libs: syntax-extensions.sh @ f519c4be (2.1.16)
 
 ### Syntax Extensions Usage:syntax
 #
@@ -143,7 +158,7 @@ syntax-extensions:use:local() {
 args:use:local() {
     syntax-extensions:use:local "$@"
 }
-##bash-libs: tty.sh @ 1d3814ad (2.1.13)
+##bash-libs: tty.sh @ f519c4be (2.1.16)
 
 ### tty.sh Usage:bbuild
 # Get information on the current terminal session.
@@ -173,7 +188,7 @@ tty:is_multiplexer() {
     [[ -n "${TMUX:-}" ]] || [[ "${TERM:-}" = screen ]]
 }
 
-##bash-libs: colours.sh @ 1d3814ad (2.1.13)
+##bash-libs: colours.sh @ f519c4be (2.1.16)
 
 ### Colours for terminal Usage:bbuild
 # A series of shorthand colour flags for use in outputs, and functions to set your own flags.
@@ -182,7 +197,7 @@ tty:is_multiplexer() {
 #
 # Example:
 # 	
-# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour")
+# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour"
 #
 # Preconfigured colours available:
 #
@@ -192,8 +207,8 @@ tty:is_multiplexer() {
 # CBLU, CBBLU, HLBLU -- blue, bright blue, highlight blue
 # CPUR, CBPUR, HLPUR -- purple, bright purple, highlight purple
 # CTEA, CBTEA, HLTEA -- teal, bright teal, highlight teal
-# CBLA, CBBLA, HLBLA -- black, bright red, highlight red
-# CWHI, CBWHI, HLWHI -- white, bright red, highlight red
+# CBLA, CBBLA, HLBLA -- black, "bright" black, highlight black
+# CWHI, CBWHI, HLWHI -- white, "bright" white, highlight white
 #
 # Modifiers available:
 #
@@ -207,16 +222,23 @@ tty:is_multiplexer() {
 #
 # CNORM -- turn off bright or dim, without affecting other modifiers
 # ULOFF -- turn off highlighting
-# RVOFF -- turn off inverse
+# RVOFF -- turn off reverse colours
 # SKOFF -- turn off strikethrough
 # HLOFF -- turn off highlight
 #
-# CDEF -- turn off all colours and modifiers(switches to the terminal default)
+# CDEF -- turn off all colours and modifiers (switches to the terminal default)
 #
 # Note that highlight and underline must be applied or re-applied after specifying a colour.
 #
 # If the session is detected as being in a pipe, colours will be turned off.
 #   You can override this by calling `colours:check --color=always` at the start of your script
+#
+#
+# /!\ SPELLING /!\
+#
+# For historic reasons, "colours.sh" was named using British spelling; however some options use American spelling to match expectations from using other tools like `ls` for example.
+#
+# Consider that in the future, this will likely be changed for consistency - this library would become fully Ameriquified and the library renamed to 'colors.sh' and all functions will start with 'color:'.
 #
 ###/doc
 
@@ -232,6 +254,8 @@ tty:is_multiplexer() {
 #   }
 #
 #   main "$@"
+#
+# Note use of American spelling in the option itself.
 #
 ###/doc
 colours:check() {
@@ -327,6 +351,14 @@ colours:define() {
 
 }
 
+### colours:remove Usage:help
+# Pipe function to remove ANSI colour bytes
+###/doc
+colours:remove() {
+    local _b=$'\033'
+    sed -r "s/${_b}\[[0-9;]+m//g"
+}
+
 colours:auto() {
     if tty:is_pipe ; then
         COLOURS_ON=false
@@ -340,7 +372,7 @@ colours:auto() {
 
 colours:auto
 
-##bash-libs: out.sh @ 1d3814ad (2.1.13)
+##bash-libs: out.sh @ f519c4be (2.1.16)
 
 ### Console output handlers Usage:bbuild
 #
@@ -427,7 +459,7 @@ function out:fail {
 function out:error {
     echo "${CBRED}ERROR: ${CRED}$*$CDEF" 1>&2
 }
-##bash-libs: patterns.sh @ 1d3814ad (2.1.13)
+##bash-libs: patterns.sh @ f519c4be (2.1.16)
 
 ### Useful patterns Usage:bbuild
 #
@@ -499,7 +531,7 @@ format:wrap() {
     fold -w "$cols" -s
 }
 
-##bash-libs: autohelp.sh @ 1d3814ad (2.1.13)
+##bash-libs: autohelp.sh @ f519c4be (2.1.16)
 
 ### Autohelp Usage:bbuild
 #
@@ -696,13 +728,409 @@ autohelp:check:section() {
     done
 }
 
+##bash-libs: strings.sh @ f519c4be (2.1.16)
+
+### Strings library Usage:bbuild
+#
+# More advanced string manipulation functions.
+#
+###/doc
+
+### strings:join JOINER STRINGS ... Usage:bbuild
+#
+# Join multiple strings, separated by the JOINER string
+#
+# Write the joined string to stdout
+#
+###/doc
+
+strings:join() {
+    # joiner can be any string
+    local joiner="$1"; shift || :
+
+    # so we use an array to collect the token parts
+    local destring=(:)
+
+    for token in "$@"; do
+        destring[${#destring[@]}]="$joiner"
+        destring[${#destring[@]}]="$token"
+    done
+
+    local finalstring=""
+    # first remove holder token and initial join token
+    #   before iterating
+    for item in "${destring[@]:2}"; do
+        finalstring="${finalstring}${item}"
+    done
+    echo "$finalstring"
+}
+
+### strings:split *RETURN_ARRAY SPLITTER STRING Usage:bbuild
+#
+# Split a STRING along each instance of SPLITTER
+#
+# Write the result to the variable in RETURN_ARRAY (pass as name reference)
+#
+# e.g.
+#
+#   local my_array
+#
+#   strings:split my_array ":" "a:b c:d"
+#
+#   echo "${my_array[1]}" # --> "b c"
+#
+###/doc
+
+strings:split() {
+    . <(args:use:local *p_returnarray splitter string_to_split -- "$@") ; 
+    local items=(:)
+
+    while [[ -n "$string_to_split" ]]; do
+        if [[ ! "$string_to_split" =~ "${splitter}" ]]; then
+            items[${#items[@]}]="$string_to_split"
+            break
+        fi
+
+        local token="$(echo "$string_to_split"|sed -r "s${splitter}.*$")"
+        items+=("$token")
+        string_to_split="$(echo "$string_to_split"|sed "s^${token}${splitter}")"
+    done
+
+    p_returnarray=("${items[@]:1}")
+}
+
+##bash-libs: args.sh @ f519c4be (2.1.16)
+
+### args Usage:bbuild
+#
+# An arguments handling utility.
+#
+# `args:has` can be used to determine if an exact token exists in the array of arguments
+#
+# `args:get` can be used to extract individual arguments from an array of arguments; it assumes any flag is to be followed by the actual sought token.
+# It follows the convention that short flags are followed by value token ("-s value", "-l value")
+#   but that long flags incorporate their value after an equals sign ("--short=value", "--long=value")
+#
+# `args:parse` provides a fuller argument parsing utility, detecting some basic types, and optionally alerting to when a an argument was not expected.
+# It assumes that both short and long flags are followed separately by their value token ("-s value", "--long value")
+#
+###/doc
+
+readonly ARGS_ERR_NaN=100
+readonly ARGS_ERR_unknown_flag=101
+readonly ARGS_ERR_missing_value=102
+readonly ARGS_ERR_unknown_token=103
+
+### args:get TOKEN ARGS ... Usage:bbuild
+#
+# Given a TOKEN, find the argument value
+#
+# Typically called with the parent's arguments
+#
+# 	args:get --key "$@"
+# 	args:get -k "$@"
+#
+# If TOKEN is an int, returns the argument at that index (starts at 1, negative numbers count from end backwards)
+#
+# If TOKEN starts with two dashes ("--"), expect the value to be supplied after an equal sign
+#
+# 	--token=desired_value
+#
+# If TOKEN starts with a single dash, and is a letter or a number, expect the value to be the following token
+#
+# 	-t desired_value
+#
+# Returns 1 if could not find anything appropriate.
+#
+###/doc
+
+args:get() {
+    local seek="$1"; shift || :
+
+    if [[ "$seek" =~ $PAT_num ]]; then
+        local arguments=("$@")
+
+        # Get the index starting at 1
+        local n=$((seek-1))
+        # but do not affect wrap-arounds
+        [[ "$n" -ge 0 ]] || n=$((n+1))
+
+        echo "${arguments[$n]}"
+
+    elif [[ "$seek" =~ ^--.+ ]]; then
+        args:_get_long "$seek" "$@"
+
+    elif [[ "$seek" =~ ^-[a-zA-Z0-9]$ ]]; then
+        args:_get_short "$seek" "$@"
+
+    else
+        return 1
+    fi
+}
+
+args:_get_short() {
+    local token="$1"; shift || :
+    while [[ -n "$*" ]]; do
+        local item="$1"; shift || :
+
+        if [[ "$item" = "$token" ]]; then
+            echo "$1"
+            return 0
+        fi
+    done
+    return 1
+}
+
+args:_get_long() {
+    local token="$1"; shift || :
+    local tokenpat="^$token=(.*)$"
+
+    for item in "$@"; do
+        if [[ "$item" =~ $tokenpat ]]; then
+            echo "${BASH_REMATCH[1]}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+### args:has TOKEN ARGS ... Usage:bbuild
+#
+# Determines whether TOKEN is present on its own in ARGS
+#
+# Typically called with the parent's arguments
+#
+# 	args:has thing "$@"
+#
+# Returns 0 on success for example
+#
+# 	args:has thing "one" "thing" "or" "another"
+#
+# Returns 1 on failure for example
+#
+# 	args:has thing "one thing" "or another"
+#
+# "one thing" is not a valid match for "thing" as a token.
+#
+###/doc
+
+args:has() {
+    local token="$1"; shift || :
+    for item in "$@"; do
+        if [[ "$token" = "$item" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+### args:quote ARGS ... Usage:bbuild
+#
+# Produce a single string with each argument. If the argument has whitespace, double-quotes are added. If the argument has double-quotes as part of its data, these are escaped.
+#
+###/doc
+args:quote() {
+    local argstring arg
+    argstring=""
+
+    for arg in "$@"; do
+        arg="$(echo -n "$arg" | sed -rz 's/"/\\"/g ; s/\n/\\n/g ; s/\r/\\r/g ; s/\t/\\t/g')"
+
+        if (echo "$arg" | grep -Pq '\s') || [[ -z "$arg" ]]; then
+            arg="\"${arg}\""
+        fi
+
+        argstring="$argstring $arg"
+    done
+
+    echo "${argstring:1}"
+}
+
+### args:parse *ARGSDEF *FLAGLESS ARGS ... Usage:bbuild
+#
+# Iterate over the supplied arguments, using an array of argument/variables definitions.
+#
+# ARGSDEF :
+#
+# This is an array of flag definitions. Each definition token comprises of three parts, separated by a colon ':':
+#
+# * type
+# * return name
+# * flags
+#
+# The return name is the literal name of a variable to return values to (by name reference)
+#
+# There are three defined types:
+#
+# * 'b' - the name reference is set to the string "true" if a relevant flag is found
+# * 's' - the name reference is set to the value of the string passed
+# * 'n' - the name reference is set to a numerical string if found
+#
+# Flags is a comma-separated list of flags that trigger a match.
+#
+# For 's' and 'n' parameters, it is always expected that the following token provide the value.
+# NOTE: this is different from args:get behaviour.
+#
+# FLAGLESS :
+#
+# The name of the variable into which to put the tokens that were found, but not attached to flags.
+# If the name "-" is passed, causes an error when a flagless token is found.
+#
+# For example:
+#
+#   #%include std/args.sh
+#
+#   docopy() {
+#       # Define locally to not cause args:parse to write global variables
+#       local args_def usebinary infile outfile bytes
+#
+#       args_def=(
+#           "b:usebinary:-b,--binary"
+#           "s:infile:-i,--input"
+#           "s:outfile:-o,--output"
+#           "n:bytes:-n"
+#       )
+#
+#       # Pass 'args_def' by name reference
+#       args:parse args_def - "$@"
+#
+#       echo "Copying from $infile to $outfile"
+#       if [[ "$usebinary" = true ]]; then
+#           echo "Using binary mode"
+#       fi
+#       if [[ -n "${bytes:-}" ]]; then
+#           echo "Limiting to $bytes bytes."
+#       fi
+#   }
+#
+#   # Prints text
+#   docopy --input infile.txt -o outfile.bin -b -n 5
+#
+#   # Fails (unknown flag '-x')
+#   docopy --input infile.txt -o outfile.bin -b -x
+#
+#
+#
+# UNKNOWN FLAGS
+#
+# By default, if args:parse finds a flag that was not declared, it will cause a filure exit. You can set an environment variable `ARGS_allow_unknown_flags=true` to bypass this.
+#
+###/doc
+args:parse() {
+    . <(args:use:local *a_argsdefs ?flagless_returnname -- "$@") ; 
+    local arg __argdef __type __name __flags __flagless
+
+    if [[ "$flagless_returnname" != "-" ]]; then
+        __flagless=(:)
+        declare -n p_flaglessreturn="$flagless_returnname"
+    fi
+
+    while [[ -n "$*" ]]; do
+        arg="$1"; shift
+
+        if [[ "$arg" =~ ^- ]]; then
+            if ! args:_get_argdef "$arg" "__argdef" "a_argsdefs" && [[ "${ARGS_allow_unknown_flags:-}" = true ]]; then
+                out:fail $ARGS_ERR_unknown_flag "Unknown flag '$arg'"
+            fi
+
+            args:_unpack_argdef __type __name __flags "$__argdef"
+
+            declare -n p_pointedvar="$__name"
+
+            if [[ "$__type" = b ]]; then
+                p_pointedvar=true
+            else
+                p_pointedvar="${1:-}"; shift || out:fail $ARGS_ERR_missing_value "Argument parse error - expected value for '$__name' (flag was '$arg')"
+            fi
+
+            if [[ "$__type" = n ]]; then
+                [[ "$p_pointedvar" =~ $PAT_num ]] || out:fail $ARGS_ERR_NaN "Argument parse error - expected number for '$__name' but got '$p_pointedvar'"
+            fi
+
+        elif [[ "$flagless_returnname" != "-" ]]; then
+            __flagless+=("$arg")
+
+        else
+            out:fail $ARGS_ERR_unknown_token "Unrecognized token: '$arg'"
+        fi
+    done
+
+    if [[ "$flagless_returnname" != "-" ]]; then
+        p_flaglessreturn=("${__flagless[@]:1}")
+    fi
+}
+
+args:_get_argdef() {
+    . <(args:use:local flag *p_argdef *p_a_argsdefs -- "$@") ; 
+    local argdef_string flags
+
+    for argdef_string in "${p_a_argsdefs[@]}"; do
+        flags="${argdef_string##*:}"
+        if [[ "$flags" =~ (^|,)$flag(,|$) ]]; then
+            p_argdef="$argdef_string"
+            return 0
+        fi
+    done
+    return 1
+}
+
+args:_unpack_argdef() {
+    . <(args:use:local *p_type *p_name *p_flags argdef_string -- "$@") ; 
+    local a_argdef
+    strings:split a_argdef : "$argdef_string"
+    
+    p_type="${a_argdef[0]}"
+    p_name="${a_argdef[1]}"
+    p_flags="${a_argdef[2]}"
+
+    if [[ ! "$p_type" =~ ^s|b|n$ ]]; then
+        out:fail "Invalid type '$p_type' for '$p_name'"
+    fi
+}
+
+_B1=$'\001'
+_B2=$'\002'
+
+function decode() {
+    base64 -di | tar x "${TARARGS[@]}"
+}
+
+function encode() {
+    tar c "${TARARGS[@]}" "$@" | base64
+}
+
+space_split() {
+    . <(args:use:local *p__target -- "$@") ; 
+    p__target="${p__target//\\ /$_B1}"
+    p__target="${p__target// /$_B2}"
+    p__target="${p__target//$_B1/ }"
+
+    strings:split p__target "$_B2" "$p__target"
+}
+
+function parse() {
+    local argdef=(
+        s:TARARGS:-t
+    )
+
+    args:parse argdef FILES "$@"
+
+    if [[ -z "${TARARGS}" ]]; then
+        TARARGS="-z"
+    fi
+
+    space_split TARARGS
+}
+
 main() {
     autohelp:check "$@"
 
-    if [[ -z "$*" ]]; then
-        base64 -di | tar xz
+    parse "$@"
+
+    if [[ -z "${FILES[*]:-}" ]]; then
+        decode
     else
-        tar cz "$@" | base64
+        encode "${FILES[@]}"
     fi
 }
 

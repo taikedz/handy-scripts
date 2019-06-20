@@ -2,34 +2,86 @@
 
 ### Create or load a base64-encoded compressed stream Usage:help
 #
-# z64 [ OPTIONS ... ]
+# z64 [-t TAROPTIONS] FILES ...
 #
-# If OPTIONS are specified, these are passed to `tar cz ...` and base64-encodes the output.
+# If FILES are specified, runs `tar c` to compress. The output is then base64-encoded
 #
-# If OPTIONS are not specified, expects a base64-encoded tar stream to be provided on stdin, for decoding and unpacking.
+# If FILES are not specified, expects a base64-encoded tar stream to be provided on stdin, for decoding and unpacking via `tar x`
 #
-# E.g.
+# If TAROPTIONS is specified, these are passed to the `tar` utility. You must specify the compression flag if you specify `-t` options. Defaults to '-z'
 #
-#    z64 -C /var/stuff file1 file2
+# TAROPTIONS is a string that is split along spaces. Tokens within `-t` options that have spaces must be escaped with `\\`
 #
-# ... creates a base64-encoded tar stream from files in /var/stuff/file1 and /var/stuff/file2 which, when decoded, unpacks file1 and file2 in the local directory.
+# 
+#
+# EXAMPLES
+#
+# Simple example:
+#
+#   z64 my_folder/ > my_folder.base64
+#   z64 < my_folder.base64
+#
+# ... tar-compress "my_folder" and write to a base64 file ; decompress base64-encoded tar data
 #
 #
-#    z64
+# Examples with tar options:
 #
-# ... expects base64 data that encodes a tar stream - the output of the above command for example. The tar decompressor only runs as `tar xz`
+#    z64 -t "-j -C ./my\\ stuff" file1 file2
+#
+# ... creates a base64-encoded tar stream containing file1 and file2, after switching context into "./my stuff/" using Bzip2 compression.
+#
+#    z64 -t "-j"
+#
+# ... expects base64 data that encodes a tar stream - the output of the above command for example - using Bzip2.
 #
 ###/doc
 
 #%include std/autohelp.sh
+#%include std/args.sh
+#%include std/strings.sh
+
+_B1=$'\001'
+_B2=$'\002'
+
+function decode() {
+    base64 -di | tar x "${TARARGS[@]}"
+}
+
+function encode() {
+    tar c "${TARARGS[@]}" "$@" | base64
+}
+
+$%function space_split(*p__target) {
+    p__target="${p__target//\\ /$_B1}"
+    p__target="${p__target// /$_B2}"
+    p__target="${p__target//$_B1/ }"
+
+    strings:split p__target "$_B2" "$p__target"
+}
+
+function parse() {
+    local argdef=(
+        s:TARARGS:-t
+    )
+
+    args:parse argdef FILES "$@"
+
+    if [[ -z "${TARARGS}" ]]; then
+        TARARGS="-z"
+    fi
+
+    space_split TARARGS
+}
 
 main() {
     autohelp:check "$@"
 
-    if [[ -z "$*" ]]; then
-        base64 -di | tar xz
+    parse "$@"
+
+    if [[ -z "${FILES[*]:-}" ]]; then
+        decode
     else
-        tar cz "$@" | base64
+        encode "${FILES[@]}"
     fi
 }
 
