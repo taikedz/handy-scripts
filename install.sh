@@ -40,6 +40,7 @@ copy_scripts() {
     declare -n p_scriptslist="$1"
 
     for script in "${p_scriptslist[@]}"; do
+        echo "Adding $script"
         cp "$script" "$HOME/.local/bin/"
     done
 }
