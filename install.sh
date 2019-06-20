@@ -3,11 +3,15 @@
 scripts_to_add=(
     bin/pstree
     bin/rmkernel.sh
+    bin/datereset
+    bin/z64
+)
+
+scripts_to_add_desktop() {
     bin/rotate-screen
     bin/secret
     bin/portblock
     bin/sendme
-    bin/datereset
     bin/brightness
     bin/mdpreview
     bin/mvaudio
@@ -15,8 +19,7 @@ scripts_to_add=(
     bin/saytimer
     bin/sendme
     bin/wifi
-    bin/z64
-)
+}
 
 addconfig() {
     if grep -q HANDYCONFIG "$2"; then
@@ -32,12 +35,23 @@ addconfig() {
     echo "Updated [$2]"
 }
 
+copy_scripts() {
+    local script
+    declare -n p_scriptslist="$1"
+
+    for script in "${p_scriptslist[@]}"; do
+        cp "$script" "$HOME/.local/bin/"
+    done
+}
+
 install_scripts() {
     mkdir -p "$HOME/.local/bin"
 
-    for script in "${scripts_to_add[@]}"; do
-        cp "$script" "$HOME/.local/bin/"
-    done
+    copy_scripts scripts_to_add
+
+    if [[ "$1" = desktop ]]; then
+        copy_scripts scripts_to_add_desktop
+    fi
 }
 
 install_configs() {
@@ -49,22 +63,26 @@ install_configs() {
 main() {
     cd "$(dirname "$0")"
 
-    case "$1" in
-    config|configs)
+    action="${1:-}"; shift || :
+
+    case "$action" in
+    configs)
         install_configs ;;
 
-    script|scripts)
-        install_scripts ;;
+    scripts)
+        install_scripts "$@" ;;
 
-    --help|-h)
-        echo "$0 [configs|scripts]"
-        exit
+    all)
+        install_configs
+        install_scripts "$@"
         ;;
 
     *)
-        install_configs
-        install_scripts
+        echo "'$0 configs' -- install just the configs"
+        echo "'$0 scripts [desktop]' -- install just scripts, optionally include desktop scripts"
+        echo "'$0 all [desktop]' -- install configs and scripts, optionally include desktop scripts"
         ;;
+
     esac
 }
 
