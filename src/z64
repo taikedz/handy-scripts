@@ -51,14 +51,6 @@ function encode() {
     tar c "${TARARGS[@]}" "$@" | base64
 }
 
-$%function space_split(*p__target) {
-    p__target="${p__target//\\ /$_B1}"
-    p__target="${p__target// /$_B2}"
-    p__target="${p__target//$_B1/ }"
-
-    strings:split p__target "$_B2" "$p__target"
-}
-
 function parse() {
     local argdef=(
         s:TARARGS:-t
@@ -70,7 +62,7 @@ function parse() {
         TARARGS="-z"
     fi
 
-    space_split TARARGS
+    strings:split:escaping TARARGS ' ' "$TARARGS"
 }
 
 main() {

@@ -37,7 +37,7 @@
 ###/doc
 
 
-##bash-libs: syntax-extensions.sh @ f519c4be (2.1.16)
+##bash-libs: syntax-extensions.sh @ 0400607e (2.1.17)
 
 ### Syntax Extensions Usage:syntax
 #
@@ -158,7 +158,7 @@ syntax-extensions:use:local() {
 args:use:local() {
     syntax-extensions:use:local "$@"
 }
-##bash-libs: tty.sh @ f519c4be (2.1.16)
+##bash-libs: tty.sh @ 0400607e (2.1.17)
 
 ### tty.sh Usage:bbuild
 # Get information on the current terminal session.
@@ -188,7 +188,7 @@ tty:is_multiplexer() {
     [[ -n "${TMUX:-}" ]] || [[ "${TERM:-}" = screen ]]
 }
 
-##bash-libs: colours.sh @ f519c4be (2.1.16)
+##bash-libs: colours.sh @ 0400607e (2.1.17)
 
 ### Colours for terminal Usage:bbuild
 # A series of shorthand colour flags for use in outputs, and functions to set your own flags.
@@ -372,7 +372,7 @@ colours:auto() {
 
 colours:auto
 
-##bash-libs: out.sh @ f519c4be (2.1.16)
+##bash-libs: out.sh @ 0400607e (2.1.17)
 
 ### Console output handlers Usage:bbuild
 #
@@ -459,7 +459,7 @@ function out:fail {
 function out:error {
     echo "${CBRED}ERROR: ${CRED}$*$CDEF" 1>&2
 }
-##bash-libs: patterns.sh @ f519c4be (2.1.16)
+##bash-libs: patterns.sh @ 0400607e (2.1.17)
 
 ### Useful patterns Usage:bbuild
 #
@@ -531,7 +531,7 @@ format:wrap() {
     fold -w "$cols" -s
 }
 
-##bash-libs: autohelp.sh @ f519c4be (2.1.16)
+##bash-libs: autohelp.sh @ 0400607e (2.1.17)
 
 ### Autohelp Usage:bbuild
 #
@@ -728,7 +728,7 @@ autohelp:check:section() {
     done
 }
 
-##bash-libs: strings.sh @ f519c4be (2.1.16)
+##bash-libs: strings.sh @ 0400607e (2.1.17)
 
 ### Strings library Usage:bbuild
 #
@@ -799,7 +799,49 @@ strings:split() {
     p_returnarray=("${items[@]:1}")
 }
 
-##bash-libs: args.sh @ f519c4be (2.1.16)
+### strings:split:escaping *p__target splitter string_to_split Usage:bbuild
+#
+# Split a string into tokens along splitter ; returns the result in an array name-referenced by p__target
+#
+# Multiple splitter characters produce multiple tokens.
+#
+# Splitter characters escaped by preceding with `\` do not cause a split, and are replaced with literal instances of the splitter.
+#
+# E.g.
+#
+#   tokens="-a -b my\ path -c"
+#   strings:split:escaping result ' ' "$tokens"
+#
+# Store the split tokens in `${result[@]}`
+#
+# The contents of the array will be  `['-a', '-b', 'my path', '-c']`
+#
+###/doc
+
+
+strings:split:escaping() {
+    . <(args:use:local *p__target splitter string_to_split -- "$@") ; 
+    local SP_ESCP=$'\001'
+    local SP_REAL=$'\002'
+    local ESC_ESC=$'\003'
+    local holder=(:)
+
+    string_to_split="${string_to_split//\\\\/$ESC_ESC}"
+    string_to_split="${string_to_split//\\$splitter/$SP_ESCP}"
+    string_to_split="${string_to_split//$splitter/$SP_REAL}"
+    string_to_split="${string_to_split//$SP_ESCP/$splitter}"
+
+    strings:split holder "$SP_REAL" "$string_to_split"
+
+    p__target=(:)
+    for token in "${holder[@]}"; do
+        p__target+=("${token//$ESC_ESC/\\}")
+    done
+
+    p__target=("${p__target[@]:1}")
+}
+
+##bash-libs: args.sh @ 0400607e (2.1.17)
 
 ### args Usage:bbuild
 #
@@ -1099,15 +1141,6 @@ function encode() {
     tar c "${TARARGS[@]}" "$@" | base64
 }
 
-space_split() {
-    . <(args:use:local *p__target -- "$@") ; 
-    p__target="${p__target//\\ /$_B1}"
-    p__target="${p__target// /$_B2}"
-    p__target="${p__target//$_B1/ }"
-
-    strings:split p__target "$_B2" "$p__target"
-}
-
 function parse() {
     local argdef=(
         s:TARARGS:-t
@@ -1119,7 +1152,7 @@ function parse() {
         TARARGS="-z"
     fi
 
-    space_split TARARGS
+    strings:split:escaping TARARGS ' ' "$TARARGS"
 }
 
 main() {
