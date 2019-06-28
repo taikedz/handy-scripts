@@ -42,7 +42,7 @@ reset_time() {
 load_config() {
     local cresetconf
 
-    if [[ -n "$TIMESERVER" ]]; then
+    if [[ -n "${TIMESERVER:-}" ]]; then
         return 0
     fi
 
@@ -52,7 +52,7 @@ load_config() {
     out:info "Using timeserver $TIMESERVER"
 }
 
-parsearguments() {
+parse_arguments() {
     local argdef=(
         s:TIMESERVER:-s,--server
     )

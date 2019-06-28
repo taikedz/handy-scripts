@@ -21,7 +21,7 @@ set -euo pipefail
 ###/doc
 
 
-##bash-libs: syntax-extensions.sh @ 1d3814ad (2.1.13)
+##bash-libs: syntax-extensions.sh @ 0400607e (2.1.17)
 
 ### Syntax Extensions Usage:syntax
 #
@@ -142,7 +142,7 @@ syntax-extensions:use:local() {
 args:use:local() {
     syntax-extensions:use:local "$@"
 }
-##bash-libs: tty.sh @ 1d3814ad (2.1.13)
+##bash-libs: tty.sh @ 0400607e (2.1.17)
 
 ### tty.sh Usage:bbuild
 # Get information on the current terminal session.
@@ -172,7 +172,7 @@ tty:is_multiplexer() {
     [[ -n "${TMUX:-}" ]] || [[ "${TERM:-}" = screen ]]
 }
 
-##bash-libs: colours.sh @ 1d3814ad (2.1.13)
+##bash-libs: colours.sh @ 0400607e (2.1.17)
 
 ### Colours for terminal Usage:bbuild
 # A series of shorthand colour flags for use in outputs, and functions to set your own flags.
@@ -181,7 +181,7 @@ tty:is_multiplexer() {
 #
 # Example:
 # 	
-# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour")
+# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour"
 #
 # Preconfigured colours available:
 #
@@ -191,8 +191,8 @@ tty:is_multiplexer() {
 # CBLU, CBBLU, HLBLU -- blue, bright blue, highlight blue
 # CPUR, CBPUR, HLPUR -- purple, bright purple, highlight purple
 # CTEA, CBTEA, HLTEA -- teal, bright teal, highlight teal
-# CBLA, CBBLA, HLBLA -- black, bright red, highlight red
-# CWHI, CBWHI, HLWHI -- white, bright red, highlight red
+# CBLA, CBBLA, HLBLA -- black, "bright" black, highlight black
+# CWHI, CBWHI, HLWHI -- white, "bright" white, highlight white
 #
 # Modifiers available:
 #
@@ -206,16 +206,23 @@ tty:is_multiplexer() {
 #
 # CNORM -- turn off bright or dim, without affecting other modifiers
 # ULOFF -- turn off highlighting
-# RVOFF -- turn off inverse
+# RVOFF -- turn off reverse colours
 # SKOFF -- turn off strikethrough
 # HLOFF -- turn off highlight
 #
-# CDEF -- turn off all colours and modifiers(switches to the terminal default)
+# CDEF -- turn off all colours and modifiers (switches to the terminal default)
 #
 # Note that highlight and underline must be applied or re-applied after specifying a colour.
 #
 # If the session is detected as being in a pipe, colours will be turned off.
 #   You can override this by calling `colours:check --color=always` at the start of your script
+#
+#
+# /!\ SPELLING /!\
+#
+# For historic reasons, "colours.sh" was named using British spelling; however some options use American spelling to match expectations from using other tools like `ls` for example.
+#
+# Consider that in the future, this will likely be changed for consistency - this library would become fully Ameriquified and the library renamed to 'colors.sh' and all functions will start with 'color:'.
 #
 ###/doc
 
@@ -231,6 +238,8 @@ tty:is_multiplexer() {
 #   }
 #
 #   main "$@"
+#
+# Note use of American spelling in the option itself.
 #
 ###/doc
 colours:check() {
@@ -326,6 +335,14 @@ colours:define() {
 
 }
 
+### colours:remove Usage:help
+# Pipe function to remove ANSI colour bytes
+###/doc
+colours:remove() {
+    local _b=$'\033'
+    sed -r "s/${_b}\[[0-9;]+m//g"
+}
+
 colours:auto() {
     if tty:is_pipe ; then
         COLOURS_ON=false
@@ -339,7 +356,7 @@ colours:auto() {
 
 colours:auto
 
-##bash-libs: out.sh @ 1d3814ad (2.1.13)
+##bash-libs: out.sh @ 0400607e (2.1.17)
 
 ### Console output handlers Usage:bbuild
 #
@@ -427,7 +444,7 @@ function out:error {
     echo "${CBRED}ERROR: ${CRED}$*$CDEF" 1>&2
 }
 
-##bash-libs: isroot.sh @ 1d3814ad (2.1.13)
+##bash-libs: isroot.sh @ 0400607e (2.1.17)
 
 ### isroot Usage:bbuild
 # Test for root access
@@ -436,7 +453,7 @@ function out:error {
 ###/doc
 
 function isroot {
-    [[ "$UID" = 0 ]] || isroot:cygwin
+    [[ "${TEST__UID:-$UID}" = 0 ]] || isroot:cygwin
 }
 
 ### isroot:cygwin Usage:bbuild
@@ -458,7 +475,7 @@ function isroot:cygwin {
 function isroot:require {
     isroot || out:fail "$*"
 }
-##bash-libs: patterns.sh @ 1d3814ad (2.1.13)
+##bash-libs: patterns.sh @ 0400607e (2.1.17)
 
 ### Useful patterns Usage:bbuild
 #
@@ -483,7 +500,7 @@ export PAT_cvar='^[a-zA-Z_][a-zA-Z0-9_]*$'
 export PAT_filename='^[a-zA-Z0-9_. -]+$'
 export PAT_email="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-z]+"
 
-##bash-libs: config.sh @ 1d3814ad (2.1.13)
+##bash-libs: config.sh @ 0400607e (2.1.17)
 
 ### config.sh Usage:bbuild
 # Read configuration from various locations.
@@ -511,7 +528,7 @@ export PAT_email="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-z]+"
 ###/doc
 
 
-##bash-libs: debug.sh @ 1d3814ad (2.1.13)
+##bash-libs: debug.sh @ 0400607e (2.1.17)
 
 ### Debug lib Usage:bbuild
 #
@@ -529,30 +546,6 @@ export PAT_email="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-z]+"
 ###/doc
 
 : ${DEBUG_mode=false}
-
-### debug:mode [output | /output | verbose | /verbose] ... Usage:bbuild
-#
-# Activate debug output (`output`), or activate command tracing (`verbose`)
-#
-# Deactivate with the corresponding `/output` and `/verbose` options
-#
-###/doc
-
-function debug:mode() {
-    local mode_switch
-    for mode_switch in "$@"; do
-        case "$mode_switch" in
-        output)
-            DEBUG_mode=true ;;
-        /output)
-            DEBUG_mode=false ;;
-        verbose)
-            set -x ;;
-        /verbose)
-            set +x ;;
-        esac
-    done
-}
 
 ### debug:print MESSAGE Usage:bbuild
 # print a blue debug message to stderr
@@ -657,7 +650,6 @@ debug:_break_dump() {
         echo "$inspect"
     fi
 }
-DEBUG_mode=true
 
 config:declare() {
     . <(args:use:local *p_configname -- "$@") ; 
@@ -815,7 +807,7 @@ format:wrap() {
     fold -w "$cols" -s
 }
 
-##bash-libs: autohelp.sh @ 1d3814ad (2.1.13)
+##bash-libs: autohelp.sh @ 0400607e (2.1.17)
 
 ### Autohelp Usage:bbuild
 #
@@ -1012,7 +1004,7 @@ autohelp:check:section() {
     done
 }
 
-##bash-libs: strings.sh @ 1d3814ad (2.1.13)
+##bash-libs: strings.sh @ 0400607e (2.1.17)
 
 ### Strings library Usage:bbuild
 #
@@ -1083,7 +1075,49 @@ strings:split() {
     p_returnarray=("${items[@]:1}")
 }
 
-##bash-libs: args.sh @ 1d3814ad (2.1.13)
+### strings:split:escaping *p__target splitter string_to_split Usage:bbuild
+#
+# Split a string into tokens along splitter ; returns the result in an array name-referenced by p__target
+#
+# Multiple splitter characters produce multiple tokens.
+#
+# Splitter characters escaped by preceding with `\` do not cause a split, and are replaced with literal instances of the splitter.
+#
+# E.g.
+#
+#   tokens="-a -b my\ path -c"
+#   strings:split:escaping result ' ' "$tokens"
+#
+# Store the split tokens in `${result[@]}`
+#
+# The contents of the array will be  `['-a', '-b', 'my path', '-c']`
+#
+###/doc
+
+
+strings:split:escaping() {
+    . <(args:use:local *p__target splitter string_to_split -- "$@") ; 
+    local SP_ESCP=$'\001'
+    local SP_REAL=$'\002'
+    local ESC_ESC=$'\003'
+    local holder=(:)
+
+    string_to_split="${string_to_split//\\\\/$ESC_ESC}"
+    string_to_split="${string_to_split//\\$splitter/$SP_ESCP}"
+    string_to_split="${string_to_split//$splitter/$SP_REAL}"
+    string_to_split="${string_to_split//$SP_ESCP/$splitter}"
+
+    strings:split holder "$SP_REAL" "$string_to_split"
+
+    p__target=(:)
+    for token in "${holder[@]}"; do
+        p__target+=("${token//$ESC_ESC/\\}")
+    done
+
+    p__target=("${p__target[@]:1}")
+}
+
+##bash-libs: args.sh @ 0400607e (2.1.17)
 
 ### args Usage:bbuild
 #
@@ -1294,13 +1328,18 @@ args:quote() {
 #   docopy --input infile.txt -o outfile.bin -b -x
 #
 #
+#
+# UNKNOWN FLAGS
+#
+# By default, if args:parse finds a flag that was not declared, it will cause a filure exit. You can set an environment variable `ARGS_allow_unknown_flags=true` to bypass this.
+#
 ###/doc
 args:parse() {
     . <(args:use:local *a_argsdefs ?flagless_returnname -- "$@") ; 
-    local arg argdef type name flags flagless
+    local arg __argdef __type __name __flags __flagless
 
     if [[ "$flagless_returnname" != "-" ]]; then
-        flagless=(:)
+        __flagless=(:)
         declare -n p_flaglessreturn="$flagless_returnname"
     fi
 
@@ -1308,26 +1347,26 @@ args:parse() {
         arg="$1"; shift
 
         if [[ "$arg" =~ ^- ]]; then
-            if ! args:_get_argdef "$arg" "argdef" "a_argsdefs"; then
+            if ! args:_get_argdef "$arg" "__argdef" "a_argsdefs" && [[ "${ARGS_allow_unknown_flags:-}" = true ]]; then
                 out:fail $ARGS_ERR_unknown_flag "Unknown flag '$arg'"
             fi
 
-            args:_unpack_argdef type name flags "$argdef"
+            args:_unpack_argdef __type __name __flags "$__argdef"
 
-            declare -n p_pointedvar="$name"
+            declare -n p_pointedvar="$__name"
 
-            if [[ "$type" = b ]]; then
+            if [[ "$__type" = b ]]; then
                 p_pointedvar=true
             else
-                p_pointedvar="${1:-}"; shift || out:fail $ARGS_ERR_missing_value "Argument parse error - expected value for '$name' (flag was '$arg')"
+                p_pointedvar="${1:-}"; shift || out:fail $ARGS_ERR_missing_value "Argument parse error - expected value for '$__name' (flag was '$arg')"
             fi
 
-            if [[ "$type" = n ]]; then
-                [[ "$p_pointedvar" =~ $PAT_num ]] || out:fail $ARGS_ERR_NaN "Argument parse error - expected number for '$name' but got '$p_pointedvar'"
+            if [[ "$__type" = n ]]; then
+                [[ "$p_pointedvar" =~ $PAT_num ]] || out:fail $ARGS_ERR_NaN "Argument parse error - expected number for '$__name' but got '$p_pointedvar'"
             fi
 
         elif [[ "$flagless_returnname" != "-" ]]; then
-            flagless+=("$arg")
+            __flagless+=("$arg")
 
         else
             out:fail $ARGS_ERR_unknown_token "Unrecognized token: '$arg'"
@@ -1335,7 +1374,7 @@ args:parse() {
     done
 
     if [[ "$flagless_returnname" != "-" ]]; then
-        p_flaglessreturn="${flagless[@]:1}"
+        p_flaglessreturn=("${__flagless[@]:1}")
     fi
 }
 
@@ -1383,7 +1422,7 @@ reset_time() {
 load_config() {
     local cresetconf
 
-    if [[ -n "$TIMESERVER" ]]; then
+    if [[ -n "${TIMESERVER:-}" ]]; then
         return 0
     fi
 
@@ -1393,7 +1432,7 @@ load_config() {
     out:info "Using timeserver $TIMESERVER"
 }
 
-parsearguments() {
+parse_arguments() {
     local argdef=(
         s:TIMESERVER:-s,--server
     )
