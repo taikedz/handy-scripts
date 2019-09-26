@@ -83,7 +83,7 @@ rmk:purge-packageless-kernels() {
 
     echo "#  The following do not have a corresponding installed package:"
     
-    ls /boot/config* /boot/initrd* /boot/retpoline* /boot/vmlinuz* /boot/abi* 2>/dev/null | grep -vP "$current_versions" |sed -r 's/^(.+)$/rm \1   && echo "delete me" > \1/'
+    ls /boot/config* /boot/initrd* /boot/retpoline* /boot/vmlinuz* /boot/abi* 2>/dev/null | grep -vP "$current_versions" |sed -r 's/^(.+)$/rm \1   \&\& echo "delete me" > \1/'
 
     echo -e "\n# ___\n# Cleanup forced removals\ndelete_me() { grep -Rl 'delete me' /boot|xargs rm ; }\ntrap delete_me EXIT"
 }
