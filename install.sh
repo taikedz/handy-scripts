@@ -5,6 +5,7 @@ scripts_to_add=(
     bin/rmkernel.sh
     bin/datereset
     bin/z64
+    bin/reconcile-swp.sh
 )
 
 scripts_to_add_desktop() {
