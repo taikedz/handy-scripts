@@ -1,0 +1,75 @@
+#!/usr/bin/env bbrun
+
+#%include std/safe.sh
+#%include std/out.sh
+#%include std/askuser.sh
+#%include std/abspath.sh
+
+GITNAME="${GITNAME:-}"
+
+git_check() {
+    out:info "=== $1"
+    if [[ -d "$1" ]]; then
+        (cd "$1"; gits remote; git log -n 1) | sed -r 's/^/\t/' || :
+    else
+        out:warn "--- No '$1'"
+    fi
+}
+
+set_destinations() {
+    local bname="$(basename "$1")"
+    GHdir="$HOME/git/github.com/$GITNAME/$bname";
+    GLdir="$HOME/git/gitlab.com/$GITNAME/$bname";
+}
+
+check() {
+    git_check "$1"
+    git_check "$GHdir"
+    git_check "$GLdir"
+}
+
+$%function chooseaction(inspected) {
+
+    local res="$(askuser:choose "Action for '$inspected'" "Delete '$(abspath:path "$inspected")',Move to github,Move to gitlab,Command line,Nothing")"
+
+    if [[ "$res" =~ ^Delete ]]; then
+        (set -x; rm -rf "$inspected")
+    elif [[ "$res" =~ github ]]; then
+        ([[ ! -d "$GHdir" ]] &&
+            (set -x; mv "$inspected" "$GHdir")) || out:fail "'$GHdir' already exists"
+    elif [[ "$res" =~ gitlab ]]; then
+        ([[ ! -d "$GLdir" ]] &&
+            (set -x; mv "$inspected" "$GLdir")) || out:fail "'$GLdir' already exists"
+    elif [[ "$res" =~ Nothing ]]; then
+        out:info "Skip"
+    elif [[ "$res" =~ Command ]]; then
+        out:info "---- Exit once done ----"
+        bash
+    else
+        out:fail "Unknown action!!"
+    fi
+}
+
+$%function isgitdir(target) {
+    [[ -d "$target/.git" ]]
+}
+
+main() {
+    if [[ -z "$USERNAME" ]]; then
+        out:fail "Please configure script - edit or export GITNAME"
+    fi
+
+    local item
+
+    for item in "$@"; do
+        set_destinations "$item"
+        if isgitdir "$item"; then
+            check "$item"
+        else
+            out:info "--- Not a git repo : '$item' ---"
+        fi
+        chooseaction "$item"
+    done
+}
+
+main "$@"
