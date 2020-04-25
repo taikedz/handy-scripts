@@ -1,0 +1,234 @@
+Welcome to the Linux server
+=================================
+
+Use the Up/Down arrow keys or Page Up/Page Down arrows keys or the "w" and "z" keys to move up and down.
+
+
+
+You may want to learn a bit about Linux before proceeding. It's easy, really, but you would be best off with some intial help.
+
+see http://ducakedhare.co.uk/?page_id=639 for a general primer.
+
+The first topic is about Linux in general, which is a necessary read at some point, but if you want to get experimenting
+go to the VirtualBox tutorials.
+
+
+In the immediate, here is some help you may find useful
+
+
+(NOTE TO ADMIN: the examples assume wordpress is installed in /var/www/html)
+
+=====================================================================================
+
+    WARNING ::  Undoing changes
+
+There is no "undo" on the Linux command line.
+There's rarely any undo on command lines at all.
+
+Linux is a command line UNIX system: it obeys you as efficiently as possible.
+However senseless your command.
+
+
+You need to take your own precautions. Make copies and backups.
+Don't overwrite your copies until you're done with them.
+
+
+
+ >   "It is not Unix's job to keep you from shooting yourself in the
+ >   foot.  If you should choose to do so, it is Unix's job to deliver
+ >   Mr. Bullet to Mr. Foot in the most efficient way it knows." 
+ >         --- Terry Lambert
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    Basic Commands
+
+ls
+  list folder ("directory") contents
+
+cd
+  "change directory" - go into a different directory
+
+	cd .. - go up one directory
+	cd ../.. - go up two directories
+
+pwd
+  "print working directory" - tells you where you are
+
+newgrp www-data
+  allows you to operate in the web server directory
+
+cd /var/www/html
+  go to the web server directory
+
+cat FILENAME
+  replace the FILENAME word with the name of an actual file
+  -Dumps the content of the file to screen ("dump to console").
+  useful if you want to see a file while also typing
+
+(navigation)
+  if your console (commands screen) fills up with lots of text, you can navigate up and down
+  by holding Shift key, and using the Pg Up and Pg Down buttons
+  On Mac mini-keyboards, hold Shift and the fn key, and use the Up and Down arrows to do the same
+
+mkdir FILENAME
+  create a directory with the name FILENAME in the current working directory
+
+less FILENAME
+  "less" allows you to read files
+  Use the Up and Down arrow keys, Page Up or Page Down arrow keys to navigate
+  You can also use the "w" and "z" keys to move up and down
+  Type a "/" when in less, then type some text to search for, then hit enter
+  When searching, press "n" (small n) to go to the next result
+  Press "N" (shift and n) to return to the previous result
+  Press "g" to go to the start of the file
+  Press "G" to go to the end of the file
+  Press 'q' to quit
+  You are probably reading this in "less" - try the commands out!
+
+nano FILENAME
+  nano allows you to edit a text file
+  at the bottom, commands are displayed with ^X and ^O etc
+  use the Ctrl key ("^") and "x" (small) to exit
+  use Ctrl+o (^O) to write the file to disk
+
+vim FILENAME
+  vim is an advanced text editor. You should google "vim tutorial" ;-)
+  It's more versatile and powerful than nano, but is quite different from what
+  you are likely used to.
+
+emacs FILENAME
+  another text editor
+  also very powerful
+  google for a tutorial
+  the choice is up to you which you prefer
+  emacs is not installed on this server though....
+
+man COMMAND
+  display manual
+  replace the COMMAND word with the name of a command to learn more about how to use it
+  very useful - try "man ls" or "man nano" for example
+  the same navigating and searching mechanisms as for 'less' apply for man
+
+^C
+  Ctrl+c when a command is running generally kills it. Dead.
+  Use if something is not quite running right
+
+^Z
+  Ctrl+z when a command is running pauses it and returns you to the command line
+
+jobs
+  lists any programs still running that you came out of with ^Z
+  each program will be preceded by a number
+
+fg [NUM]
+  fg on its own returns you to the last job you paused
+  fg with a number, for example "fg 2" takes you to the job with that number
+  the "[" and "]" characters when describing a command mean the item is optional
+
+bg [NUM]
+  when you pause a job with ^Z it is completely paused. If you want it to continue running in the background
+  whilst you continue working, set it back in motion with "bg"
+
+cp [FILE] [NEWFILE]
+  copies FILE to the location specified by NEWFILE
+  note that if NEWFILE already exists, it is completely overwritten!
+
+exit
+  come out of the current command line session
+
+^D
+  end of input
+  useful if you've typed a command that expects input on the command line but you want to signal that you've finished sending input.
+  can only be used on an empty line
+
+^S
+  pause the session. Nothing will respond
+
+^Q
+  resume a paused session
+
+==================================================================================
+
+     Tab Completion
+
+You can use the TAB key (above caps lock) to use "tab-completion"
+
+Start typing the name of a command and press tab to complete it. If that does not complete the command, press tab again.
+
+Either there are several commands that are spelled the same to start with and you will be told all of them, or there are no commands of that name.
+
+You can also use tab completion for file names and file paths. For example type
+
+  cd /va
+
+and then press tab. You end up with "cd /var/". Type some more so that you have
+
+  cd /var/ww/html/wp
+
+and press tab again. It will complete to "cd /var/www/html/wp-". Press tab again to see a list of files starting with "wp-"
+
+==================================================================================
+
+    Globbing
+
+Globbing allows you to refer to groups of files with similar names. Try the following commands:
+
+  ls /var/www/html/
+  ls /var/www/html/wp
+  ls /var/www/html/wp*
+  ls /var/www/html/*.php
+
+The first command lists all the files in /var/www/html
+
+The second command complains that there's no "/var/www/html/wp" file
+
+The third command displays all files whose name starts with "/var/www/html/wp", as well as the contents of all directories that start with "wp" too.
+
+The fourth command displays all files inside /var/www/html/ and whose name ends in ".php"
+
+===================================================================================
+
+     Terminals
+
+You can copy and paste in terminals too - they're just a little different from other applications, because the "Ctrl" key is used for other purposes
+
+###     Windows
+
+If you are connecting from Windows, you are probably using KiTTY or PuTTY
+
+Select text to copy it
+
+Right-click to paste, or press Shift+Insert keys to paste
+
+###     Mac
+
+You are probably using Terminal to connect
+
+Use the Command keys as you normally would to copy and paste
+
+Cmd+C , Cmd+V
+
+###     Other
+
+If you are connecting from Linux, from a Chromebook, or another system, you probably use Ctrl+C and Ctrl+V to copy and paste.
+
+You need to instead use Ctrl+Shift+C and Ctrl+Shift+V to paste
+
+====================================================================================
+
+Thus ends your command line primer. There is so much more that can be done with the command line, including writing programs called "shell scripts". On this server, we use the fairly standard shell "bash", with which you can write "bash scripts" - Google that to find out more.
+
+Bash scripts are essentially series of command line commands with extra logic to allow you to automate various complex tasks. You can then run ("call", "execute") them like any other program.
+
+Knowing proper bash syntax - the language of bash - can allow you great mastery over a system. It is often the preferred way for power users and system administrators to interact with computers when processing information for its greater flexibility and reporting options, so you know exactly what's going on where.
+
+Of course, it is ill suited for navigating the web (which you can still do by typing "elinks"), or airbrushing photos.
+
+However it is very useful for grabbing hundreds of pages and doing some processing or data extraction on them, or producing thumbnails of thousands of images in one go, with the appropriate tools.
+
+Once you know how to use a command line, you'll wonder how you ever used a computer without it :-)
+
+Good luck, and happy learning!

@@ -1,0 +1,23 @@
+
+# ============ Friendly help message to add to the end of .profile
+
+alias helpme="less $HOME/linux-help"
+
+cat <<EOF
+
+[1;31m=============================
+[32mWelcome to the Linux server
+[31m=============================
+
+[34mIf this is the first time you have used a Linux server, please take the time to read the quick
+how-to / getting-started guide.
+
+Type the following command:
+
+       [33mhelpme
+
+[34mAnd press the Enter key.
+
+... and follow along! You may want to open a fresh new session to have the guide and your work side by side.
+[0m
+EOF
