@@ -7,7 +7,7 @@
 # USAGE
 # =====
 #
-# 	nmcli [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
+# 	wifi [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
 #
 # list
 # 	Lists available access points
@@ -32,7 +32,7 @@
 ###/doc
 
 
-##bash-libs: syntax-extensions.sh @ 1d3814ad (2.1.13)
+##bash-libs: syntax-extensions.sh @ 319fa210 (2.1.19)
 
 ### Syntax Extensions Usage:syntax
 #
@@ -153,7 +153,7 @@ syntax-extensions:use:local() {
 args:use:local() {
     syntax-extensions:use:local "$@"
 }
-##bash-libs: tty.sh @ 1d3814ad (2.1.13)
+##bash-libs: tty.sh @ 319fa210 (2.1.19)
 
 ### tty.sh Usage:bbuild
 # Get information on the current terminal session.
@@ -183,7 +183,7 @@ tty:is_multiplexer() {
     [[ -n "${TMUX:-}" ]] || [[ "${TERM:-}" = screen ]]
 }
 
-##bash-libs: colours.sh @ 1d3814ad (2.1.13)
+##bash-libs: colours.sh @ 319fa210 (2.1.19)
 
 ### Colours for terminal Usage:bbuild
 # A series of shorthand colour flags for use in outputs, and functions to set your own flags.
@@ -192,7 +192,7 @@ tty:is_multiplexer() {
 #
 # Example:
 # 	
-# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour")
+# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour"
 #
 # Preconfigured colours available:
 #
@@ -202,8 +202,8 @@ tty:is_multiplexer() {
 # CBLU, CBBLU, HLBLU -- blue, bright blue, highlight blue
 # CPUR, CBPUR, HLPUR -- purple, bright purple, highlight purple
 # CTEA, CBTEA, HLTEA -- teal, bright teal, highlight teal
-# CBLA, CBBLA, HLBLA -- black, bright red, highlight red
-# CWHI, CBWHI, HLWHI -- white, bright red, highlight red
+# CBLA, CBBLA, HLBLA -- black, "bright" black, highlight black
+# CWHI, CBWHI, HLWHI -- white, "bright" white, highlight white
 #
 # Modifiers available:
 #
@@ -215,18 +215,25 @@ tty:is_multiplexer() {
 # 
 # Resets available:
 #
-# CNORM -- turn off bright or dim, without affecting other modifiers
+# CBNRM -- turn off bright or dim, without affecting other modifiers
 # ULOFF -- turn off highlighting
-# RVOFF -- turn off inverse
+# RVOFF -- turn off reverse colours
 # SKOFF -- turn off strikethrough
 # HLOFF -- turn off highlight
 #
-# CDEF -- turn off all colours and modifiers(switches to the terminal default)
+# CDEF -- turn off all colours and modifiers (switches to the terminal default)
 #
 # Note that highlight and underline must be applied or re-applied after specifying a colour.
 #
 # If the session is detected as being in a pipe, colours will be turned off.
 #   You can override this by calling `colours:check --color=always` at the start of your script
+#
+#
+# /!\ SPELLING /!\
+#
+# For historic reasons, "colours.sh" was named using British spelling; however some options use American spelling to match expectations from using other tools like `ls` for example.
+#
+# Consider that in the future, this will likely be changed for consistency - this library would become fully Ameriquified and the library renamed to 'colors.sh' and all functions will start with 'color:'.
 #
 ###/doc
 
@@ -242,6 +249,8 @@ tty:is_multiplexer() {
 #   }
 #
 #   main "$@"
+#
+# Note use of American spelling in the option itself.
 #
 ###/doc
 colours:check() {
@@ -337,6 +346,14 @@ colours:define() {
 
 }
 
+### colours:remove Usage:bbuild
+# Pipe function to remove ANSI colour bytes
+###/doc
+colours:remove() {
+    local _b=$'\033'
+    sed -r "s/${_b}\[[0-9;]+m//g"
+}
+
 colours:auto() {
     if tty:is_pipe ; then
         COLOURS_ON=false
@@ -350,7 +367,7 @@ colours:auto() {
 
 colours:auto
 
-##bash-libs: out.sh @ 1d3814ad (2.1.13)
+##bash-libs: out.sh @ 319fa210 (2.1.19)
 
 ### Console output handlers Usage:bbuild
 #
@@ -437,7 +454,7 @@ function out:fail {
 function out:error {
     echo "${CBRED}ERROR: ${CRED}$*$CDEF" 1>&2
 }
-##bash-libs: patterns.sh @ 1d3814ad (2.1.13)
+##bash-libs: patterns.sh @ 319fa210 (2.1.19)
 
 ### Useful patterns Usage:bbuild
 #
@@ -509,7 +526,7 @@ format:wrap() {
     fold -w "$cols" -s
 }
 
-##bash-libs: autohelp.sh @ 1d3814ad (2.1.13)
+##bash-libs: autohelp.sh @ 319fa210 (2.1.19)
 
 ### Autohelp Usage:bbuild
 #
@@ -712,13 +729,9 @@ if [[ -z "$(which nmcli)" ]]; then
 	out:fail 'Required program `nmcli` not found.'
 fi
 
-if [[ -z "$*" ]]; then
-	out:info "Raw wifi status\n"
-	out:info "$(nmcli connection show --active | grep wireless)\n"
-	exit
-fi
-
-WIFICMD="$1" ; shift
+nmcli:run() {
+    (set -x; nmcli "$@")
+}
 
 function newconn {
 	WIFI_AP="$1"; shift
@@ -727,9 +740,9 @@ function newconn {
 	out:info "Trying to establish new connection ..."
 
 	if [[ -n "$WIFI_PW" ]]; then
-		nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW" ; RES=$?
+		nmcli:run device wifi connect "$WIFI_AP" password "$WIFI_PW" ; RES=$?
 	else
-		nmcli device wifi connect "$WIFI_AP" ; RES="$?"
+		nmcli:run device wifi connect "$WIFI_AP" ; RES="$?"
 	fi
 
 	return "$RES"
@@ -739,62 +752,75 @@ function oldconn {
 	WIFI_AP="$1"; shift
 	out:info "Trying old connections ..."
 
-	nmcli connection up "$WIFI_AP" ; RES=$?
+	nmcli:run connection up "$WIFI_AP" ; RES=$?
 
 	return "$RES"
 }
 
-case "$WIFICMD" in
-	restart)
-		debug:print Deactivating wifi
-		nmcli radio wifi off
+main() {
+    if [[ -z "$*" ]]; then
+        out:info "Raw wifi status"
+        out:info "$(nmcli:run connection show --active | grep wireless)"
+        exit
+    fi
 
-		debug:print Re-activating wifi
-		nmcli radio wifi on
+    WIFICMD="$1" ; shift
 
-		out:info Done.
-		;;
-	stop)
-		debug:print Deactivating wifi
-		nmcli radio wifi off
-		out:info Done.
-		;;
-	start)
-		debug:print Re-activating wifi
-		nmcli radio wifi on
-		out:info Done.
-		;;
-	connect)
-		nmcli device wifi rescan
-		WIFI_AP="$1"; shift
-		WIFI_PW="$1"; shift
+    case "$WIFICMD" in
+        restart)
+            debug:print Deactivating wifi
+            nmcli:run radio wifi off
 
-		if [[ -z  "$WIFI_AP" ]]; then
-			printhelp
-			exit
-		fi
+            debug:print Re-activating wifi
+            nmcli:run radio wifi on
 
-		oldconn "$WIFI_AP" || newconn "$WIFI_AP" "$WIFI_PW"
-		;;
-	forget)
-		WIFI_AP="$1"; shift
-		nmcli connection delete "$WIFI_AP" && {
-			out:info Done.
-		}
-		;;
-	list)
-		nmcli device wifi rescan
-		nmcli device wifi list
-		;;
-	old)
-		WIFI_AP="$1" ; shift
-		if [[ -z "$WIFI_AP" ]]; then
-			nmcli connection show|grep wireless
-		else
-			nmcli connection show "$WIFI_AP"|grep wireless
-		fi
-		;;
-	*)
-		out:fail "Invalid command $WIFICMD"
-		;;
-esac
+            out:info Done.
+            ;;
+        stop)
+            debug:print Deactivating wifi
+            nmcli:run radio wifi off
+            out:info Done.
+            ;;
+        start)
+            debug:print Re-activating wifi
+            nmcli:run radio wifi on
+            out:info Done.
+            ;;
+        connect)
+            nmcli:run device wifi rescan
+            WIFI_AP="$1"; shift
+            WIFI_PW="$1"; shift
+
+            if [[ -z  "$WIFI_AP" ]]; then
+                printhelp
+                exit
+            fi
+
+            oldconn "$WIFI_AP" || newconn "$WIFI_AP" "$WIFI_PW"
+            ;;
+        forget)
+            WIFI_AP="$1"; shift
+            nmcli:run connection delete "$WIFI_AP" && {
+                out:info Done.
+            }
+            ;;
+        list)
+            nmcli:run device wifi rescan
+            nmcli:run device wifi list
+            ;;
+        old)
+            WIFI_AP="$1" ; shift
+            if [[ -z "$WIFI_AP" ]]; then
+                nmcli:run connection show|grep wireless
+            else
+                nmcli:run connection show "$WIFI_AP"|grep wireless
+            fi
+            ;;
+        *)
+            out:fail "Invalid command $WIFICMD"
+            ;;
+    esac
+}
+
+autohelp:check "$@"
+main "$@"

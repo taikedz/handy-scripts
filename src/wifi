@@ -7,7 +7,7 @@
 # USAGE
 # =====
 #
-# 	nmcli [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
+# 	wifi [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
 #
 # list
 # 	Lists available access points
@@ -40,13 +40,9 @@ if [[ -z "$(which nmcli)" ]]; then
 	out:fail 'Required program `nmcli` not found.'
 fi
 
-if [[ -z "$*" ]]; then
-	out:info "Raw wifi status\n"
-	out:info "$(nmcli connection show --active | grep wireless)\n"
-	exit
-fi
-
-WIFICMD="$1" ; shift
+nmcli:run() {
+    (set -x; nmcli "$@")
+}
 
 function newconn {
 	WIFI_AP="$1"; shift
@@ -55,9 +51,9 @@ function newconn {
 	out:info "Trying to establish new connection ..."
 
 	if [[ -n "$WIFI_PW" ]]; then
-		nmcli device wifi connect "$WIFI_AP" password "$WIFI_PW" ; RES=$?
+		nmcli:run device wifi connect "$WIFI_AP" password "$WIFI_PW" ; RES=$?
 	else
-		nmcli device wifi connect "$WIFI_AP" ; RES="$?"
+		nmcli:run device wifi connect "$WIFI_AP" ; RES="$?"
 	fi
 
 	return "$RES"
@@ -67,62 +63,75 @@ function oldconn {
 	WIFI_AP="$1"; shift
 	out:info "Trying old connections ..."
 
-	nmcli connection up "$WIFI_AP" ; RES=$?
+	nmcli:run connection up "$WIFI_AP" ; RES=$?
 
 	return "$RES"
 }
 
-case "$WIFICMD" in
-	restart)
-		debug:print Deactivating wifi
-		nmcli radio wifi off
+main() {
+    if [[ -z "$*" ]]; then
+        out:info "Raw wifi status"
+        out:info "$(nmcli:run connection show --active | grep wireless)"
+        exit
+    fi
 
-		debug:print Re-activating wifi
-		nmcli radio wifi on
+    WIFICMD="$1" ; shift
 
-		out:info Done.
-		;;
-	stop)
-		debug:print Deactivating wifi
-		nmcli radio wifi off
-		out:info Done.
-		;;
-	start)
-		debug:print Re-activating wifi
-		nmcli radio wifi on
-		out:info Done.
-		;;
-	connect)
-		nmcli device wifi rescan
-		WIFI_AP="$1"; shift
-		WIFI_PW="$1"; shift
+    case "$WIFICMD" in
+        restart)
+            debug:print Deactivating wifi
+            nmcli:run radio wifi off
 
-		if [[ -z  "$WIFI_AP" ]]; then
-			printhelp
-			exit
-		fi
+            debug:print Re-activating wifi
+            nmcli:run radio wifi on
 
-		oldconn "$WIFI_AP" || newconn "$WIFI_AP" "$WIFI_PW"
-		;;
-	forget)
-		WIFI_AP="$1"; shift
-		nmcli connection delete "$WIFI_AP" && {
-			out:info Done.
-		}
-		;;
-	list)
-		nmcli device wifi rescan
-		nmcli device wifi list
-		;;
-	old)
-		WIFI_AP="$1" ; shift
-		if [[ -z "$WIFI_AP" ]]; then
-			nmcli connection show|grep wireless
-		else
-			nmcli connection show "$WIFI_AP"|grep wireless
-		fi
-		;;
-	*)
-		out:fail "Invalid command $WIFICMD"
-		;;
-esac
+            out:info Done.
+            ;;
+        stop)
+            debug:print Deactivating wifi
+            nmcli:run radio wifi off
+            out:info Done.
+            ;;
+        start)
+            debug:print Re-activating wifi
+            nmcli:run radio wifi on
+            out:info Done.
+            ;;
+        connect)
+            nmcli:run device wifi rescan
+            WIFI_AP="$1"; shift
+            WIFI_PW="$1"; shift
+
+            if [[ -z  "$WIFI_AP" ]]; then
+                printhelp
+                exit
+            fi
+
+            oldconn "$WIFI_AP" || newconn "$WIFI_AP" "$WIFI_PW"
+            ;;
+        forget)
+            WIFI_AP="$1"; shift
+            nmcli:run connection delete "$WIFI_AP" && {
+                out:info Done.
+            }
+            ;;
+        list)
+            nmcli:run device wifi rescan
+            nmcli:run device wifi list
+            ;;
+        old)
+            WIFI_AP="$1" ; shift
+            if [[ -z "$WIFI_AP" ]]; then
+                nmcli:run connection show|grep wireless
+            else
+                nmcli:run connection show "$WIFI_AP"|grep wireless
+            fi
+            ;;
+        *)
+            out:fail "Invalid command $WIFICMD"
+            ;;
+    esac
+}
+
+autohelp:check "$@"
+main "$@"
