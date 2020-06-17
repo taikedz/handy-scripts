@@ -19,6 +19,14 @@
 # to set the default output channel, and move all audio to
 # the specified channel.
 #
+#
+#
+# Run as
+#
+#     mvaudio
+#
+# to restart the pulseaudio server (sound card detection problems, for example)
+#
 ###/doc
 
 #%include std/safe.sh
@@ -31,6 +39,9 @@ if [[ -z "$*" ]]; then
 
     out:info "Available Sinks"
     pacmd list-sinks|grep -P 'index:|name:'
+elif [[ "$1" = restart ]]; then
+    pulseaudio -k
+    pulseaudio --start
 else
     TGTINPUT="$1"; shift
 

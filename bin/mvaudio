@@ -19,9 +19,17 @@
 # to set the default output channel, and move all audio to
 # the specified channel.
 #
+#
+#
+# Run as
+#
+#     mvaudio
+#
+# to restart the pulseaudio server (sound card detection problems, for example)
+#
 ###/doc
 
-##bash-libs: safe.sh @ 1d3814ad (2.1.13)
+##bash-libs: safe.sh @ 13baf19c (2.1.20)
 
 ### Safe mode Usage:bbuild
 #
@@ -80,7 +88,7 @@ safe:glob() {
 
 set -eufo pipefail
 
-##bash-libs: syntax-extensions.sh @ 1d3814ad (2.1.13)
+##bash-libs: syntax-extensions.sh @ 13baf19c (2.1.20)
 
 ### Syntax Extensions Usage:syntax
 #
@@ -201,7 +209,7 @@ syntax-extensions:use:local() {
 args:use:local() {
     syntax-extensions:use:local "$@"
 }
-##bash-libs: tty.sh @ 1d3814ad (2.1.13)
+##bash-libs: tty.sh @ 13baf19c (2.1.20)
 
 ### tty.sh Usage:bbuild
 # Get information on the current terminal session.
@@ -231,7 +239,7 @@ tty:is_multiplexer() {
     [[ -n "${TMUX:-}" ]] || [[ "${TERM:-}" = screen ]]
 }
 
-##bash-libs: colours.sh @ 1d3814ad (2.1.13)
+##bash-libs: colours.sh @ 13baf19c (2.1.20)
 
 ### Colours for terminal Usage:bbuild
 # A series of shorthand colour flags for use in outputs, and functions to set your own flags.
@@ -240,7 +248,7 @@ tty:is_multiplexer() {
 #
 # Example:
 # 	
-# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour")
+# 	echo "${CRED}Some red text ${CBBLU} some blue text. $CDEF Some text in the terminal's default colour"
 #
 # Preconfigured colours available:
 #
@@ -250,8 +258,8 @@ tty:is_multiplexer() {
 # CBLU, CBBLU, HLBLU -- blue, bright blue, highlight blue
 # CPUR, CBPUR, HLPUR -- purple, bright purple, highlight purple
 # CTEA, CBTEA, HLTEA -- teal, bright teal, highlight teal
-# CBLA, CBBLA, HLBLA -- black, bright red, highlight red
-# CWHI, CBWHI, HLWHI -- white, bright red, highlight red
+# CBLA, CBBLA, HLBLA -- black, "bright" black, highlight black
+# CWHI, CBWHI, HLWHI -- white, "bright" white, highlight white
 #
 # Modifiers available:
 #
@@ -263,18 +271,25 @@ tty:is_multiplexer() {
 # 
 # Resets available:
 #
-# CNORM -- turn off bright or dim, without affecting other modifiers
+# CBNRM -- turn off bright or dim, without affecting other modifiers
 # ULOFF -- turn off highlighting
-# RVOFF -- turn off inverse
+# RVOFF -- turn off reverse colours
 # SKOFF -- turn off strikethrough
 # HLOFF -- turn off highlight
 #
-# CDEF -- turn off all colours and modifiers(switches to the terminal default)
+# CDEF -- turn off all colours and modifiers (switches to the terminal default)
 #
 # Note that highlight and underline must be applied or re-applied after specifying a colour.
 #
 # If the session is detected as being in a pipe, colours will be turned off.
 #   You can override this by calling `colours:check --color=always` at the start of your script
+#
+#
+# /!\ SPELLING /!\
+#
+# For historic reasons, "colours.sh" was named using British spelling; however some options use American spelling to match expectations from using other tools like `ls` for example.
+#
+# Consider that in the future, this will likely be changed for consistency - this library would become fully Ameriquified and the library renamed to 'colors.sh' and all functions will start with 'color:'.
 #
 ###/doc
 
@@ -290,6 +305,8 @@ tty:is_multiplexer() {
 #   }
 #
 #   main "$@"
+#
+# Note use of American spelling in the option itself.
 #
 ###/doc
 colours:check() {
@@ -385,6 +402,14 @@ colours:define() {
 
 }
 
+### colours:remove Usage:bbuild
+# Pipe function to remove ANSI colour bytes
+###/doc
+colours:remove() {
+    local _b=$'\033'
+    sed -r "s/${_b}\[[0-9;]+m//g"
+}
+
 colours:auto() {
     if tty:is_pipe ; then
         COLOURS_ON=false
@@ -398,7 +423,7 @@ colours:auto() {
 
 colours:auto
 
-##bash-libs: out.sh @ 1d3814ad (2.1.13)
+##bash-libs: out.sh @ 13baf19c (2.1.20)
 
 ### Console output handlers Usage:bbuild
 #
@@ -485,7 +510,7 @@ function out:fail {
 function out:error {
     echo "${CBRED}ERROR: ${CRED}$*$CDEF" 1>&2
 }
-##bash-libs: patterns.sh @ 1d3814ad (2.1.13)
+##bash-libs: patterns.sh @ 13baf19c (2.1.20)
 
 ### Useful patterns Usage:bbuild
 #
@@ -557,7 +582,7 @@ format:wrap() {
     fold -w "$cols" -s
 }
 
-##bash-libs: autohelp.sh @ 1d3814ad (2.1.13)
+##bash-libs: autohelp.sh @ 13baf19c (2.1.20)
 
 ### Autohelp Usage:bbuild
 #
@@ -760,6 +785,9 @@ if [[ -z "$*" ]]; then
 
     out:info "Available Sinks"
     pacmd list-sinks|grep -P 'index:|name:'
+elif [[ "$1" = restart ]]; then
+    pulseaudio -k
+    pulseaudio --start
 else
     TGTINPUT="$1"; shift
 
