@@ -18,8 +18,10 @@
 # stop
 # 	Stop the wifi device
 #
-# restart
+# restart [N]
 # 	Restart the wifi device
+#
+# 	Optionally specify N, an integer number of seconds to wait between stopping and starting. Default is 5.
 #
 # connect ACCESSPOINT [PASSWORD]
 # 	Connect to the given access point, optionally providing a password
@@ -32,7 +34,7 @@
 ###/doc
 
 
-##bash-libs: syntax-extensions.sh @ 319fa210 (2.1.19)
+##bash-libs: syntax-extensions.sh @ 13baf19c (2.1.20)
 
 ### Syntax Extensions Usage:syntax
 #
@@ -153,7 +155,7 @@ syntax-extensions:use:local() {
 args:use:local() {
     syntax-extensions:use:local "$@"
 }
-##bash-libs: tty.sh @ 319fa210 (2.1.19)
+##bash-libs: tty.sh @ 13baf19c (2.1.20)
 
 ### tty.sh Usage:bbuild
 # Get information on the current terminal session.
@@ -183,7 +185,7 @@ tty:is_multiplexer() {
     [[ -n "${TMUX:-}" ]] || [[ "${TERM:-}" = screen ]]
 }
 
-##bash-libs: colours.sh @ 319fa210 (2.1.19)
+##bash-libs: colours.sh @ 13baf19c (2.1.20)
 
 ### Colours for terminal Usage:bbuild
 # A series of shorthand colour flags for use in outputs, and functions to set your own flags.
@@ -367,7 +369,7 @@ colours:auto() {
 
 colours:auto
 
-##bash-libs: out.sh @ 319fa210 (2.1.19)
+##bash-libs: out.sh @ 13baf19c (2.1.20)
 
 ### Console output handlers Usage:bbuild
 #
@@ -454,7 +456,7 @@ function out:fail {
 function out:error {
     echo "${CBRED}ERROR: ${CRED}$*$CDEF" 1>&2
 }
-##bash-libs: patterns.sh @ 319fa210 (2.1.19)
+##bash-libs: patterns.sh @ 13baf19c (2.1.20)
 
 ### Useful patterns Usage:bbuild
 #
@@ -478,6 +480,129 @@ export PAT_num='^[0-9]+$'
 export PAT_cvar='^[a-zA-Z_][a-zA-Z0-9_]*$'
 export PAT_filename='^[a-zA-Z0-9_. -]+$'
 export PAT_email="[a-zA-Z0-9_.+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-z]+"
+
+##bash-libs: debug.sh @ 13baf19c (2.1.20)
+
+### Debug lib Usage:bbuild
+#
+# Debugging tools and functions.
+#
+# You need to activate debug mode using debug:activate command at the start of your script
+#  (or from whatever point you wish it to activate)
+#
+###/doc
+
+### Environment Variables Usage:bbuild
+#
+# DEBUG_mode : set to 'true' to enable debugging output
+#
+###/doc
+
+: ${DEBUG_mode=false}
+
+### debug:print MESSAGE Usage:bbuild
+# print a blue debug message to stderr
+# only prints if DEBUG_mode is set to "true"
+###/doc
+function debug:print {
+    [[ "$DEBUG_mode" = true ]] || return 0
+    echo "${CBBLU}DEBUG: $CBLU$*$CDEF" 1>&2
+}
+
+### debug:dump [MARKER] Usage:bbuild
+#
+# Pipe the data coming through stdin to stdout (as if it weren't there at all)
+#
+# If debug mode is on, *also* write the same data to stderr, each line preceded by MARKER
+#
+# Insert this function into pipes to see their output when in debugging mode
+#
+#   sed -r 's/linux|unix/*NIX/gi' myfile.txt | debug:dump | lprint
+#
+# Or use this to mask a command's output unless in debug mode
+#
+#   which binary 2>&1 | debug:dump
+#
+###/doc
+function debug:dump {
+    if [[ "$DEBUG_mode" = true ]]; then
+        local MARKER="${1:-DEBUG: }"; shift || :
+
+        cat - | sed -r "s/^/$MARKER/" | tee -a /dev/stderr | sed -r "s/^$MARKER//"
+    else
+        cat -
+    fi
+}
+
+### debug:break MESSAGE Usage:bbuild
+#
+# Add break points to a script
+#
+# Requires `DEBUG_mode` set to true
+#
+# When the script runs, the message is printed with a prompt, and execution pauses.
+#
+# Press return to continue execution.
+#
+# Type a variable name, with leading `$`, to dump it, e.g. `$myvar`
+#
+# Type a variable name, with leading `$`, followed by an assignment to change its value, e.g. `$myvar=new value`
+#  the new value will be seen by the script.
+#
+# Type 'env' to dump the current environment variables.
+#
+# Type `exit`, `quit` or `stop` to stop the program. If the breakpoint is in a subshell,
+#  execution from after the subshell will be resumed.
+#
+###/doc
+
+function debug:break {
+    [[ "$DEBUG_mode" = true ]] || return 0
+    local reply
+
+    while true; do
+        read -p "${CRED}BREAKPOINT: $* >$CDEF " reply
+        if [[ "$reply" =~ quit|exit|stop ]]; then
+            echo "${CBRED}ABORT${CDEF}" >&2
+            exit 127
+
+        elif [[ "$reply" = env ]]; then
+            env |sed 's//^[/g' |debug:dump "--- "
+
+        elif [[ "$reply" =~ ^\$ ]]; then
+            debug:_break_dump "${reply:1}" || :
+
+        elif [[ -z "$reply" ]]; then
+            return 0
+        else
+            debug:print "'quit','exit' or 'stop' to abort; '\$varname' to see a variable's contents; '\$varname=new value' to assign a new value for run time; <Enter> to continue"
+        fi
+    done
+}
+
+debug:_break_dump() {
+    local inspectable="$1"
+    local varname="$1"
+    local varval
+
+    if [[ "$inspectable" =~ = ]]; then
+        varname="${inspectable%%=*}"
+        varval="${inspectable#*=}"
+    fi
+
+    [[ "$varname" =~ $PAT_cvar ]] || {
+        debug:print "${CRED}Invalid var name '$varname'"
+        return 1
+    }
+
+    declare -n inspect="$varname"
+
+    if [[ "$inspectable" =~ = ]]; then
+        inspect="$varval"
+    else
+        echo "$inspect"
+    fi
+}
 
 ### Formatting library Usage:bbuild
 #
@@ -526,7 +651,7 @@ format:wrap() {
     fold -w "$cols" -s
 }
 
-##bash-libs: autohelp.sh @ 319fa210 (2.1.19)
+##bash-libs: autohelp.sh @ 13baf19c (2.1.20)
 
 ### Autohelp Usage:bbuild
 #
@@ -768,8 +893,15 @@ main() {
 
     case "$WIFICMD" in
         restart)
+            local wait_time=5
+            if [[ "$1" =~ ^[0-9]+$ ]]; then
+                wait_time="$1"
+            fi
             debug:print Deactivating wifi
             nmcli:run radio wifi off
+
+            debug:print "Waiting for '$wait_time' seconds ..."
+            sleep "$wait_time"
 
             debug:print Re-activating wifi
             nmcli:run radio wifi on

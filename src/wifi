@@ -18,8 +18,10 @@
 # stop
 # 	Stop the wifi device
 #
-# restart
+# restart [N]
 # 	Restart the wifi device
+#
+# 	Optionally specify N, an integer number of seconds to wait between stopping and starting. Default is 5.
 #
 # connect ACCESSPOINT [PASSWORD]
 # 	Connect to the given access point, optionally providing a password
@@ -32,6 +34,7 @@
 ###/doc
 
 #%include std/out.sh
+#%include std/debug.sh
 #%include std/autohelp.sh
 
 SEP=$'\033'
@@ -79,8 +82,15 @@ main() {
 
     case "$WIFICMD" in
         restart)
+            local wait_time=5
+            if [[ "$1" =~ ^[0-9]+$ ]]; then
+                wait_time="$1"
+            fi
             debug:print Deactivating wifi
             nmcli:run radio wifi off
+
+            debug:print "Waiting for '$wait_time' seconds ..."
+            sleep "$wait_time"
 
             debug:print Re-activating wifi
             nmcli:run radio wifi on
