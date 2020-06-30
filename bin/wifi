@@ -7,7 +7,7 @@
 # USAGE
 # =====
 #
-# 	wifi [ list | start | stop | restart | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT ]
+# 	wifi [ list | start | stop | restart [N] | connect ACCESSPOINT [PASSWORD] | forget ACCESSPOINT | monitor [IP] ]
 #
 # list
 # 	Lists available access points
@@ -30,6 +30,11 @@
 #
 # forget ACCESSPOINT
 # 	Forget the access point and password
+# 
+# monitor [IP]
+#   Keep checking if wireless is up. If the IP cannot be pinged,
+#    restarts the wifi.
+#   IP defaults to 1.1.1.1
 #
 ###/doc
 
@@ -893,20 +898,7 @@ main() {
 
     case "$WIFICMD" in
         restart)
-            local wait_time=5
-            if [[ "$1" =~ ^[0-9]+$ ]]; then
-                wait_time="$1"
-            fi
-            debug:print Deactivating wifi
-            nmcli:run radio wifi off
-
-            debug:print "Waiting for '$wait_time' seconds ..."
-            sleep "$wait_time"
-
-            debug:print Re-activating wifi
-            nmcli:run radio wifi on
-
-            out:info Done.
+            nmcli:restart
             ;;
         stop)
             debug:print Deactivating wifi
@@ -940,18 +932,56 @@ main() {
             nmcli:run device wifi rescan
             nmcli:run device wifi list
             ;;
-        old)
-            WIFI_AP="$1" ; shift
+        show)
+            WIFI_AP="${1:-}" ; shift
             if [[ -z "$WIFI_AP" ]]; then
-                nmcli:run connection show|grep wireless
+                out:warn "Please specify the AP name to show details for."
             else
                 nmcli:run connection show "$WIFI_AP"|grep wireless
             fi
+            ;;
+        monitor)
+            nmcli:monitor "$@"
             ;;
         *)
             out:fail "Invalid command $WIFICMD"
             ;;
     esac
+}
+
+nmcli:monitor() {
+    . <(args:use:local ?ip -- "$@") ; 
+    local checktime=5
+    local check_ip="${ip:-1.1.1.1}"
+    while true; do
+        if ! ping "$check_ip" -w 2 &>/dev/null ; then
+            out:info "$(date) - Ping failed - restarting ..."
+            nmcli:restart
+
+            # wait a little to have a chance of re-establishing the connection
+            checktime=60
+        fi
+
+        sleep "$checktime"
+    done
+}
+
+nmcli:restart() {
+    . <(args:use:local ?n -- "$@") ; 
+    local wait_time=5
+    if [[ "$n" =~ ^[0-9]+$ ]]; then
+        wait_time="$n"
+    fi
+    debug:print "Deactivating wifi"
+    nmcli:run radio wifi off
+
+    debug:print "Waiting for '$wait_time' seconds ..."
+    sleep "$wait_time"
+
+    debug:print "Re-activating wifi"
+    nmcli:run radio wifi on
+
+    out:info Done.
 }
 
 autohelp:check "$@"
