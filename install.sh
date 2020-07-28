@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 scripts_to_add=(
-    bin/pstree
+    bin/pstree.sh
     bin/rmkernel.sh
     bin/datereset
     bin/z64
@@ -22,8 +22,17 @@ scripts_to_add_desktop() {
     bin/wifi
 }
 
+addpath() {
+    mkdir -p ~/.local/bin
+
+    if ! grep "PATH=" "$HOME/.bashrc" | grep '\$HOME/\.local/bin'; then
+        echo 'export PATH="$PATH:$HOME/.local/bin"' >> "$HOME/.bashrc"
+    fi
+}
+
 addconfig() {
-    if grep -q HANDYCONFIG "$2"; then
+    # Check for marker of having previously done an install of config
+    if grep -q HANDYCONFIG "$2" && [[ "${HANDYCONFIG_FORCE:-}" != true ]]; then
         return 0
     fi
 
@@ -64,6 +73,7 @@ install_configs() {
 
 main() {
     cd "$(dirname "$0")"
+    addpath
 
     action="${1:-}"; shift || :
 
@@ -80,7 +90,7 @@ main() {
         ;;
 
     *)
-        echo "'$0 configs' -- install just the configs"
+        echo "'$0 configs' -- install just the configs (set HANDYCONFIG_FORCE=true to forcibly overwrite pre-existing configs)"
         echo "'$0 scripts [desktop]' -- install just scripts, optionally include desktop scripts"
         echo "'$0 all [desktop]' -- install configs and scripts, optionally include desktop scripts"
         ;;
