@@ -19,7 +19,7 @@ case "$BASH" in
 *)
     PS1_clr=32
     PS1_sig='$'
-    export PS1='\[\e['"$PS1_clr"';1m\]\u\[\e[33;1m\]@\[\e[35;1m\]\h\[\e[0m\]:\[\e[34m\]\w \[\e[36;1m\]'"$PS1_sig"'\[\e[0m\] '
+    export PS1='\[\e['"$PS1_clr"';1m\]\u\[\e[33;1m\]@\[\e[35;1m\]\h\[\e[0m\]:\[\e[36m\]\w \[\e[33m\]'"$PS1_sig"'\[\e[0m\] '
 esac
 
 export EDITOR=/usr/bin/vim
