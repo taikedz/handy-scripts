@@ -15,7 +15,8 @@ set modelines=5
 " filetype indent on
 
 set autoindent
-set formatoptions=tcqr
+set formatoptions+=tcqrno
+set comments+=n:*,n:#,n://
 
 " Lin / col number
 set ruler
