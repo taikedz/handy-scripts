@@ -16,7 +16,6 @@ set modelines=5
 
 set autoindent
 set formatoptions+=tcqrno
-set comments+=n:*,n:#,n://
 
 " Lin / col number
 set ruler
@@ -25,7 +24,7 @@ set ruler
 set laststatus=2
 set hlsearch
 
-colorscheme koehler
+colorscheme desert
 
 " Confirm quit when multiple buffers are open
 set confirm
@@ -34,8 +33,14 @@ set confirm
 set tabstop=4
 set shiftwidth=4
 set expandtab
+
+" File type specific settings
+" Note that file type file configs may override anything general from this
+" file
+" These override the general files
 autocmd FileType yaml set tabstop=2|set shiftwidth=2|set expandtab
 autocmd FileType html set tabstop=2|set shiftwidth=2|set expandtab
+autocmd FileType markdown set formatoptions+=tcqrno|set comments+=n:*
 
 " In absence of powershell syntax profile, use perl (eck!)
 autocmd BufNewFile,BufRead *.ps1 set syntax=perl
