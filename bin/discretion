@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+ALLOW_PORTS=(
+    443
+    22
+    53
+)
+
+activate() {
+    local port
+
+    echo "Locking outgoing, allowing ports: ${ALLOW_PORTS[*]}"
+    sudo ufw default deny outgoing
+
+    allow "${ALLOW_PORTS[@]}"
+}
+
+deactivate() {
+    echo "Unlocking outgoing"
+    sudo ufw default allow outgoing
+}
+
+allow() {
+    local port
+
+    for port in "$@"; do
+        echo "-- $port"
+        sudo ufw allow out "$port"
+    done
+}
+
+revoke() {
+    local port
+
+    for port in "$@"; do
+        echo "-- $port"
+        sudo ufw delete allow out "$port"
+    done
+}
+
+temp() {
+    local timer
+    local port
+    
+    if [[ "$UID" != 0 ]]; then
+        exec sudo "$0" temp "$@"
+    fi
+
+    timer="${1:-}"; shift
+
+    if [[ ! "$timer" =~ ^[0-9]+$ ]]; then
+        echo "'$timer' is not a valid duration"
+        exit 1
+    fi
+
+    allow "$@"
+
+    # Revoke on any script exit
+    # Including ^C
+    REVOKES=("$@")
+    temp_revoke() {
+        revoke "${REVOKES[@]}"
+    }
+    trap temp_revoke EXIT
+
+    echo "Reverting in $timer seconds"
+    sleep "$timer"
+}
+
+main() {
+    local arg
+
+    command="${1:-}"; shift
+
+    if [[ -z "$command" ]]; then
+        sudo ufw status verbose
+        exit
+    fi
+
+    case "$command" in
+    on)
+        activate
+        ;;
+    off)
+        deactivate
+        ;;
+    allow|revoke|temp)
+        "$command" "$@"
+        ;;
+    *)
+        echo "Unknown mode '$command'. Use 'on', 'off', 'allow PORTS...', 'revoke PORTS...'"
+        ;;
+    esac
+}
+
+main "$@"
