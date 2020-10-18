@@ -1,0 +1,33 @@
+#!/usr/bin/env bbrun
+
+#%include std/isroot.sh
+#%include std/out.sh
+#%include std/safe.sh
+
+# For Ubuntu MATE systems, not tested with others
+
+main() {
+
+    if [[ ! "${1:-}" =~ ^[0-9]+$ ]]; then
+        out:fail "Specify the number of minutes until suspend."
+    fi
+
+    if isroot; then
+        out:fail "Must not run as root"
+    fi
+
+    # Turn off screen
+    xset dpms force off
+
+    sleep "$(( $1 * 60 ))"
+
+    # Lock
+    mate-screensaver-command -l
+    sleep 2
+
+    # Computer-sleep
+    systemctl suspend
+}
+
+main "$@"
+
