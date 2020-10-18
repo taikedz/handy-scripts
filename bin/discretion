@@ -64,7 +64,12 @@ temp() {
     trap temp_revoke EXIT
 
     echo "Reverting in $timer seconds"
-    sleep "$timer"
+    while [[ "$timer" -gt 0 ]]; do
+        echo -n $'\r'"$timer"
+        timer=$((timer-1))
+        sleep 1
+    done
+    echo $'\r'"Restoring."
 }
 
 main() {
