@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 ALLOW_PORTS=(
-    443
-    22
-    53
+    443 # HTTPS
+    22  # SSH
+    53  # DNS lookup
+    123 # NTP time sync
 )
 
 activate() {
