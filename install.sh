@@ -11,7 +11,7 @@ scripts_to_add=(
 scripts_to_add_desktop() {
     bin/rotate-screen
     bin/secret
-    bin/portblock
+    bin/discretion
     bin/sendme
     bin/brightness
     bin/mdpreview
@@ -49,6 +49,8 @@ copy_scripts() {
     local script
     declare -n p_scriptslist="$1"
 
+    mkdir -p "$HOME/.local/bin"
+
     for script in "${p_scriptslist[@]}"; do
         echo "Adding $script"
         cp "$script" "$HOME/.local/bin/"
@@ -56,8 +58,6 @@ copy_scripts() {
 }
 
 install_scripts() {
-    mkdir -p "$HOME/.local/bin"
-
     copy_scripts scripts_to_add
 
     if [[ "$1" = desktop ]]; then
@@ -69,6 +69,14 @@ install_configs() {
     addconfig configs/vimrc "$HOME/.vimrc"
     addconfig configs/user.bashrc "$HOME/.bashrc"
     SUDO=true addconfig configs/root.bashrc /etc/bash.bashrc
+}
+
+install_one() {
+    if [[ ! -f "$1" ]]; then return 1; fi
+
+    local this_script=("$1")
+
+    copy_scripts this_script
 }
 
 main() {
@@ -90,9 +98,12 @@ main() {
         ;;
 
     *)
-        echo "'$0 configs' -- install just the configs (set HANDYCONFIG_FORCE=true to forcibly overwrite pre-existing configs)"
-        echo "'$0 scripts [desktop]' -- install just scripts, optionally include desktop scripts"
-        echo "'$0 all [desktop]' -- install configs and scripts, optionally include desktop scripts"
+        if ! install_one "$action"; then
+            echo "'$0 configs' -- install just the configs (set HANDYCONFIG_FORCE=true to forcibly overwrite pre-existing configs)"
+            echo "'$0 scripts [desktop]' -- install just scripts, optionally include desktop scripts"
+            echo "'$0 all [desktop]' -- install configs and scripts, optionally include desktop scripts"
+            echo "'$0 SCRIPTFILE -- install this one script"
+        fi
         ;;
 
     esac
