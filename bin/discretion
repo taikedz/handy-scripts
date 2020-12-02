@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+PORTSFILE="$HOME/.local/etc/discretion.ports"
+
 ALLOW_PORTS=(
     443 # HTTPS
     22  # SSH
@@ -7,18 +11,52 @@ ALLOW_PORTS=(
     123 # NTP time sync
 )
 
+STATEFILE="$HOME/.local/var/discretion.state"
+
+read_portsfile() {
+    if [[ -f "$PORTSFILE" ]]; then
+        ALLOW_PORTS=($(readlines "$PORTSFILE"))
+    fi
+}
+
+readlines() {
+    grep -vP '^\s*$' "$1" | sed -r 's/#.*$//'
+}
+
+ensure_statedir() {
+    local statedir="$(dirname "$STATEFILE")"
+
+    [[ -d "$statedir" ]] || mkdir -p "$statedir"
+}
+
+savestate() {
+    ensure_statedir
+
+    echo "$1" > "$STATEFILE" || :
+}
+
+getstate() {
+    cat "$STATEFILE"
+}
+
 activate() {
     local port
+
+    read_portsfile
 
     echo "Locking outgoing, allowing ports: ${ALLOW_PORTS[*]}"
     sudo ufw default deny outgoing
 
     allow "${ALLOW_PORTS[@]}"
+
+    savestate "activated"
 }
 
 deactivate() {
     echo "Unlocking outgoing"
     sudo ufw default allow outgoing
+
+    savestate "deactivated"
 }
 
 allow() {
@@ -76,7 +114,7 @@ temp() {
 main() {
     local arg
 
-    command="${1:-}"; shift
+    command="${1:-}"; shift || :
 
     if [[ -z "$command" ]]; then
         sudo ufw status verbose
@@ -93,8 +131,11 @@ main() {
     allow|revoke|temp)
         "$command" "$@"
         ;;
+    last)
+        getstate
+        ;;
     *)
-        echo "Unknown mode '$command'. Use 'on', 'off', 'allow PORTS...', 'revoke PORTS...'"
+        echo "Unknown mode '$command'. Use 'on', 'off', 'allow PORTS...', 'revoke PORTS...', last"
         ;;
     esac
 }
