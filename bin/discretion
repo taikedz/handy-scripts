@@ -42,14 +42,16 @@ getstate() {
 activate() {
     local port
 
-    read_portsfile
-
-    echo "Locking outgoing, allowing ports: ${ALLOW_PORTS[*]}"
+    echo "Locking outgoing"
     sudo ufw default deny outgoing
 
-    allow "${ALLOW_PORTS[@]}"
-
     savestate "activated"
+
+    if [[ "${1:-}" = ports ]]; then
+        read_portsfile
+        echo "Applying port exceptions: ${ALLOW_PORTS[*]}"
+        allow "${ALLOW_PORTS[@]}"
+    fi
 }
 
 deactivate() {
@@ -125,6 +127,9 @@ main() {
     on)
         activate
         ;;
+    apply)
+        activate ports
+        ;;
     off)
         deactivate
         ;;
@@ -135,7 +140,7 @@ main() {
         getstate
         ;;
     *)
-        echo "Unknown mode '$command'. Use 'on', 'off', 'allow PORTS...', 'revoke PORTS...', last"
+        echo "Unknown mode '$command'. Use 'on', 'off', 'apply', 'allow PORTS...', 'revoke PORTS...', last"
         ;;
     esac
 }
