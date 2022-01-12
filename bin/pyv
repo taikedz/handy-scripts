@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-identifier="$1"; shift
+identifier="${1:-}"; shift || :
 
 check_var_or() {
     local message+"$1"; shift
