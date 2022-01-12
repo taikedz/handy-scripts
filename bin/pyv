@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+identifier="$1"; shift
+
+check_var_or() {
+    local message+"$1"; shift
+    local value="$1"; shift
+    [[ -n "$value" ]] || { echo "$message" ; exit 1 ; }
+}
+
+ensure_venv() {
+    local venv_version="$1"; shift
+    local venv_path="$1"; shift
+
+    # virtualenv2 tries to load a PS1, but our
+    #  bash "-eu" fails it because it is undefined
+    PS1="${PS1:-}"
+
+    if [[ ! -e "$venv_path" ]]; then
+        echo "--- Initializing virtual environment $venv_path"
+
+        case "$venv_version" in
+        venv2)
+            virtualenv "$venv_path"
+            ;;
+        venv3)
+            python3 -m venv "$venv_path"
+            ;;
+        *)
+            echo "Not a valid venv version '$venv_version'"
+            exit 1
+            ;;
+        esac
+
+    elif [[ "${1:-}" = noload ]]; then
+        # Load-only mode. Likely a creation command
+        echo "'$venv_path' already exists"
+
+    fi
+
+    if [[ "${1:-}" != noload ]]; then
+        echo -e "\033[32;1m [Loading virtual environment $venv_path] \033[0m"
+        . "$venv_path/bin/activate"
+    fi
+}
+
+runtime_venv() {
+    # During a runtime, allow a venv override
+    if [[ -n "${LOAD_VENV:-}" ]]; then
+        ensure_venv "$1" "$LOAD_VENV"
+    else
+        ensure_venv "$@"
+    fi
+}
+
+main() {
+    case "$identifier" in
+    3|-3|pip3|pylint3)
+        runtime_venv venv3 ~/.local/venv/py3.venv
+        bin=python3
+        case "$identifier" in
+            pip3) bin=pip3 ;;
+            pylint3) bin=pylint ;;
+        esac
+        $bin "$@"
+        ;;
+
+    2|-2|pip|pip2|pylint2)
+        runtime_venv venv2 ~/.local/venv/py2.venv
+        bin=python
+        case "$identifier" in
+            pip2|pip) bin=pip ;;
+            pylint2) bin=pylint ;;
+        esac
+        $bin "$@"
+        ;;
+
+    venv2|venv3)
+        check_var_or "Path not specified" "$1"
+        ensure_venv "$identifier" "$1"
+        ;;
+
+    *)
+        echo "Invalid identifier '$identifier'"
+        printhelp
+        exit 1
+        ;;
+    esac
+}
+
+printhelp() {
+cat <<EOHELP
+
+Simple wrapper to ensure a virtualenv is used, and the correct python version is used.
+
+Assumes "python" is python2 and "python3" exists as itself.
+
+
+Run a python script
+
+    $0 {-2|-3} my_script.py ...
+
+
+Use pip
+
+    $0 {pip2|pip3} install package ...
+
+Use pylint
+
+    $0 {pylint2|pylint3} SCRIPTS ...
+
+
+Create a vritual environment
+
+    $0 {venv2|venv3} VIRTUALENV_PATH
+
+
+In "python" and "pip" modes, optionally specify a virtual environment to use instead of the default.
+
+    export LOAD_VENV=./custom/venv/path
+    $0 {-2|-3} my_script.py ...
+
+
+EOHELP
+}
+
+main "$@"

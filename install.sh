@@ -6,6 +6,7 @@ scripts_to_add=(
     bin/datereset
     bin/z64
     bin/reconcile-swp.sh
+    bin/pyv
 )
 
 scripts_to_add_desktop() {
