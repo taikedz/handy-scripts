@@ -14,10 +14,6 @@ ensure_venv() {
     local venv_version="$1"; shift
     local venv_path="$1"; shift
 
-    # virtualenv2 tries to load a PS1, but our
-    #  bash "-eu" fails it because it is undefined
-    PS1="${PS1:-}"
-
     if [[ ! -e "$venv_path" ]]; then
         echo "--- Initializing virtual environment $venv_path"
 
@@ -56,6 +52,10 @@ runtime_venv() {
 }
 
 main() {
+    # virtualenv2 tries to load a PS1, but our
+    #  bash "-eu" fails it because it is undefined
+    PS1="${PS1:-}"
+
     case "$identifier" in
     3|-3|pip3|pylint3)
         runtime_venv venv3 ~/.local/venv/py3.venv
@@ -80,6 +80,11 @@ main() {
     venv2|venv3)
         check_var_or "Path not specified" "$1"
         ensure_venv "$identifier" "$1"
+        ;;
+
+    cmd)
+        . "$LOAD_VENV/bin/activate"
+        "$@"
         ;;
 
     *)
@@ -116,6 +121,10 @@ Create a vritual environment
 
     $0 {venv2|venv3} VIRTUALENV_PATH
 
+
+Run an arbitrary command with a custom virtual environment
+
+    LOAD_VENV=./venv/path $0 cmd SHELL_COMMAND ...
 
 In "python" and "pip" modes, optionally specify a virtual environment to use instead of the default.
 
