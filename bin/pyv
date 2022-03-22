@@ -96,6 +96,7 @@ main() {
 }
 
 printhelp() {
+    local cpyv="$(basename "$0")"
 cat <<EOHELP
 
 Simple wrapper to ensure a virtualenv is used, and the correct python version is used.
@@ -105,31 +106,31 @@ Assumes "python" is python2 and "python3" exists as itself.
 
 Run a python script
 
-    $0 {-2|-3} my_script.py ...
+    $cpyv {-2|-3} my_script.py ...
 
 
 Use pip
 
-    $0 {pip2|pip3} install package ...
+    $cpyv {pip2|pip3} install package ...
 
 Use pylint
 
-    $0 {pylint2|pylint3} SCRIPTS ...
+    $cpyv {pylint2|pylint3} SCRIPTS ...
 
 
 Create a vritual environment
 
-    $0 {venv2|venv3} VIRTUALENV_PATH
+    $cpyv {venv2|venv3} VIRTUALENV_PATH
 
 
-Run an arbitrary command with a custom virtual environment
+Run an arbitrary command with a custom virtual environment (LOAD_VENV must be specified)
 
-    LOAD_VENV=./venv/path $0 cmd SHELL_COMMAND ...
+    LOAD_VENV=./venv/path $cpyv cmd SHELL_COMMAND ...
 
 In "python" and "pip" modes, optionally specify a virtual environment to use instead of the default.
 
     export LOAD_VENV=./custom/venv/path
-    $0 {-2|-3} my_script.py ...
+    $cpyv {-2|-3} my_script.py ...
 
 
 EOHELP
