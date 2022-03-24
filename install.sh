@@ -9,7 +9,7 @@ scripts_to_add=(
     bin/pyv
 )
 
-scripts_to_add_desktop() {
+scripts_to_add_desktop=(
     bin/rotate-screen
     bin/secret
     bin/discretion
@@ -21,7 +21,7 @@ scripts_to_add_desktop() {
     bin/saytimer
     bin/sendme
     bin/wifi
-}
+)
 
 addpath() {
     mkdir -p ~/.local/bin
