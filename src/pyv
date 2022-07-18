@@ -21,6 +21,9 @@
 # pyv %use PATH
 #   use the specified path when pyv is invoked
 #
+# pyv %which
+#   see which venv will be used
+#
 #
 # SHORTHAND
 #
@@ -55,13 +58,17 @@ $%function set_venv(path) {
     echo "$path" > "$VENV_PATH_HOLDER"
 }
 
+get_venv() {
+    cat "$VENV_PATH_HOLDER"
+}
+
 $%function load_venv(?path) {
     if [[ -z "$path" ]]; then
-        path="$(cat "$VENV_PATH_HOLDER")"
+        path="$(get_venv)"
     fi
 
     if [[ -n "$path" ]]; then
-        . "$path/bin/activate"
+        . "$path/bin/activate" || exit
     else
         out:warn "No virtualenv declared in $VENV_PATH_HOLDER . No virtualenv lodaed."
     fi
@@ -74,6 +81,9 @@ $%function main(action) {
         ;;
     %use)
         set_venv "$@"
+        ;;
+    %which)
+        out:info "Current virtual-env : $(get_venv)"
         ;;
     %/*)
         load_venv "${action:2}"
