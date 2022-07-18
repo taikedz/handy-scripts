@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+### pyv : A python virtualenv manager Usage:help
+#
+# A very simple virtual environment manager for Python
+#
+#
+# Invoke a command after loading a virtual environment:
+#
+# pyv COMMAND [ ARGS ... ]
+#   Load a pre-determined virtual environment, and run the specified command.
+#   Set the pre-determined virtualenv with the "%use" meta-command.
+#
+#
+# META-COMMANDS
+#
+#
+# pyv %venv VERSION PATH
+#   create a virtualenv on this path. VERSION is '2' or '3'
+#
+# pyv %use PATH
+#   use the specified path when pyv is invoked
+#
+#
+# SHORTHAND
+#
+# pyv %/PATH COMMAND [ARGS ...]
+#   Load the specified path (not a pre-determined path), and run the specified command.
+#
+###/doc
+
+#%include std/out.sh
+#%include std/autohelp.sh
+
+VENV_PATH_HOLDER="$HOME/.local/var/pyv/current"
+
+$%function create_venv(version path) {
+    set -eu
+    case "$version" in
+    3)
+        python3 -m venv "$path"
+        ;;
+    2)
+        virtualenv "$path"
+        ;;
+    *)
+        out:fail "Bad version '$version' - use '2' or '3'"
+        ;;
+    esac
+    set +eu
+}
+
+$%function set_venv(path) {
+    mkdir -p "$(dirname "$VENV_PATH_HOLDER")"
+    echo "$path" > "$VENV_PATH_HOLDER"
+}
+
+$%function load_venv(?path) {
+    if [[ -z "$path" ]]; then
+        path="$(cat "$VENV_PATH_HOLDER")"
+    fi
+
+    if [[ -n "$path" ]]; then
+        . "$path/bin/activate"
+    else
+        out:warn "No virtualenv declared in $VENV_PATH_HOLDER . No virtualenv lodaed."
+    fi
+}
+
+$%function main(action) {
+    case "$action" in
+    %venv)
+        create_venv "$@"
+        ;;
+    %use)
+        set_venv "$@"
+        ;;
+    %/*)
+        load_venv "${action:2}"
+        "$@"
+        ;;
+    *)
+        load_venv
+        "$action" "$@"
+        ;;
+    esac
+}
+
+if [[ "$*" = "--help" ]]; then
+    autohelp:print help
+else
+    main "$@"
+fi
+
