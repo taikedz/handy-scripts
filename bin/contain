@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+: "
+POD_DEFS specifies where to find dockerfile definitions
+
+E.g. create a POD_DEFS/my/python/Dockerfile
+
+It can be invoked with 'contain from my/python' .
+
+The current working dir is mounted at MOUNTPOINT for access
+
+The container is ephemeral
+
+use a container from registry by running 'contain using alpine'
+"
+ACTION="$1"; shift
+POD_DEFS=~/.local/var/contain
+
+resolve_vars() {
+
+    MOUNTPOINT="${MOUNTPOINT:-/hostdata}"
+
+    IMAGE_NAME="$1" # SHIFT 1
+
+    if [[ "$IMAGE_NAME" =~ : ]]; then
+        OCI_IMAGE_TAG="${IMAGE_NAME#*:}"
+        IMAGE_NAME="${IMAGE_NAME%:*}"
+    fi
+    OCI_IMAGE_TAG="${OCI_IMAGE_TAG:-latest}"
+
+    if [[ "$IMAGE_NAME" =~ / ]]; then
+        OCI_REGISTRY="${IMAGE_NAME%/*}"
+        IMAGE_NAME="${IMAGE_NAME#*/}"
+    fi
+    OCI_REGISTRY="${OCI_REGISTRY:-docker.io}"
+
+    BASE_IMAGE="$OCI_REGISTRY/$IMAGE_NAME"
+    FQIN="$BASE_IMAGE:$OCI_IMAGE_TAG"
+}
+
+build_image() {
+set -x
+    if [[ -d "$POD_DEFS/$BASE_IMAGE" ]]; then
+        podman build -t "$BASE_IMAGE:$OCI_IMAGE_TAG" "$POD_DEFS/$BASE_IMAGE"
+    else
+        echo "No definition $POD_DEFS/$BASE_IMAGE"
+        exit 1
+    fi
+}
+
+ensure_image() {
+    if ! podman image exists "$FQIN"; then
+        build_image
+    fi
+}
+
+run_with() {
+    set -x
+    podman run --rm -it -v "$PWD:$MOUNTPOINT" "$@"
+}
+
+main() {
+    if [[ ! -d "$POD_DEFS" ]]; then
+        mkdir -p "$POD_DEFS"
+    fi
+
+    case "$ACTION" in
+    ls)
+        ls "$POD_DEFS"/*
+        ;;
+    build)
+        resolve_vars "$@"; shift
+        build_image
+        ;;
+    from)
+        resolve_vars "$@"; shift
+        ensure_image
+        run_with "$FQIN" "$@"
+        ;;
+    using)
+        resolve_vars "$@"; shift
+        run_with "$FQIN" "$@"
+        ;;
+    *)
+        echo "Invalid action '$ACTION'"
+        ;;
+    esac
+}
+
+main "$@"
