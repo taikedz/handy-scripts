@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 
-: "
-POD_DEFS specifies where to find dockerfile definitions
+POD_DEFS=~/.local/var/contain
 
-E.g. create a POD_DEFS/my/python/Dockerfile
+printhelp() {
+cat <<EOHELP
+Create docker definition folders in $POD_DEFS/*
+
+E.g. create a $POD_DEFS/my/python/Dockerfile
 
 It can be invoked with 'contain from my/python' .
 
 The current working dir is mounted at MOUNTPOINT for access
 
-The container is ephemeral
+The container is ephemeral.
 
 use a container from registry by running 'contain using alpine'
-"
+EOHELP
+}
+
 ACTION="$1"; shift
-POD_DEFS=~/.local/var/contain
 
 resolve_vars() {
 
@@ -59,6 +63,11 @@ run_with() {
     podman run --rm -it -v "$PWD:$MOUNTPOINT" "$@"
 }
 
+edit_dockerfile() {
+    [[ -d "$1" ]] || mkdir -p "$1"
+    "$EDITOR" "$1/Dockerfile"
+}
+
 main() {
     if [[ ! -d "$POD_DEFS" ]]; then
         mkdir -p "$POD_DEFS"
@@ -66,7 +75,7 @@ main() {
 
     case "$ACTION" in
     ls)
-        ls "$POD_DEFS"/*
+        ls "$POD_DEFS/$1"
         ;;
     build)
         resolve_vars "$@"; shift
@@ -81,8 +90,14 @@ main() {
         resolve_vars "$@"; shift
         run_with "$FQIN" "$@"
         ;;
+    edit)
+        resolve_vars "$@"; shift
+        edit_dockerfile "$POD_DEFS/$BASE_IMAGE"
+        ;;
     *)
         echo "Invalid action '$ACTION'"
+        printhelp
+        exit 1
         ;;
     esac
 }

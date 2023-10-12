@@ -26,8 +26,8 @@ scripts_to_add_desktop=(
 addpath() {
     mkdir -p ~/.local/bin
 
-    if ! grep "PATH=" "$HOME/.bashrc" | grep '\$HOME/\.local/bin'; then
-        echo 'export PATH="$PATH:$HOME/.local/bin"' >> "$HOME/.bashrc"
+    if ! grep "PATH=" "$HOME/.bashrc" | grep '\$HOME/\.local/bin' >/dev/null; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
     fi
 }
 
