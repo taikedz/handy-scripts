@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Use this `rustr` script as a shebang target.
+# put `rustr` somewhere on your PATH
+
+filename="$1"; shift
+
+temp="$(mktemp)"
+rmtemp() { rm "$temp"; }
+touch "$temp"
+trap rmtemp exit
+
+
+if rustc "$filename" -o "$temp"; then
+    chmod 700 "$temp"
+    "$temp" "$@"
+fi
+

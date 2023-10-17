@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# Run `goenv ./env-dir` to create an isolated dependencies dir
+# Source the resulting file to activate  it in a local shell session
+#    . env-dir/go-activate
+# This sets GOPATH and adds a PATH entry to the environment
+# Run `go-deactivate` to deactivate it.
+
+if [[ -z "$1" ]]; then
+    echo "No name specified"
+    exit 1
+fi
+
+TARGET="$1"; shift
+TARGET_F="$(readlink -f "$TARGET")"
+TARGET_N="$(basename "$TARGET_F")"
+
+mkdir "$TARGET_F"
+
+cat <<EOF > "$TARGET/go-activate"
+if env | grep GOENV_OLD -q ; then
+    echo "Already activated"
+else
+    GOENV_OLD_PS1="\$PS1"
+    GOENV_OLD_PATH="\$PATH"
+    export PS1="(goenv:$TARGET_N) \$PS1"
+    export GOPATH="$TARGET_F"
+    export PATH="$TARGET_F/bin:\$PATH"
+    go-deactivate() {
+        export PS1="\$OLD_PS1"
+        unset GOPATH
+        export PATH="\$GOENV_OLD_PATH"
+        unset GOENV_OLD_PS1
+        unset GOENV_OLD_PATH
+        unset go-deactivate
+    }
+fi
+EOF
+
+echo "Created GOPATH directory at $TARGET . Source '$TARGET/go-activate' to load it."
+
