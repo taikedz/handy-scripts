@@ -14,7 +14,21 @@ a {
 	text-decoration:none;
 }
 </style>
+<script>
+var TICKER = null;
 
+function clear_ticker() {
+  if(TICKER) {
+    clearInterval(TICKER);
+  }
+}
+
+function set_ticker(speed) {
+  clear_ticker();
+  TICKER = setInterval('newLine()', speed)
+}
+
+</script>
 </head>
 <body bgcolor="#000000">
 
@@ -27,8 +41,8 @@ a {
 		<a onClick="obj('fontsbox').style.visibility='visible';">&nbsp;Fonts Settings&nbsp;</a>&nbsp;
 		<a onClick="editpalette();">&nbsp;Edit Character Palette&nbsp;</a>&nbsp;
 		<a onClick="about();">&nbsp;About this page&nbsp;</a>&nbsp;
-		<a onClick="clearInterval(INT);">&nbsp;Stop&nbsp;</a>&nbsp;
-		<a onClick="INT = setInterval('newLine();',speed);">&nbsp;Play&nbsp;</a>&nbsp;
+		<a onClick="clear_ticker()">&nbsp;Stop&nbsp;</a>&nbsp;
+		<a onClick="set_ticker(speed);">&nbsp;Play&nbsp;</a>&nbsp;
 		<a onClick="newLine();">&nbsp;Step&nbsp;</a>
 
 	</font>
@@ -195,7 +209,7 @@ function editpalette() {
 		palette = "abcdefghijklmnopqrstuvwxyz1234567890#!?%$£";
 
 function newSquare() {
-	clearInterval(INT);
+	clear_ticker();
 
 	columnlength = new Array(cols);
 
@@ -210,10 +224,10 @@ function newSquare() {
 	}
 	
 	obj('square').innerHTML = "";
-	INT = setInterval('newLine();',speed);
+	set_ticker(speed);
 }
 
-	INT = setInterval('newLine();',speed);
+	set_ticker(speed);
 	newSquare();
 
 // === Function definition ======
