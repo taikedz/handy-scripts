@@ -35,7 +35,7 @@ else
     export GOPATH="$TARGET_F"
     export PATH="\$GOPATH/bin:\$PATH"
     go-deactivate() {
-        export PS1="\$OLD_PS1"
+        export PS1="\$GOENV_OLD_PS1"
         unset GOPATH
         export PATH="\$GOENV_OLD_PATH"
         unset GOENV_OLD_PS1
