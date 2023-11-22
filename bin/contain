@@ -14,11 +14,19 @@ The current working dir is mounted at MOUNTPOINT for access
 
 The container is ephemeral.
 
-use a container from registry by running 'contain using alpine'
+use a container from registry by running 'contain with alpine'
 EOHELP
 }
 
 ACTION="$1"; shift
+
+user:confirm() {
+    read -p "$* > "
+    if [[ "$REPLY" =~ (yes|YES|y|Y) ]]; then
+        return 0
+    fi
+    return 1
+}
 
 resolve_vars() {
 
@@ -43,7 +51,6 @@ resolve_vars() {
 }
 
 build_image() {
-set -x
     if [[ -d "$POD_DEFS/$BASE_IMAGE" ]]; then
         podman build -t "$BASE_IMAGE:$OCI_IMAGE_TAG" "$POD_DEFS/$BASE_IMAGE"
     else
@@ -51,6 +58,14 @@ set -x
         exit 1
     fi
 }
+
+conditional_build() {
+    if podman image exists "$BASE_IMAGE"; then
+        return 0
+    fi
+    build_image
+}
+
 
 ensure_image() {
     if ! podman image exists "$FQIN"; then
@@ -64,7 +79,11 @@ run_with() {
 }
 
 edit_dockerfile() {
-    [[ -d "$1" ]] || mkdir -p "$1"
+    if [[ ! -d "$1" ]]; then
+        user:confirm "'$1' does not exist - create it?" || return
+    fi
+
+    mkdir -p "$1"
     "$EDITOR" "$1/Dockerfile"
 }
 
@@ -86,8 +105,9 @@ main() {
         ensure_image
         run_with "$FQIN" "$@"
         ;;
-    using)
+    with)
         resolve_vars "$@"; shift
+        conditional_build "$POD_DEFS" "$BASE_IMAGE"
         run_with "$FQIN" "$@"
         ;;
     edit)
