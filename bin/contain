@@ -52,7 +52,11 @@ resolve_vars() {
 
 build_image() {
     if [[ -d "$POD_DEFS/$BASE_IMAGE" ]]; then
-        podman build -t "$BASE_IMAGE:$OCI_IMAGE_TAG" "$POD_DEFS/$BASE_IMAGE"
+        opts=""
+        if [[ -n "${1:-}" ]]; then
+            opts="--no-cache"
+        fi
+        podman build $opts -t "$BASE_IMAGE:$OCI_IMAGE_TAG" "$POD_DEFS/$BASE_IMAGE"
     else
         echo "No definition $POD_DEFS/$BASE_IMAGE"
         exit 1
@@ -99,6 +103,10 @@ main() {
     build)
         resolve_vars "$@"; shift
         build_image
+        ;;
+    rebuild)
+        resolve_vars "$@"; shift
+        build_image force
         ;;
     from)
         resolve_vars "$@"; shift
