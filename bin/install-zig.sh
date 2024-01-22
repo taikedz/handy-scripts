@@ -50,6 +50,13 @@ fi
 zigpath="$(readlink -f $zigdir)/zig"
 ln -s "$zigpath" ~/.local/bin/$zigcmd
 
+# ---- Add zig plugin for vim
+(
+    mkdir -p ~/.vim/pack/plugins/start/
+    cd ~/.vim/pack/plugins/start/
+    git clone https://github.com/ziglang/zig.vim
+)
+
 # ---- Validate install
 
 if ! which $zigcmd; then
