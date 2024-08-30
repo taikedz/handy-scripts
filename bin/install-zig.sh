@@ -10,10 +10,10 @@ cd ~/.local/var/zig
 arch="$(uname -m)"
 zigtag="${1:-master}"
 
-if [[ "$zigtag" != master ]]; then
+if [[ "$zigtag" != master ]] && [[ -e "$2" ]]; then
     zigcmd="zig-${zigtag}"
 else
-    zigcmd=zig
+    zigcmd="${2:-zig}"
 fi
 
 get_zig_url_py="
