@@ -42,6 +42,8 @@ autocmd FileType yaml set tabstop=2|set shiftwidth=2|set expandtab
 autocmd FileType html set tabstop=2|set shiftwidth=2|set expandtab
 autocmd FileType markdown set formatoptions+=tcqrno|set comments+=n:*
 
+autocmd BufNewFile,BufRead Makefile set noexpandtab
+
 " In absence of powershell syntax profile, use perl (eck!)
 autocmd BufNewFile,BufRead *.ps1 set syntax=perl
 
