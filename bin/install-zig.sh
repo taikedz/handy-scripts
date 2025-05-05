@@ -59,7 +59,7 @@ ln -s "$zigpath" "$BINDIR/$zigcmd"
 # ---- Add zig plugin for vim
 # vim plugins dir
 VPDIR="$HOME/.vim/pack/plugins/start"
-if [[ ! -d "$VPDIR/zig" ]]; then
+if [[ ! -d "$VPDIR/zig.vim" ]]; then
     (
     mkdir -p "$VPDIR"
     cd "$VPDIR"
