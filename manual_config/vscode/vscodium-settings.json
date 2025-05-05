@@ -1,0 +1,14 @@
+{
+    "python.analysis.autoImportCompletions": true,
+    "terminal.integrated.enableMultiLinePasteWarning": false,
+    "editor.autoClosingBrackets": "never",
+    "editor.autoClosingQuotes": "never",
+    "editor.autoClosingDelete": "never",
+    "editor.autoClosingOvertype": "never",
+    "editor.autoSurround": "never",
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "zig.path": "zig",
+    "zig.formattingProvider": "off",
+    "zig.zls.path": "zls",
+    "dart.flutterSdkPath": "/home/tai/.local/var/flutter/flutter"
+}
