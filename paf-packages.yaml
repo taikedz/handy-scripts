@@ -1,0 +1,22 @@
+alpacka:
+  variants:
+  - release: ID_LIKE=~debian
+    groups:
+    - common
+  - release: ID_LIKE=~fedora
+    groups:
+    - common
+
+  package-groups:
+    common:
+    - htop
+    - vim
+    - git
+    - tmux
+    - python3
+    - wget
+    - busybox
+    - podman
+    - firefox
+    - gimp
+
