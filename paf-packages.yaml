@@ -3,20 +3,27 @@ alpacka:
   - release: ID_LIKE=~debian
     groups:
     - common
+    - graphical
   - release: ID_LIKE=~fedora
     groups:
     - common
+    - graphical
 
   package-groups:
-    common:
-    - htop
-    - vim
+    cli:
+    #- htop
+    - btop
+    #- vim
+    - nvim
+
     - git
     - tmux
     - python3
     - wget
     - busybox
     - podman
+
+    graphical:
     - firefox
     - gimp
 
