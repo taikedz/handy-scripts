@@ -5,7 +5,7 @@
 # INSTALL:
 #
 # Add this file to your home folder for example ~/.bashrc.d/
-# And in .basrch , ensure you have `. ~/bashrc.d/*rc`
+# And in .bashrc , ensure you have `. ~/bashrc.d/venv.bashrc`
 
 
 # ---

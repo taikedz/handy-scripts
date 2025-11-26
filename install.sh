@@ -1,5 +1,29 @@
 #!/usr/bin/env bash
 
+
+THIS="$(realpath "$0")"
+HEREDIR="$(dirname "$THIS")"
+SCRIPT="$(basename "$0")"
+
+set -euo pipefail
+
+add_bashrc_files() {
+    # Allow custom isolated *.bashrc files
+
+    mkdir -p ~/.bashrc.d
+    mkdir -p "$HOME/.local/bin"
+
+    if ! grep '// LOADRC' ~/.bashrc ; then
+        cat "$HEREDIR/bashrc/_loader.sh" >> ~/.bashrc
+    fi
+
+    for rcfile in "$HEREDIR"/bashrc/*.bashrc ; do
+        if [[ ! -f ~/.bashrc.d/"$(basename "$rcfile")" ]]; then
+            cp "$rcfile" ~/.bashrc.d/
+        fi
+    done
+}
+
 scripts_to_add=(
     bin/pstree.sh
     bin/rmkernel.sh
@@ -22,14 +46,6 @@ scripts_to_add_desktop=(
     bin/sendme
     bin/wifi
 )
-
-addpath() {
-    mkdir -p ~/.local/bin
-
-    if ! grep "PATH=" "$HOME/.bashrc" | grep '\$HOME/\.local/bin' >/dev/null; then
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-    fi
-}
 
 addconfig() {
     # Check for marker of having previously done an install of config
@@ -68,7 +84,6 @@ install_scripts() {
 
 install_configs() {
     addconfig configs/vimrc "$HOME/.vimrc"
-    addconfig configs/user.bashrc "$HOME/.bashrc"
     SUDO=true addconfig configs/root.bashrc /etc/bash.bashrc
 }
 
@@ -82,7 +97,7 @@ install_one() {
 
 main() {
     cd "$(dirname "$0")"
-    addpath
+    add_bashrc_files
 
     action="${1:-}"; shift || :
 

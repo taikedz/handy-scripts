@@ -1,6 +1,3 @@
-# // HANDYCONFIG
-# ^--- do not delete
-
 # PS1 override
 #
 # Write the desired pattern, eg
