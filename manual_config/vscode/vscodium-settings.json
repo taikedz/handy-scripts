@@ -10,5 +10,9 @@
     "zig.path": "zig",
     "zig.formattingProvider": "off",
     "zig.zls.path": "zls",
-    "dart.flutterSdkPath": "/home/tai/.local/var/flutter/flutter"
+    "dart.flutterSdkPath": "/home/tai/.local/var/flutter/flutter",
+
+    "workbench.commandPalette.showAskInChat": false,
+    "chat.agent.enabled": false,
+    "chat.disableAIFeatures": true
 }
