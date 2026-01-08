@@ -31,6 +31,11 @@ scripts_to_add=(
     bin/z64
     bin/reconcile-swp.sh
     bin/pyv
+    bin/ignore-dir.sh
+    bin/new-git.sh
+    bin/new-go.sh
+    bin/new-shell.sh
+    bin/new-py.sh
 )
 
 scripts_to_add_desktop=(
@@ -87,10 +92,12 @@ install_configs() {
     SUDO=true addconfig configs/root.bashrc /etc/bash.bashrc
 }
 
-install_one() {
-    if [[ ! -f "$1" ]]; then return 1; fi
+install_files() {
+    for f in "$@"; do
+        if [[ ! -f "$f" ]]; then return 1; fi
+    done
 
-    local this_script=("$1")
+    local this_script=("$@")
 
     copy_scripts this_script
 }
@@ -99,9 +106,7 @@ main() {
     cd "$(dirname "$0")"
     add_bashrc_files
 
-    action="${1:-}"; shift || :
-
-    case "$action" in
+    case "${1:-}" in
     configs)
         install_configs ;;
 
@@ -114,7 +119,7 @@ main() {
         ;;
 
     *)
-        if ! install_one "$action"; then
+        if ! install_files "$@"; then
             echo "'$0 configs' -- install just the configs (set HANDYCONFIG_FORCE=true to forcibly overwrite pre-existing configs)"
             echo "'$0 scripts [desktop]' -- install just scripts, optionally include desktop scripts"
             echo "'$0 all [desktop]' -- install configs and scripts, optionally include desktop scripts"
