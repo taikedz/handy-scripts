@@ -1,4 +1,7 @@
 {
+    "workbench.commandPalette.showAskInChat": false,
+    "chat.agent.enabled": false,
+    "chat.disableAIFeatures": true,
     "python.analysis.autoImportCompletions": true,
     "terminal.integrated.enableMultiLinePasteWarning": false,
     "editor.autoClosingBrackets": "never",
@@ -11,8 +14,8 @@
     "zig.formattingProvider": "off",
     "zig.zls.path": "zls",
     "dart.flutterSdkPath": "/home/tai/.local/var/flutter/flutter",
-
-    "workbench.commandPalette.showAskInChat": false,
-    "chat.agent.enabled": false,
-    "chat.disableAIFeatures": true
+    "terminal.integrated.suggest.providers": {
+        "lsp": false
+    },
+    "terminal.integrated.suggest.enabled": false
 }
