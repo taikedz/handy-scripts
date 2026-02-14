@@ -1,21 +1,45 @@
 {
-    "workbench.commandPalette.showAskInChat": false,
+    "accessibility.verbosity.inlineChat": false,
+    "accessibility.verbosity.panelChat": false,
+
     "chat.agent.enabled": false,
+    "chat.commandCenter.enabled": false,
+    "chat.detectParticipant.enabled": false,
     "chat.disableAIFeatures": true,
-    "python.analysis.autoImportCompletions": true,
-    "terminal.integrated.enableMultiLinePasteWarning": false,
+    
     "editor.autoClosingBrackets": "never",
     "editor.autoClosingQuotes": "never",
     "editor.autoClosingDelete": "never",
     "editor.autoClosingOvertype": "never",
     "editor.autoSurround": "never",
+
+    "extensions.ignoreRecommendations": true,
+    
+    "dart.flutterSdkPath": "/home/tai/.local/var/flutter/flutter",
+
+    "go.toolsEnvVars": {
+        "CGO_LDFLAGS_ALLOW":".*"
+    },
+
+    "notebook.experimental.generate": false,
+    
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "standard",
+
+    "telemetry.feedback.enabled": false,
+
+    "terminal.integrated.enableMultiLinePasteWarning": false,
     "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.suggest.enabled": false,    
+    "terminal.integrated.suggest.providers": {
+        "lsp": false,
+        "vscode.terminal-suggest": false
+    },
+    
+    "workbench.commandPalette.showAskInChat": false,
+    "workbench.startupEditor": "none",
+
     "zig.path": "zig",
     "zig.formattingProvider": "off",
-    "zig.zls.path": "zls",
-    "dart.flutterSdkPath": "/home/tai/.local/var/flutter/flutter",
-    "terminal.integrated.suggest.providers": {
-        "lsp": false
-    },
-    "terminal.integrated.suggest.enabled": false
+    "zig.zls.path": "zls"
 }
