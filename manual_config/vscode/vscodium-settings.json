@@ -6,7 +6,7 @@
     "chat.commandCenter.enabled": false,
     "chat.detectParticipant.enabled": false,
     "chat.disableAIFeatures": true,
-    
+
     "editor.autoClosingBrackets": "never",
     "editor.autoClosingQuotes": "never",
     "editor.autoClosingDelete": "never",
@@ -14,7 +14,7 @@
     "editor.autoSurround": "never",
 
     "extensions.ignoreRecommendations": true,
-    
+
     "dart.flutterSdkPath": "/home/tai/.local/var/flutter/flutter",
 
     "go.toolsEnvVars": {
@@ -22,7 +22,7 @@
     },
 
     "notebook.experimental.generate": false,
-    
+
     "python.analysis.autoImportCompletions": true,
     "python.analysis.typeCheckingMode": "standard",
 
@@ -30,12 +30,13 @@
 
     "terminal.integrated.enableMultiLinePasteWarning": false,
     "terminal.integrated.defaultProfile.linux": "bash",
-    "terminal.integrated.suggest.enabled": false,    
+    "terminal.integrated.initialHint": false,
+    "terminal.integrated.suggest.enabled": false,
     "terminal.integrated.suggest.providers": {
         "lsp": false,
         "vscode.terminal-suggest": false
     },
-    
+
     "workbench.commandPalette.showAskInChat": false,
     "workbench.startupEditor": "none",
 
